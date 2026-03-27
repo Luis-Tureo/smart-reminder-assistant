@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="6dp"
+    app:cardBackgroundColor="@color/reminder_card_background"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="6dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/reminder_card_stroke">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- TEXTO PRINCIPAL -->
+        <TextView
+            android:id="@+id/tvReminderText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Comprar pan"
+            android:textColor="@color/reminder_text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- FECHA Y HORA -->
+        <TextView
+            android:id="@+id/tvReminderDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="20/03/2026"
+            android:textColor="@color/reminder_text_secondary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvReminderTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="14:30"
+            android:textColor="@color/reminder_text_secondary"
+            android:textSize="14sp" />
+
+        <!-- ACCIONES -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical|end"
+            android:orientation="horizontal">
+
+            <CheckBox
+                android:id="@+id/checkCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/done_label"
+                android:textColor="@color/reminder_text_primary"
+                android:buttonTint="@color/reminder_accent" />
+
+            <ImageButton
+                android:id="@+id/btnDelete"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/delete_reminder"
+                android:src="@android:drawable/ic_menu_delete"
+                android:tint="@color/reminder_delete_tint" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

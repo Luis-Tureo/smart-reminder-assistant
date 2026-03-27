@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">VoiceReminderApp</string>
+
+    <string name="mic_permission_denied">Permiso de micrófono denegado</string>
+    <string name="notification_permission_denied">Permiso de notificaciones denegado</string>
+    <string name="recognized_text_placeholder">El texto reconocido aparecerá aquí</string>
+    <string name="speech_not_available">El reconocimiento de voz no está disponible</string>
+
+    <string name="no_date_time_selected">No hay fecha ni hora seleccionada</string>
+    <string name="selected_date">Fecha seleccionada: %1$s</string>
+    <string name="selected_time">Hora seleccionada: %1$s</string>
+    <string name="selected_datetime">Seleccionado: %1$s %2$s</string>
+
+    <string name="message_no_text_to_save">No hay texto para guardar</string>
+    <string name="message_select_date_time">Selecciona fecha y hora</string>
+    <string name="message_select_future_date_time">Selecciona una fecha y hora futura</string>
+    <string name="message_reminder_saved">Recordatorio guardado y notificación programada</string>
+    <string name="message_error_saving_reminder">Error al guardar el recordatorio</string>
+    <string name="message_unknown_error">Error desconocido</string>
+    <string name="message_delete_reminder_failed">No se pudo eliminar el recordatorio</string>
+    <string name="message_update_reminder_failed">No se pudo actualizar el recordatorio</string>
+
+    <string name="done_label">Completado</string>
+    <string name="delete_reminder">Eliminar recordatorio</string>
+</resources>

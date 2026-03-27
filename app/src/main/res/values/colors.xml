@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Fondo general -->
+    <color name="screen_background">#16202A</color>
+
+    <!-- Tarjetas -->
+    <color name="card_background">#223246</color>
+    <color name="card_stroke">#4E6E91</color>
+
+    <!-- Textos -->
+    <color name="text_primary">#F8FBFF</color>
+    <color name="text_secondary">#C9D8E8</color>
+
+    <!-- Botones principales -->
+    <color name="primary_blue">#6FA8FF</color>
+    <color name="accent_purple">#AE8BFF</color>
+    <color name="success_green">#5FD37A</color>
+
+    <!-- Ripple -->
+    <color name="ripple_soft">#40FFFFFF</color>
+
+    <!-- Cajas informativas -->
+    <color name="info_box_background">#30465F</color>
+    <color name="result_box_background">#37506B</color>
+
+    <!-- Recordatorios -->
+    <color name="reminder_card_background">#24384D</color>
+    <color name="reminder_card_stroke">#4E6E91</color>
+    <color name="reminder_text_primary">#F8FBFF</color>
+    <color name="reminder_text_secondary">#D0DCEA</color>
+    <color name="reminder_accent">#79ACFF</color>
+    <color name="reminder_delete_tint">#F28B82</color>
+
+    <!-- Compatibilidad -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+    <!-- Material heredados -->
+    <color name="purple_500">#6FA8FF</color>
+    <color name="teal_200">#7ED6D1</color>
+
+</resources>

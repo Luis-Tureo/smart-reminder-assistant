@@ -1,0 +1,14 @@
+package com.luistureo.voicereminderapp.domain.repository
+
+import com.luistureo.voicereminderapp.domain.model.Reminder
+
+interface ReminderRepository {
+
+    suspend fun insertReminder(reminder: Reminder)
+
+    suspend fun getAllReminders(): List<Reminder>
+
+    suspend fun deleteReminder(reminder: Reminder)
+
+    suspend fun updateReminder(reminder: Reminder)
+}
