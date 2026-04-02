@@ -10,7 +10,7 @@ class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val reminderText = intent.getStringExtra("reminder_text")
-            ?: "You have a reminder"
+            ?: "Tienes un recordatorio"
 
         val reminderDate = intent.getStringExtra("reminder_date")
             ?: "--/--/----"

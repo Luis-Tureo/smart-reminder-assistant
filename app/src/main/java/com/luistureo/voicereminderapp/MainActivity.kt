@@ -1,12 +1,9 @@
 package com.luistureo.voicereminderapp
 
 import android.Manifest
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -35,16 +32,11 @@ import com.luistureo.voicereminderapp.presentation.ui.swipe.SwipeToDeleteCallbac
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModelFactory
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var selectedDateTimeTextView: TextView
     private lateinit var resultTextView: TextView
-    private lateinit var selectDateButton: Button
-    private lateinit var selectTimeButton: Button
-    private lateinit var speakButton: Button
-    private lateinit var saveButton: Button
     private lateinit var voiceButton: MaterialButton
     private lateinit var remindersRecyclerView: RecyclerView
 
@@ -55,33 +47,24 @@ class MainActivity : ComponentActivity() {
     private lateinit var voiceAssistantSpeaker: VoiceAssistantSpeaker
 
     private var lastVoiceAssistantMessage: String = ""
+    private var isAssistantConversationMode: Boolean = false
 
     private val speechRecognitionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val text = speechManager.extractResult(result.resultCode, result.data)
 
-            if (text != null) {
-                resultTextView.text = text
+            if (!text.isNullOrBlank()) {
+                resultTextView.text = "Tú: $text"
 
-                // 🔥 clave: enviar al flujo conversacional
-                reminderViewModel.processVoiceInput(text)
+                if (isAssistantConversationMode) {
+                    reminderViewModel.processAssistantMessage(text)
+                } else {
+                    reminderViewModel.processVoiceInput(text)
+                }
             } else {
                 Toast.makeText(
                     this,
                     "No se entendió el audio, intenta nuevamente",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-
-    private val audioPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                startSpeechRecognition()
-            } else {
-                Toast.makeText(
-                    this,
-                    getString(R.string.mic_permission_denied),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -101,7 +84,7 @@ class MainActivity : ComponentActivity() {
     private val voiceAudioPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
-                reminderViewModel.startVoiceReminderFlow()
+                startAssistantConversation()
             } else {
                 Toast.makeText(
                     this,
@@ -120,7 +103,6 @@ class MainActivity : ComponentActivity() {
         setupCore()
         setupRecyclerView()
         setupSwipeToDelete()
-        //setupListeners()
         setupVoiceButton()
         observeState()
         observeEvents()
@@ -130,10 +112,6 @@ class MainActivity : ComponentActivity() {
     private fun initViews() {
         selectedDateTimeTextView = findViewById(R.id.tvSelectedDateTime)
         resultTextView = findViewById(R.id.tvResult)
-        /* selectDateButton = findViewById(R.id.btnSelectDate)
-        selectTimeButton = findViewById(R.id.btnSelectTime)
-        speakButton = findViewById(R.id.btnSpeak)
-        saveButton = findViewById(R.id.btnSave) */
         voiceButton = findViewById(R.id.btnVoiceReminder)
         remindersRecyclerView = findViewById(R.id.recyclerReminders)
     }
@@ -183,30 +161,15 @@ class MainActivity : ComponentActivity() {
         itemTouchHelper.attachToRecyclerView(remindersRecyclerView)
     }
 
-    /* private fun setupListeners() {
-        selectDateButton.setOnClickListener {
-            openDatePicker()
-        }
-
-        selectTimeButton.setOnClickListener {
-            openTimePicker()
-        }
-
-        speakButton.setOnClickListener {
-            checkAudioPermissionForManualRecognition()
-        }
-
-        saveButton.setOnClickListener {
-            reminderViewModel.saveReminder(
-                resultTextView.text.toString().trim()
-            )
-        }
-    }*/
-
     private fun setupVoiceButton() {
         voiceButton.setOnClickListener {
             checkAudioPermissionForVoiceFlow()
         }
+    }
+
+    private fun startAssistantConversation() {
+        isAssistantConversationMode = true
+        reminderViewModel.startAssistantSession()
     }
 
     private fun observeState() {
@@ -278,7 +241,50 @@ class MainActivity : ComponentActivity() {
                 }
 
                 launch {
+                    reminderViewModel.assistantState.collect { state ->
+                        val userText = state.recognizedText
+                        val assistantReply = state.assistantReply
+                        val draft = state.pendingDraft
+
+                        if (userText.isNotBlank() || assistantReply.isNotBlank()) {
+                            val draftText = buildString {
+                                if (draft?.text != null) append("\nTexto: ${draft.text}")
+                                if (draft?.date != null) append("\nFecha: ${draft.date}")
+                                if (draft?.time != null) append("\nHora: ${draft.time}")
+                            }
+
+                            resultTextView.text = buildString {
+                                if (userText.isNotBlank()) {
+                                    append("Tú: $userText")
+                                }
+
+                                if (assistantReply.isNotBlank()) {
+                                    if (isNotBlank()) append("\n\n")
+                                    append("Secretaria IA: $assistantReply")
+                                }
+
+                                if (draftText.isNotBlank()) {
+                                    append("\n\nBorrador actual:$draftText")
+                                }
+                            }
+                        }
+
+                        if (state.error != null) {
+                            Toast.makeText(
+                                this@MainActivity,
+                                state.error,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+
+                launch {
                     reminderViewModel.voiceState.collect { state ->
+                        if (isAssistantConversationMode) {
+                            return@collect
+                        }
+
                         val message = state.lastAssistantMessage
 
                         if (
@@ -290,7 +296,10 @@ class MainActivity : ComponentActivity() {
 
                             voiceAssistantSpeaker.speakText(message) {
                                 runOnUiThread {
-                                    if (reminderViewModel.voiceState.value.isVoiceFlowActive) {
+                                    if (
+                                        reminderViewModel.voiceState.value.isVoiceFlowActive &&
+                                        !isAssistantConversationMode
+                                    ) {
                                         startVoiceRecognition()
                                     }
                                 }
@@ -308,28 +317,52 @@ class MainActivity : ComponentActivity() {
 
     private fun observeEvents() {
         lifecycleScope.launch {
-            reminderViewModel.events.collect { event ->
-                when (event) {
-                    is ReminderUiEvent.ShowMessage -> {
-                        Toast.makeText(
-                            this@MainActivity,
-                            event.message,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                reminderViewModel.events.collect { event ->
+                    when (event) {
+                        is ReminderUiEvent.ShowMessage -> {
+                            Toast.makeText(
+                                this@MainActivity,
+                                event.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
 
-                    is ReminderUiEvent.ScheduleReminder -> {
-                        reminderScheduler.scheduleReminder(
-                            reminderText = event.reminderText,
-                            reminderDate = event.reminderDate,
-                            reminderTime = event.reminderTime,
-                            triggerTimeMillis = event.triggerTimeMillis
-                        )
-                    }
+                        is ReminderUiEvent.ScheduleReminder -> {
+                            reminderScheduler.scheduleReminder(
+                                reminderText = event.reminderText,
+                                reminderDate = event.reminderDate,
+                                reminderTime = event.reminderTime,
+                                triggerTimeMillis = event.triggerTimeMillis
+                            )
+                        }
 
-                    ReminderUiEvent.ClearForm -> {
-                        resultTextView.text = getString(R.string.recognized_text_placeholder)
-                        reminderViewModel.clearFormState()
+                        is ReminderUiEvent.SpeakAssistantReply -> {
+                            if (event.message.isNotBlank()) {
+                                val shouldContinueListening = isAssistantConversationMode
+
+                                voiceAssistantSpeaker.speakText(event.message) {
+                                    runOnUiThread {
+                                        if (
+                                            shouldContinueListening &&
+                                            isAssistantConversationMode &&
+                                            reminderViewModel.assistantState.value.isConversationActive
+                                        ) {
+                                            startSpeechRecognition()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        ReminderUiEvent.StopAssistantConversation -> {
+                            isAssistantConversationMode = false
+                        }
+
+                        ReminderUiEvent.ClearForm -> {
+                            resultTextView.text = getString(R.string.recognized_text_placeholder)
+                            reminderViewModel.clearFormState()
+                        }
                     }
                 }
             }
@@ -355,24 +388,12 @@ class MainActivity : ComponentActivity() {
             speechManager.startRecognition(speechRecognitionLauncher)
         } catch (exception: Exception) {
             exception.printStackTrace()
+
             Toast.makeText(
                 this,
                 getString(R.string.speech_not_available),
                 Toast.LENGTH_SHORT
             ).show()
-        }
-    }
-
-    private fun checkAudioPermissionForManualRecognition() {
-        if (
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            startSpeechRecognition()
-        } else {
-            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
@@ -383,7 +404,7 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.RECORD_AUDIO
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            reminderViewModel.startVoiceReminderFlow()
+            startAssistantConversation()
         } else {
             voiceAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
@@ -400,49 +421,6 @@ class MainActivity : ComponentActivity() {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-    }
-
-    private fun openDatePicker() {
-        val form = reminderViewModel.formState.value
-        val calendar = Calendar.getInstance()
-
-        val initialYear =
-            if (form.selectedYear != -1) form.selectedYear else calendar.get(Calendar.YEAR)
-
-        val initialMonth =
-            if (form.selectedMonth != -1) form.selectedMonth - 1 else calendar.get(Calendar.MONTH)
-
-        val initialDay =
-            if (form.selectedDay != -1) form.selectedDay else calendar.get(Calendar.DAY_OF_MONTH)
-
-        val datePicker = DatePickerDialog(
-            this,
-            { _, year, month, day ->
-                reminderViewModel.onDateSelected(year, month + 1, day)
-            },
-            initialYear,
-            initialMonth,
-            initialDay
-        )
-
-        datePicker.show()
-    }
-
-    private fun openTimePicker() {
-        val form = reminderViewModel.formState.value
-        val calendar = Calendar.getInstance()
-
-        val timePicker = TimePickerDialog(
-            this,
-            { _, hour, minute ->
-                reminderViewModel.onTimeSelected(hour, minute)
-            },
-            if (form.selectedHour != -1) form.selectedHour else calendar.get(Calendar.HOUR_OF_DAY),
-            if (form.selectedMinute != -1) form.selectedMinute else calendar.get(Calendar.MINUTE),
-            true
-        )
-
-        timePicker.show()
     }
 
     override fun onDestroy() {

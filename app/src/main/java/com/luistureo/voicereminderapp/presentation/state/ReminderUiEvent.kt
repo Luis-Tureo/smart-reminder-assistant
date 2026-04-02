@@ -10,5 +10,9 @@ sealed class ReminderUiEvent {
         val triggerTimeMillis: Long
     ) : ReminderUiEvent()
 
+    data class SpeakAssistantReply(val message: String) : ReminderUiEvent()
+
+    data object StopAssistantConversation : ReminderUiEvent()
+
     data object ClearForm : ReminderUiEvent()
 }
