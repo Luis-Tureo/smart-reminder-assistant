@@ -1,9 +1,17 @@
 package com.luistureo.voicereminderapp.core.speech
 
 import android.content.Context
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Locale
 
 class VoiceAssistantSpeaker(
@@ -11,10 +19,20 @@ class VoiceAssistantSpeaker(
 ) : TextToSpeech.OnInitListener {
 
     private val appContext = context.applicationContext
+    private val speakerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
     private var textToSpeech: TextToSpeech? = null
+    private var mediaPlayer: MediaPlayer? = null
+
     private var pendingText: String? = null
     private var pendingOnFinished: (() -> Unit)? = null
-    private var isReady = false
+    private var isLocalTtsReady = false
+
+    private val tokenProvider = GoogleAuthTokenProvider(appContext)
+    private val googleCloudTtsService = GoogleCloudTtsService(
+        context = appContext,
+        tokenProvider = tokenProvider
+    )
 
     init {
         textToSpeech = TextToSpeech(appContext, this)
@@ -27,14 +45,7 @@ class VoiceAssistantSpeaker(
             return
         }
 
-        val localeResult = textToSpeech?.setLanguage(Locale("es", "CL"))
-
-        if (
-            localeResult == TextToSpeech.LANG_MISSING_DATA ||
-            localeResult == TextToSpeech.LANG_NOT_SUPPORTED
-        ) {
-            textToSpeech?.setLanguage(Locale("es", "ES"))
-        }
+        configureLocalTts()
 
         textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) = Unit
@@ -56,15 +67,16 @@ class VoiceAssistantSpeaker(
             }
         })
 
-        isReady = true
+        isLocalTtsReady = true
 
         val text = pendingText
+        val onFinished = pendingOnFinished
+
         if (!text.isNullOrBlank()) {
-            speakInternal(text)
+            speakText(text, onFinished)
         }
     }
 
-    // Reproduce un texto cualquiera con voz
     fun speakText(
         message: String,
         onFinished: (() -> Unit)? = null
@@ -72,21 +84,63 @@ class VoiceAssistantSpeaker(
         pendingText = message
         pendingOnFinished = onFinished
 
-        if (isReady) {
-            speakInternal(message)
+        stopCurrentPlayback()
+
+        speakerScope.launch {
+            try {
+                val naturalMessage = message
+                    .replace(".", ". ")
+                    .replace(",", ", ")
+                    .trim()
+
+                val audioFile = googleCloudTtsService.synthesizeToTempFile(naturalMessage)
+
+                playCloudAudio(
+                    file = audioFile,
+                    onFinished = onFinished
+                )
+            } catch (_: Exception) {
+                speakWithLocalTtsFallback(message)
+            }
         }
     }
 
-    // Libera recursos del motor TTS
     fun shutdown() {
+        stopCurrentPlayback()
+
         textToSpeech?.stop()
         textToSpeech?.shutdown()
         textToSpeech = null
-        isReady = false
+
+        isLocalTtsReady = false
         clearPendingData()
+        speakerScope.cancel()
     }
 
-    private fun speakInternal(message: String) {
+    private fun configureLocalTts() {
+        val preferredLocale = Locale("es", "ES")
+        val fallbackLocale = Locale("es", "US")
+
+        val localeResult = textToSpeech?.setLanguage(preferredLocale)
+
+        if (
+            localeResult == TextToSpeech.LANG_MISSING_DATA ||
+            localeResult == TextToSpeech.LANG_NOT_SUPPORTED
+        ) {
+            textToSpeech?.setLanguage(fallbackLocale)
+        }
+
+        textToSpeech?.setPitch(1.0f)
+        textToSpeech?.setSpeechRate(0.85f)
+    }
+
+    private fun speakWithLocalTtsFallback(message: String) {
+        if (!isLocalTtsReady) {
+            pendingOnFinished?.invoke()
+            clearPendingData()
+            return
+        }
+
         val utteranceId = "voice_assistant_${System.currentTimeMillis()}"
 
         textToSpeech?.speak(
@@ -95,6 +149,59 @@ class VoiceAssistantSpeaker(
             Bundle(),
             utteranceId
         )
+    }
+
+    private fun playCloudAudio(
+        file: File,
+        onFinished: (() -> Unit)?
+    ) {
+        stopCurrentPlayback()
+
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(file.absolutePath)
+
+            setOnPreparedListener {
+                start()
+            }
+
+            setOnCompletionListener { player ->
+                player.release()
+                mediaPlayer = null
+                file.delete()
+
+                speakerScope.launch {
+                    delay(150)
+                    onFinished?.invoke()
+                    clearPendingData()
+                }
+            }
+
+            setOnErrorListener { player, _, _ ->
+                player.release()
+                mediaPlayer = null
+                file.delete()
+
+                speakWithLocalTtsFallback(pendingText.orEmpty())
+                true
+            }
+
+            prepareAsync()
+        }
+    }
+
+    private fun stopCurrentPlayback() {
+        mediaPlayer?.apply {
+            try {
+                if (isPlaying) {
+                    stop()
+                }
+            } catch (_: Exception) {
+            }
+
+            release()
+        }
+
+        mediaPlayer = null
     }
 
     private fun clearPendingData() {

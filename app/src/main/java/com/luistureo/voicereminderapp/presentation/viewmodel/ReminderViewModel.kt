@@ -127,7 +127,7 @@ class ReminderViewModel(
         _assistantState.update {
             it.copy(
                 recognizedText = "",
-                assistantReply = "¿Qué deseas recordar?",
+                assistantReply = "Dime tu recordatorio",
                 pendingDraft = null,
                 error = null,
                 isLoading = false,
@@ -136,7 +136,7 @@ class ReminderViewModel(
         }
 
         viewModelScope.launch {
-            _events.emit(ReminderUiEvent.SpeakAssistantReply("¿Qué deseas recordar?"))
+            _events.emit(ReminderUiEvent.SpeakAssistantReply("Dime tu recordatorio"))
         }
     }
 
