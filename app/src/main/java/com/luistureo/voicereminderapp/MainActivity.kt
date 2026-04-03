@@ -121,10 +121,11 @@ class MainActivity : ComponentActivity() {
         val repository = ReminderRepositoryImpl(database.reminderDao())
 
         val factory = ReminderViewModelFactory(
-            AddReminderUseCase(repository),
-            GetRemindersUseCase(repository),
-            DeleteReminderUseCase(repository),
-            UpdateReminderUseCase(repository)
+            context = applicationContext,
+            addReminderUseCase = AddReminderUseCase(repository),
+            getRemindersUseCase = GetRemindersUseCase(repository),
+            deleteReminderUseCase = DeleteReminderUseCase(repository),
+            updateReminderUseCase = UpdateReminderUseCase(repository)
         )
 
         reminderViewModel = ViewModelProvider(this, factory)[ReminderViewModel::class.java]
@@ -153,12 +154,13 @@ class MainActivity : ComponentActivity() {
 
     private fun setupSwipeToDelete() {
         val swipeHandler = SwipeToDeleteCallback { position ->
-            val reminder = reminderViewModel.uiState.value.reminders[position]
-            reminderViewModel.deleteReminder(reminder)
+            val reminders = reminderViewModel.uiState.value.reminders
+            if (position in reminders.indices) {
+                reminderViewModel.deleteReminder(reminders[position])
+            }
         }
 
-        val itemTouchHelper = ItemTouchHelper(swipeHandler)
-        itemTouchHelper.attachToRecyclerView(remindersRecyclerView)
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(remindersRecyclerView)
     }
 
     private fun setupVoiceButton() {
@@ -179,10 +181,10 @@ class MainActivity : ComponentActivity() {
                     reminderViewModel.uiState.collect { state ->
                         reminderAdapter.updateData(state.reminders)
 
-                        if (state.error != null) {
+                        state.error?.let { error ->
                             Toast.makeText(
                                 this@MainActivity,
-                                state.error.asString(this@MainActivity),
+                                error.asString(this@MainActivity),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -191,14 +193,12 @@ class MainActivity : ComponentActivity() {
 
                 launch {
                     reminderViewModel.formState.collect { form ->
-                        val hasDate =
-                            form.selectedDay != -1 &&
-                                    form.selectedMonth != -1 &&
-                                    form.selectedYear != -1
+                        val hasDate = form.selectedDay != -1 &&
+                                form.selectedMonth != -1 &&
+                                form.selectedYear != -1
 
-                        val hasTime =
-                            form.selectedHour != -1 &&
-                                    form.selectedMinute != -1
+                        val hasTime = form.selectedHour != -1 &&
+                                form.selectedMinute != -1
 
                         selectedDateTimeTextView.text = when {
                             hasDate && hasTime -> {
@@ -246,33 +246,31 @@ class MainActivity : ComponentActivity() {
                         val assistantReply = state.assistantReply
                         val draft = state.pendingDraft
 
-                        if (userText.isNotBlank() || assistantReply.isNotBlank()) {
-                            val draftText = buildString {
-                                if (draft?.text != null) append("\nTexto: ${draft.text}")
-                                if (draft?.date != null) append("\nFecha: ${draft.date}")
-                                if (draft?.time != null) append("\nHora: ${draft.time}")
+                        val draftText = buildString {
+                            if (!draft?.text.isNullOrBlank()) append("\nTexto: ${draft?.text}")
+                            if (!draft?.date.isNullOrBlank()) append("\nFecha: ${draft?.date}")
+                            if (!draft?.time.isNullOrBlank()) append("\nHora: ${draft?.time}")
+                        }
+
+                        resultTextView.text = buildString {
+                            if (userText.isNotBlank()) {
+                                append("Tú: $userText")
                             }
 
-                            resultTextView.text = buildString {
-                                if (userText.isNotBlank()) {
-                                    append("Tú: $userText")
-                                }
+                            if (assistantReply.isNotBlank()) {
+                                if (isNotBlank()) append("\n\n")
+                                append("Asistente: $assistantReply")
+                            }
 
-                                if (assistantReply.isNotBlank()) {
-                                    if (isNotBlank()) append("\n\n")
-                                    append("Secretaria IA: $assistantReply")
-                                }
-
-                                if (draftText.isNotBlank()) {
-                                    append("\n\nBorrador actual:$draftText")
-                                }
+                            if (draftText.isNotBlank()) {
+                                append("\n\nBorrador actual:$draftText")
                             }
                         }
 
-                        if (state.error != null) {
+                        state.error?.let { error ->
                             Toast.makeText(
                                 this@MainActivity,
-                                state.error,
+                                error,
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -281,9 +279,7 @@ class MainActivity : ComponentActivity() {
 
                 launch {
                     reminderViewModel.voiceState.collect { state ->
-                        if (isAssistantConversationMode) {
-                            return@collect
-                        }
+                        if (isAssistantConversationMode) return@collect
 
                         val message = state.lastAssistantMessage
 
@@ -300,7 +296,7 @@ class MainActivity : ComponentActivity() {
                                         reminderViewModel.voiceState.value.isVoiceFlowActive &&
                                         !isAssistantConversationMode
                                     ) {
-                                        startVoiceRecognition()
+                                        startSpeechRecognition()
                                     }
                                 }
                             }
@@ -366,20 +362,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-        }
-    }
-
-    private fun startVoiceRecognition() {
-        try {
-            speechManager.startRecognition(speechRecognitionLauncher)
-        } catch (exception: Exception) {
-            exception.printStackTrace()
-
-            Toast.makeText(
-                this,
-                getString(R.string.speech_not_available),
-                Toast.LENGTH_SHORT
-            ).show()
         }
     }
 

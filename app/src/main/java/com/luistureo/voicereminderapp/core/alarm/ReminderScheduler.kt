@@ -22,7 +22,8 @@ class ReminderScheduler(
             putExtra("reminder_time", reminderTime)
         }
 
-        val requestCode = System.currentTimeMillis().toInt()
+        // 🔥 Mejora: requestCode más único (evita colisiones)
+        val requestCode = (reminderText + triggerTimeMillis).hashCode()
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
@@ -33,6 +34,7 @@ class ReminderScheduler(
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+        // 🔥 setExactAndAllowWhileIdle = funciona incluso en modo ahorro batería
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerTimeMillis,
