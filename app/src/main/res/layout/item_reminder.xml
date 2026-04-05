@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="12dp"
+    android:layout_marginHorizontal="4dp"
     android:layout_marginVertical="6dp"
     app:cardBackgroundColor="@color/reminder_card_background"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="6dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="3dp"
     app:strokeWidth="1dp"
     app:strokeColor="@color/reminder_card_stroke">
 
@@ -15,62 +15,96 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="14dp">
+        android:padding="16dp">
 
-        <!-- TEXTO PRINCIPAL -->
         <TextView
             android:id="@+id/tvReminderText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Comprar pan"
             android:textColor="@color/reminder_text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:maxLines="2" />
 
-        <!-- FECHA Y HORA -->
         <TextView
-            android:id="@+id/tvReminderDate"
+            android:id="@+id/tvReminderDetail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="20/03/2026"
-            android:textColor="@color/reminder_text_secondary"
-            android:textSize="14sp" />
+            android:text="Ir a comprar pan a las 15 horas"
+            android:textColor="@color/reminder_text_primary"
+            android:textSize="14sp"
+            android:alpha="0.78"
+            android:maxLines="3" />
 
-        <TextView
-            android:id="@+id/tvReminderTime"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="14:30"
-            android:textColor="@color/reminder_text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_info_box"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp">
 
-        <!-- ACCIONES -->
+            <TextView
+                android:id="@+id/tvReminderDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20/03/2026"
+                android:textColor="@color/reminder_text_secondary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:text="•"
+                android:textColor="@color/reminder_text_secondary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvReminderTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="14:30"
+                android:textColor="@color/reminder_text_secondary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center_vertical|end"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <CheckBox
                 android:id="@+id/checkCompleted"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:buttonTint="@color/reminder_accent"
                 android:text="@string/done_label"
                 android:textColor="@color/reminder_text_primary"
-                android:buttonTint="@color/reminder_accent" />
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
             <ImageButton
                 android:id="@+id/btnDelete"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@drawable/bg_delete_circle"
                 android:contentDescription="@string/delete_reminder"
+                android:padding="10dp"
                 android:src="@android:drawable/ic_menu_delete"
                 android:tint="@color/reminder_delete_tint" />
-
         </LinearLayout>
 
     </LinearLayout>

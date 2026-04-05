@@ -13,33 +13,43 @@
         android:padding="20dp">
 
         <TextView
-            android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="VoiceReminderApp"
+            android:text="VoiceReminder"
             android:textColor="@color/text_primary"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.02"
-            android:layout_marginBottom="6dp" />
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tvSubtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Organiza tus recordatorios de forma simple y rápida"
+            android:layout_marginBottom="20dp"
+            android:text="Tu asistente personal inteligente"
             android:textColor="@color/text_secondary"
-            android:textSize="15sp"
-            android:layout_marginBottom="20dp" />
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVoiceReminder"
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:layout_marginBottom="20dp"
+            android:text="Hablar con tu asistente"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/primary_blue"
+            app:cornerRadius="50dp"
+            app:icon="@android:drawable/ic_btn_speak_now"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp" />
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardSchedule"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardBackgroundColor="@color/card_background"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="2dp"
             app:strokeColor="@color/card_stroke"
             app:strokeWidth="1dp">
 
@@ -47,65 +57,35 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Programación"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="14dp" />
-
-                <!--<com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSelectDate"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Seleccionar fecha"
-                    android:textAllCaps="false"
-                    android:textSize="15sp"
-                    app:backgroundTint="@color/primary_blue"
-                    app:cornerRadius="16dp"
-                    app:iconGravity="textStart"
-                    app:rippleColor="@color/ripple_soft" />-->
-
-                <!-- <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSelectTime"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="Seleccionar hora"
-                    android:textAllCaps="false"
-                    android:textSize="15sp"
-                    app:backgroundTint="@color/primary_blue"
-                    app:cornerRadius="16dp"
-                    app:rippleColor="@color/ripple_soft" /> -->
+                    android:layout_marginBottom="4dp"
+                    android:text="Asistente"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
 
                 <TextView
-                    android:id="@+id/tvSelectedDateTime"
+                    android:id="@+id/tvResult"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_info_box"
-                    android:padding="14dp"
-                    android:text="No hay fecha ni hora seleccionada"
-                    android:textColor="@color/text_secondary"
+                    android:maxLines="2"
+                    android:text="Aquí verás lo que entendí"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardVoice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardBackgroundColor="@color/card_background"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="4dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="2dp"
             app:strokeColor="@color/card_stroke"
             app:strokeWidth="1dp">
 
@@ -113,86 +93,43 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Entrada por voz"
+                    android:layout_marginBottom="10dp"
+                    android:text="Programación"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="14dp" />
-
-                <!-- <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSpeak"
-                    style="@style/Widget.Material3.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Hablar recordatorio"
-                    android:textAllCaps="false"
-                    android:textSize="15sp"
-                    app:backgroundTint="@color/accent_purple"
-                    app:cornerRadius="16dp"
-                    app:rippleColor="@color/ripple_soft" /> -->
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tvResult"
+                    android:id="@+id/tvSelectedDateTime"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_result_box"
-                    android:minHeight="88dp"
-                    android:gravity="top|start"
-                    android:padding="14dp"
-                    android:text="El texto reconocido aparecerá aquí"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp" />
+                    android:background="@drawable/bg_info_box"
+                    android:padding="12dp"
+                    android:text="Sin fecha seleccionada"
+                    android:textColor="@color/text_secondary" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSave"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
-            android:text="Guardar recordatorio"
-            android:textAllCaps="false"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/success_green"
-            app:cornerRadius="18dp"
-            app:rippleColor="@color/ripple_soft" /> -->
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVoiceReminder"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:text="Crear recordatorio por voz"
-            app:cornerRadius="16dp"
-            app:icon="@android:drawable/ic_btn_speak_now"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp" />
-
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
             android:text="Tus recordatorios"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="10dp" />
+            android:textStyle="bold" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerReminders"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            android:clipToPadding="false"
-            android:paddingBottom="8dp" />
+            android:nestedScrollingEnabled="false" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

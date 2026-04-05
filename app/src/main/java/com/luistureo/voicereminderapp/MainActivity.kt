@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
             val text = speechManager.extractResult(result.resultCode, result.data)
 
             if (!text.isNullOrBlank()) {
-                resultTextView.text = "Tú: $text"
+                resultTextView.text = "Te escuché: $text"
 
                 if (isAssistantConversationMode) {
                     reminderViewModel.processAssistantMessage(text)
@@ -242,29 +242,11 @@ class MainActivity : ComponentActivity() {
 
                 launch {
                     reminderViewModel.assistantState.collect { state ->
-                        val userText = state.recognizedText
+
                         val assistantReply = state.assistantReply
-                        val draft = state.pendingDraft
 
-                        val draftText = buildString {
-                            if (!draft?.text.isNullOrBlank()) append("\nTexto: ${draft?.text}")
-                            if (!draft?.date.isNullOrBlank()) append("\nFecha: ${draft?.date}")
-                            if (!draft?.time.isNullOrBlank()) append("\nHora: ${draft?.time}")
-                        }
-
-                        resultTextView.text = buildString {
-                            if (userText.isNotBlank()) {
-                                append("Tú: $userText")
-                            }
-
-                            if (assistantReply.isNotBlank()) {
-                                if (isNotBlank()) append("\n\n")
-                                append("Asistente: $assistantReply")
-                            }
-
-                            if (draftText.isNotBlank()) {
-                                append("\n\nBorrador actual:$draftText")
-                            }
+                        if (assistantReply.isNotBlank()) {
+                            resultTextView.text = assistantReply
                         }
 
                         state.error?.let { error ->
@@ -326,7 +308,8 @@ class MainActivity : ComponentActivity() {
 
                         is ReminderUiEvent.ScheduleReminder -> {
                             reminderScheduler.scheduleReminder(
-                                reminderText = event.reminderText,
+                                reminderTitle = event.reminderTitle,
+                                reminderDetail = event.reminderDetail,
                                 reminderDate = event.reminderDate,
                                 reminderTime = event.reminderTime,
                                 triggerTimeMillis = event.triggerTimeMillis

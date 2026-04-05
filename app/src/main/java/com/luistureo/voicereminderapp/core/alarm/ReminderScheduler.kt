@@ -11,30 +11,32 @@ class ReminderScheduler(
 
     // Programa una alarma local para mostrar y hablar el recordatorio
     fun scheduleReminder(
-        reminderText: String,
+        reminderTitle: String,
+        reminderDetail: String,
         reminderDate: String,
         reminderTime: String,
         triggerTimeMillis: Long
     ) {
+        val requestCodeBase = (reminderTitle + reminderDetail + triggerTimeMillis).hashCode()
+
         val intent = Intent(context, ReminderReceiver::class.java).apply {
-            putExtra("reminder_text", reminderText)
+            putExtra("reminder_title", reminderTitle)
+            putExtra("reminder_detail", reminderDetail)
             putExtra("reminder_date", reminderDate)
             putExtra("reminder_time", reminderTime)
+            putExtra("repeat_count", 0)
+            putExtra("request_code_base", requestCodeBase)
         }
-
-        // 🔥 Mejora: requestCode más único (evita colisiones)
-        val requestCode = (reminderText + triggerTimeMillis).hashCode()
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            requestCode,
+            requestCodeBase,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        // 🔥 setExactAndAllowWhileIdle = funciona incluso en modo ahorro batería
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerTimeMillis,

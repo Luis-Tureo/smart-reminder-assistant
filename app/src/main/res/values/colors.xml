@@ -2,42 +2,42 @@
 <resources>
 
     <!-- Fondo general -->
-    <color name="screen_background">#16202A</color>
+    <color name="screen_background">#F4F7FC</color>
 
     <!-- Tarjetas -->
-    <color name="card_background">#223246</color>
-    <color name="card_stroke">#4E6E91</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_stroke">#D8E3F0</color>
 
     <!-- Textos -->
-    <color name="text_primary">#F8FBFF</color>
-    <color name="text_secondary">#C9D8E8</color>
+    <color name="text_primary">#1C2430</color>
+    <color name="text_secondary">#6E7B8C</color>
 
     <!-- Botones principales -->
-    <color name="primary_blue">#6FA8FF</color>
-    <color name="accent_purple">#AE8BFF</color>
-    <color name="success_green">#5FD37A</color>
+    <color name="primary_blue">#3F51B5</color>
+    <color name="accent_purple">#8F9BFF</color>
+    <color name="success_green">#63C98D</color>
 
     <!-- Ripple -->
-    <color name="ripple_soft">#40FFFFFF</color>
+    <color name="ripple_soft">#1A6EA8FE</color>
 
     <!-- Cajas informativas -->
-    <color name="info_box_background">#30465F</color>
-    <color name="result_box_background">#37506B</color>
+    <color name="info_box_background">#EEF4FB</color>
+    <color name="result_box_background">#EAF2FF</color>
 
     <!-- Recordatorios -->
-    <color name="reminder_card_background">#24384D</color>
-    <color name="reminder_card_stroke">#4E6E91</color>
-    <color name="reminder_text_primary">#F8FBFF</color>
-    <color name="reminder_text_secondary">#D0DCEA</color>
-    <color name="reminder_accent">#79ACFF</color>
-    <color name="reminder_delete_tint">#F28B82</color>
+    <color name="reminder_card_background">#FFFFFF</color>
+    <color name="reminder_card_stroke">#D8E3F0</color>
+    <color name="reminder_text_primary">#1C2430</color>
+    <color name="reminder_text_secondary">#6E7B8C</color>
+    <color name="reminder_accent">#6EA8FE</color>
+    <color name="reminder_delete_tint">#E57373</color>
 
     <!-- Compatibilidad -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
 
     <!-- Material heredados -->
-    <color name="purple_500">#6FA8FF</color>
+    <color name="purple_500">#6EA8FE</color>
     <color name="teal_200">#7ED6D1</color>
 
 </resources>

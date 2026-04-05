@@ -267,11 +267,9 @@ class ReminderViewModel(
     }
 
     private suspend fun saveDraftReminder(draft: ReminderDraft) {
-        val reminderText = draft.text.orEmpty()
+        val reminderDetail = draft.text.orEmpty().trim()
         val reminderDate = draft.date.orEmpty()
         val reminderTime = draft.time.orEmpty()
-
-        Log.d(ASSISTANT_TAG, "Intentando guardar draft: $draft")
 
         if (pendingAssistantAmbiguousTime != null) {
             val ambiguityReply = buildQuestionForMissingData(draft)
@@ -290,10 +288,8 @@ class ReminderViewModel(
             return
         }
 
-        if (reminderText.isBlank() || reminderDate.isBlank() || reminderTime.isBlank()) {
+        if (reminderDetail.isBlank() || reminderDate.isBlank() || reminderTime.isBlank()) {
             val missingDataReply = buildQuestionForMissingData(draft)
-
-            Log.d(ASSISTANT_TAG, "Faltan datos. Respuesta asistente: $missingDataReply")
 
             _assistantState.update {
                 it.copy(
@@ -314,13 +310,9 @@ class ReminderViewModel(
             reminderTime = reminderTime
         )
 
-        Log.d(ASSISTANT_TAG, "Trigger calculado: $triggerTimeMillis")
-
         if (triggerTimeMillis == null || triggerTimeMillis <= System.currentTimeMillis()) {
             val invalidDateReply =
                 "La fecha u hora indicadas ya pasaron o no son válidas. Indícame una fecha u hora futura."
-
-            Log.d(ASSISTANT_TAG, "Fecha/hora inválida. Respuesta asistente: $invalidDateReply")
 
             _assistantState.update {
                 it.copy(
@@ -339,24 +331,23 @@ class ReminderViewModel(
             return
         }
 
+        val reminderTitle = extractReminderTitle(reminderDetail)
+
         val reminder = Reminder(
-            text = reminderText,
+            title = reminderTitle,
+            detail = reminderDetail,
             date = reminderDate,
             time = reminderTime,
             isCompleted = false
         )
-
-        Log.d(ASSISTANT_TAG, "Guardando recordatorio:")
-        Log.d(ASSISTANT_TAG, "Texto: $reminderText")
-        Log.d(ASSISTANT_TAG, "Fecha: $reminderDate")
-        Log.d(ASSISTANT_TAG, "Hora: $reminderTime")
 
         addReminderUseCase(reminder)
         loadReminders()
 
         _events.emit(
             ReminderUiEvent.ScheduleReminder(
-                reminderText = reminder.text,
+                reminderTitle = reminder.title,
+                reminderDetail = reminder.detail,
                 reminderDate = reminder.date,
                 reminderTime = reminder.time,
                 triggerTimeMillis = triggerTimeMillis
@@ -366,7 +357,6 @@ class ReminderViewModel(
         hasSavedInCurrentSession = true
 
         _events.emit(ReminderUiEvent.ShowMessage("Recordatorio guardado correctamente."))
-
         _events.emit(
             ReminderUiEvent.SpeakAssistantReply(
                 "Perfecto, tu recordatorio fue guardado con éxito."
@@ -385,8 +375,6 @@ class ReminderViewModel(
                 isConversationActive = false
             )
         }
-
-        Log.d(ASSISTANT_TAG, "Recordatorio guardado correctamente.")
 
         _events.emit(ReminderUiEvent.StopAssistantConversation)
     }
@@ -523,7 +511,9 @@ class ReminderViewModel(
                 form.selectedMinute
             )
 
-            if (text.isBlank()) {
+            val reminderDetail = text.trim()
+
+            if (reminderDetail.isBlank()) {
                 _events.emit(ReminderUiEvent.ShowMessage("No hay texto para guardar"))
                 return@launch
             }
@@ -547,7 +537,8 @@ class ReminderViewModel(
             }
 
             val reminder = Reminder(
-                text = text,
+                title = extractReminderTitle(reminderDetail),
+                detail = reminderDetail,
                 date = DateTimeFormatter.formatDate(
                     form.selectedDay,
                     form.selectedMonth,
@@ -566,7 +557,8 @@ class ReminderViewModel(
 
                 _events.emit(
                     ReminderUiEvent.ScheduleReminder(
-                        reminderText = reminder.text,
+                        reminderTitle = reminder.title,
+                        reminderDetail = reminder.detail,
                         reminderDate = reminder.date,
                         reminderTime = reminder.time,
                         triggerTimeMillis = triggerTimeMillis
@@ -898,8 +890,12 @@ class ReminderViewModel(
             .replace(Regex("\\bel\\s+sabado\\b"), "")
             .replace(Regex("\\bel\\s+domingo\\b"), "")
 
+            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}:\\d{1,2}\\s*horas?\\b"), "")
+            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}:\\d{1,2}\\s*horas?\\b"), "")
             .replace(Regex("\\ba\\s+las\\s+\\d{1,2}:\\d{1,2}\\b"), "")
             .replace(Regex("\\ba\\s+la\\s+\\d{1,2}:\\d{1,2}\\b"), "")
+            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*horas?\\b"), "")
+            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*horas?\\b"), "")
             .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\b"), "")
             .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\b"), "")
             .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s*(am|pm)\\b"), "")
@@ -907,9 +903,15 @@ class ReminderViewModel(
             .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+manana\\b"), "")
             .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+tarde\\b"), "")
             .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+noche\\b"), "")
+            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+madrugada\\b"), "")
             .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+manana\\b"), "")
             .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+tarde\\b"), "")
             .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+noche\\b"), "")
+            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+madrugada\\b"), "")
+            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s*horas\\b"), "")
+            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s*hora\\b"), "")
+            .replace(Regex("\\blas\\s+\\d{1,2}\\s*horas\\b"), "")
+            .replace(Regex("\\bla\\s+\\d{1,2}\\s*hora\\b"), "")
             .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\b"), "")
             .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\b"), "")
 
@@ -941,9 +943,9 @@ class ReminderViewModel(
         val reminderYear = state.reminderYear ?: return
         val reminderHour = state.reminderHour ?: return
         val reminderMinute = state.reminderMinute ?: return
-        val reminderText = state.reminderText.trim()
+        val reminderDetail = state.reminderText.trim()
 
-        if (reminderText.isBlank()) {
+        if (reminderDetail.isBlank()) {
             emitVoiceMessage("Todavía no tengo claro el texto del recordatorio. Dímelo nuevamente.")
             _voiceState.value = _voiceState.value.copy(
                 step = VoiceReminderStep.WAITING_FOR_REMINDER_TEXT,
@@ -970,7 +972,8 @@ class ReminderViewModel(
         }
 
         val reminder = Reminder(
-            text = reminderText,
+            title = extractReminderTitle(reminderDetail),
+            detail = reminderDetail,
             date = DateTimeFormatter.formatDate(
                 reminderDay,
                 reminderMonth,
@@ -990,7 +993,8 @@ class ReminderViewModel(
 
                 _events.emit(
                     ReminderUiEvent.ScheduleReminder(
-                        reminderText = reminder.text,
+                        reminderTitle = reminder.title,
+                        reminderDetail = reminder.detail,
                         reminderDate = reminder.date,
                         reminderTime = reminder.time,
                         triggerTimeMillis = triggerTimeMillis
@@ -1147,14 +1151,27 @@ class ReminderViewModel(
         val text = normalizeText(input)
 
         val patterns = listOf(
+            Regex("\\ba\\s+las\\s+(\\d{1,2}):(\\d{1,2})\\s*horas?\\b"),
+            Regex("\\ba\\s+la\\s+(\\d{1,2}):(\\d{1,2})\\s*horas?\\b"),
             Regex("\\ba\\s+las\\s+(\\d{1,2}):(\\d{1,2})\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2}):(\\d{1,2})\\b"),
+
+            Regex("\\ba\\s+las\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\s*horas?\\b"),
+            Regex("\\ba\\s+la\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\s*horas?\\b"),
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\b"),
+
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s*(am|pm)\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s*(am|pm)\\b"),
+
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s+de\\s+la\\s+(manana|tarde|noche|madrugada)\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s+de\\s+la\\s+(manana|tarde|noche|madrugada)\\b"),
+
+            Regex("\\ba\\s+las\\s+(\\d{1,2})\\s*horas\\b"),
+            Regex("\\ba\\s+la\\s+(\\d{1,2})\\s*horas\\b"),
+            Regex("\\blas\\s+(\\d{1,2})\\s*horas\\b"),
+            Regex("\\bla\\s+(\\d{1,2})\\s*hora\\b"),
+
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\b")
         )
@@ -1165,10 +1182,13 @@ class ReminderViewModel(
         }
 
         val exactTimeOnlyPatterns = listOf(
+            Regex("^(\\d{1,2}):(\\d{1,2})\\s*horas?$"),
             Regex("^(\\d{1,2}):(\\d{1,2})$"),
+            Regex("^(\\d{1,2})\\s+y\\s+(\\d{1,2})\\s*horas?$"),
             Regex("^(\\d{1,2})\\s+y\\s+(\\d{1,2})$"),
             Regex("^(\\d{1,2})\\s*(am|pm)$"),
             Regex("^(\\d{1,2})\\s+de\\s+la\\s+(manana|tarde|noche|madrugada)$"),
+            Regex("^(\\d{1,2})\\s*horas?$"),
             Regex("^(\\d{1,2})$")
         )
 
@@ -1184,14 +1204,16 @@ class ReminderViewModel(
         fullMatch: String,
         values: List<String>
     ): ParsedTime? {
+        val normalizedMatch = normalizeText(fullMatch)
+
         return when {
-            values.size >= 3 && fullMatch.contains(":") -> {
+            values.size >= 3 && normalizedMatch.contains(":") -> {
                 val rawHour = values[1].toIntOrNull() ?: return null
                 val minute = values[2].toIntOrNull() ?: return null
                 if (minute !in 0..59) return null
 
-                if (hasExplicitTimeContext(fullMatch)) {
-                    val hour = adjustHourByPeriod(fullMatch, rawHour) ?: return null
+                if (hasExplicitTimeContext(normalizedMatch)) {
+                    val hour = adjustHourByPeriod(normalizedMatch, rawHour) ?: return null
                     ParsedTime(hour = hour, minute = minute, isAmbiguous = false)
                 } else {
                     val hour = rawHour.takeIf { it in 0..23 } ?: return null
@@ -1203,13 +1225,13 @@ class ReminderViewModel(
                 }
             }
 
-            values.size >= 3 && fullMatch.contains(" y ") -> {
+            values.size >= 3 && normalizedMatch.contains(" y ") -> {
                 val rawHour = values[1].toIntOrNull() ?: return null
                 val minute = values[2].toIntOrNull() ?: return null
                 if (minute !in 0..59) return null
 
-                if (hasExplicitTimeContext(fullMatch)) {
-                    val hour = adjustHourByPeriod(fullMatch, rawHour) ?: return null
+                if (hasExplicitTimeContext(normalizedMatch)) {
+                    val hour = adjustHourByPeriod(normalizedMatch, rawHour) ?: return null
                     ParsedTime(hour = hour, minute = minute, isAmbiguous = false)
                 } else {
                     val hour = rawHour.takeIf { it in 0..23 } ?: return null
@@ -1223,7 +1245,7 @@ class ReminderViewModel(
 
             values.size >= 3 && (values[2] == "am" || values[2] == "pm") -> {
                 val rawHour = values[1].toIntOrNull() ?: return null
-                val hour = adjustHourByPeriod(fullMatch, rawHour) ?: return null
+                val hour = adjustHourByPeriod(normalizedMatch, rawHour) ?: return null
                 ParsedTime(hour = hour, minute = 0, isAmbiguous = false)
             }
 
@@ -1234,7 +1256,7 @@ class ReminderViewModel(
                             values[2] == "madrugada"
                     ) -> {
                 val rawHour = values[1].toIntOrNull() ?: return null
-                val hour = adjustHourByPeriod(fullMatch, rawHour) ?: return null
+                val hour = adjustHourByPeriod(normalizedMatch, rawHour) ?: return null
                 ParsedTime(hour = hour, minute = 0, isAmbiguous = false)
             }
 
@@ -1475,6 +1497,7 @@ class ReminderViewModel(
             .replace(Regex("\\blas\\b"), " ")
             .replace(Regex("\\bde\\b"), " ")
             .replace(Regex("\\ben\\b"), " ")
+            .replace(Regex("\\bhoras?\\b"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
 
@@ -1547,5 +1570,24 @@ class ReminderViewModel(
             hour = hour,
             minute = minute
         )
+    }
+
+    private fun extractReminderTitle(detail: String): String {
+        val cleanedTitle = extractReminderText(detail)
+            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            ?.trim()
+            .orEmpty()
+
+        if (cleanedTitle.isNotBlank()) {
+            return cleanedTitle
+        }
+
+        val normalizedDetail = detail.trim()
+        if (normalizedDetail.isBlank()) {
+            return "Recordatorio"
+        }
+
+        return normalizedDetail
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 }

@@ -7,7 +7,8 @@ import com.luistureo.voicereminderapp.domain.model.Reminder
 fun ReminderEntity.toDomain(): Reminder {
     return Reminder(
         id = id,
-        text = text,
+        title = title,
+        detail = detail,
         date = date,
         time = time,
         isCompleted = isCompleted
@@ -18,7 +19,8 @@ fun ReminderEntity.toDomain(): Reminder {
 fun Reminder.toEntity(): ReminderEntity {
     return ReminderEntity(
         id = id,
-        text = text,
+        title = title,
+        detail = detail,
         date = date,
         time = time,
         isCompleted = isCompleted

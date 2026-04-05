@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 data class ReminderEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val text: String,
+    val title: String,
+    val detail: String,
     val date: String,
     val time: String,
     val isCompleted: Boolean = false

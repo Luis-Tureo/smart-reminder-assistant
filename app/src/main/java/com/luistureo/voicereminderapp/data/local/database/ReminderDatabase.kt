@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.luistureo.voicereminderapp.data.local.dao.ReminderDao
 import com.luistureo.voicereminderapp.data.local.entity.ReminderEntity
 
-@Database(entities = [ReminderEntity::class], version = 1)
+@Database(entities = [ReminderEntity::class], version = 2)
 abstract class ReminderDatabase : RoomDatabase() {
 
     abstract fun reminderDao(): ReminderDao
@@ -22,7 +22,9 @@ abstract class ReminderDatabase : RoomDatabase() {
                     context.applicationContext,
                     ReminderDatabase::class.java,
                     "reminder_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
 
                 instance = newInstance
                 newInstance

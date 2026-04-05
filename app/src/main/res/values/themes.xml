@@ -1,27 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.VoiceReminderApp" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.VoiceReminderApp" parent="Theme.Material3.Light.NoActionBar">
 
-        <!-- Colores principales modernos -->
+        <!-- Colores principales -->
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorOnPrimary">@color/white</item>
 
         <item name="colorSecondary">@color/accent_purple</item>
         <item name="colorOnSecondary">@color/white</item>
 
-        <!-- Fondo general -->
+        <!-- Fondo -->
         <item name="android:colorBackground">@color/screen_background</item>
+        <item name="colorSurface">@color/card_background</item>
 
-        <!-- Barra de estado -->
+        <!-- Textos -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Status bar -->
         <item name="android:statusBarColor">@android:color/transparent</item>
-
-        <!-- Barra de navegación -->
-        <item name="android:navigationBarColor">@color/screen_background</item>
-
-        <!-- Iconos oscuros en status bar -->
         <item name="android:windowLightStatusBar">true</item>
 
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/screen_background</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- Botones -->
+        <item name="materialButtonStyle">@style/Widget.Voice.Button</item>
+
+    </style>
+
+    <style name="Widget.Voice.Button" parent="Widget.Material3.Button">
+        <item name="cornerRadius">24dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
     </style>
 
 </resources>

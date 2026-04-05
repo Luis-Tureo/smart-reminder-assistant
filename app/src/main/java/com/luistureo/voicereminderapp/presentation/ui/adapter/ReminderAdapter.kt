@@ -18,7 +18,8 @@ class ReminderAdapter(
 ) : RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder>() {
 
     class ReminderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val text: TextView = itemView.findViewById(R.id.tvReminderText)
+        val title: TextView = itemView.findViewById(R.id.tvReminderText)
+        val detail: TextView = itemView.findViewById(R.id.tvReminderDetail)
         val date: TextView = itemView.findViewById(R.id.tvReminderDate)
         val time: TextView = itemView.findViewById(R.id.tvReminderTime)
         val check: CheckBox = itemView.findViewById(R.id.checkCompleted)
@@ -34,7 +35,8 @@ class ReminderAdapter(
     override fun onBindViewHolder(holder: ReminderViewHolder, position: Int) {
         val reminder = reminders[position]
 
-        holder.text.text = reminder.text
+        holder.title.text = reminder.title
+        holder.detail.text = reminder.detail
         holder.date.text = reminder.date
         holder.time.text = reminder.time
 
@@ -63,22 +65,27 @@ class ReminderAdapter(
 
     private fun applyCompletedStyle(holder: ReminderViewHolder, isCompleted: Boolean) {
         if (isCompleted) {
-            holder.text.paintFlags = holder.text.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.title.paintFlags = holder.title.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.detail.paintFlags = holder.detail.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             holder.date.paintFlags = holder.date.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             holder.time.paintFlags = holder.time.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
 
-            holder.text.alpha = 0.5f
+            holder.title.alpha = 0.5f
+            holder.detail.alpha = 0.5f
             holder.date.alpha = 0.5f
             holder.time.alpha = 0.5f
         } else {
-            holder.text.paintFlags =
-                holder.text.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.title.paintFlags =
+                holder.title.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.detail.paintFlags =
+                holder.detail.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             holder.date.paintFlags =
                 holder.date.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             holder.time.paintFlags =
                 holder.time.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
 
-            holder.text.alpha = 1.0f
+            holder.title.alpha = 1.0f
+            holder.detail.alpha = 0.78f
             holder.date.alpha = 1.0f
             holder.time.alpha = 1.0f
         }
