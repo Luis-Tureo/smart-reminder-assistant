@@ -677,14 +677,7 @@ class ReminderViewModel(
         val parsedDate = parseNaturalDate(normalizedInput)
         val parsedTime = parseTime(normalizedInput)
 
-        val parsedReminderText = when {
-            parsedDate != null || parsedTime != null -> {
-                extractReminderText(normalizedInput)
-            }
-            else -> {
-                normalizedInput.takeIf { it.isNotBlank() }
-            }
-        }
+        val parsedReminderText = input.trim().takeIf { it.isNotBlank() }
 
         return ParsedVoiceInput(
             reminderText = parsedReminderText,
@@ -844,95 +837,6 @@ class ReminderViewModel(
             month = candidate.get(Calendar.MONTH) + 1,
             year = candidate.get(Calendar.YEAR)
         )
-    }
-
-    private fun extractReminderText(input: String): String? {
-        var text = normalizeText(input)
-
-        text = text
-            .replace(Regex("\\brecordarme\\b"), "")
-            .replace(Regex("\\brecuerdame\\b"), "")
-            .replace(Regex("\\brecordatorio\\b"), "")
-            .replace(Regex("\\bagendar\\b"), "")
-            .replace(Regex("\\bagenda\\b"), "")
-            .replace(Regex("\\bguardar\\b"), "")
-            .replace(Regex("\\bguarda\\b"), "")
-            .replace(Regex("\\bcrear\\b"), "")
-            .replace(Regex("\\bcrea\\b"), "")
-            .replace(Regex("\\bprogramar\\b"), "")
-            .replace(Regex("\\bprograma\\b"), "")
-            .replace(Regex("\\brecuerda\\b"), "")
-            .replace(Regex("\\banota\\b"), "")
-
-            .replace(Regex("\\bpara\\s+pasado\\s+manana\\b"), "")
-            .replace(Regex("\\bpara\\s+manana\\b"), "")
-            .replace(Regex("\\bpara\\s+hoy\\b"), "")
-            .replace(Regex("\\bpasado\\s+manana\\b"), "")
-            .replace(Regex("\\bmanana\\b"), "")
-            .replace(Regex("\\bhoy\\b"), "")
-
-            .replace(Regex("\\bpara\\s+la\\s+proxima\\s+semana\\b"), "")
-            .replace(Regex("\\bla\\s+proxima\\s+semana\\b"), "")
-            .replace(Regex("\\bproxima\\s+semana\\b"), "")
-
-            .replace(Regex("\\bpara\\s+el\\s+lunes\\b"), "")
-            .replace(Regex("\\bpara\\s+el\\s+martes\\b"), "")
-            .replace(Regex("\\bpara\\s+el\\s+miercoles\\b"), "")
-            .replace(Regex("\\bpara\\s+el\\s+jueves\\b"), "")
-            .replace(Regex("\\bpara\\s+el\\s+viernes\\b"), "")
-            .replace(Regex("\\bpara\\s+el\\s+sabado\\b"), "")
-            .replace(Regex("\\bpara\\s+el\\s+domingo\\b"), "")
-            .replace(Regex("\\bel\\s+lunes\\b"), "")
-            .replace(Regex("\\bel\\s+martes\\b"), "")
-            .replace(Regex("\\bel\\s+miercoles\\b"), "")
-            .replace(Regex("\\bel\\s+jueves\\b"), "")
-            .replace(Regex("\\bel\\s+viernes\\b"), "")
-            .replace(Regex("\\bel\\s+sabado\\b"), "")
-            .replace(Regex("\\bel\\s+domingo\\b"), "")
-
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}:\\d{1,2}\\s*horas?\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}:\\d{1,2}\\s*horas?\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}:\\d{1,2}\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}:\\d{1,2}\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*horas?\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*horas?\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s*(am|pm)\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s*(am|pm)\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+manana\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+tarde\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+noche\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s+de\\s+la\\s+madrugada\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+manana\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+tarde\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+noche\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s+de\\s+la\\s+madrugada\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\s*horas\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\s*hora\\b"), "")
-            .replace(Regex("\\blas\\s+\\d{1,2}\\s*horas\\b"), "")
-            .replace(Regex("\\bla\\s+\\d{1,2}\\s*hora\\b"), "")
-            .replace(Regex("\\ba\\s+las\\s+\\d{1,2}\\b"), "")
-            .replace(Regex("\\ba\\s+la\\s+\\d{1,2}\\b"), "")
-
-            .replace(Regex("\\bpara\\s+el\\s+\\d{1,2}\\b"), "")
-            .replace(Regex("\\bel\\s+\\d{1,2}\\b"), "")
-
-            .replace(",", " ")
-            .replace(".", " ")
-            .replace(";", " ")
-            .replace(":", " ")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-
-        text = text
-            .replace(Regex("\\bpara\\b\\s*$"), "")
-            .replace(Regex("\\ba\\b\\s*$"), "")
-            .replace(Regex("\\bde\\b\\s*$"), "")
-            .replace(Regex("^\\s+|\\s+$"), "")
-            .trim()
-
-        return text.takeIf { it.isNotBlank() }
     }
 
     private fun saveVoiceReminder() {
@@ -1105,14 +1009,7 @@ class ReminderViewModel(
 
         val parsedText = when {
             shouldKeepCurrentText -> currentDraft.text
-            parsedDate != null || parsedTime != null -> {
-                mlKitReminderText?.takeIf { isUsefulReminderText(it) }
-                    ?: message.trim().takeIf { it.isNotBlank() }
-            }
-            else -> {
-                mlKitReminderText?.takeIf { isUsefulReminderText(it) }
-                    ?: message.trim().takeIf { it.isNotBlank() }
-            }
+            else -> message.trim().takeIf { it.isNotBlank() }
         }
 
         if (parsedTime != null) {
@@ -1517,31 +1414,6 @@ class ReminderViewModel(
         return hasKeyword || hasOnlyNumbersAndTime
     }
 
-    private fun isUsefulReminderText(value: String): Boolean {
-        if (value.isBlank()) return false
-        if (parseNaturalDate(value) != null) return false
-        if (parseTime(value) != null) return false
-
-        val blockedValues = listOf(
-            "hoy",
-            "manana",
-            "pasado manana",
-            "lunes",
-            "martes",
-            "miercoles",
-            "jueves",
-            "viernes",
-            "sabado",
-            "domingo",
-            "proxima semana",
-            "tarde",
-            "noche",
-            "madrugada"
-        )
-
-        return blockedValues.none { containsWholeWord(value, it) }
-    }
-
     private fun buildTriggerTimeMillisFromDraft(
         reminderDate: String,
         reminderTime: String
@@ -1573,22 +1445,80 @@ class ReminderViewModel(
     }
 
     private fun extractReminderTitle(detail: String): String {
-        val cleanedTitle = extractReminderText(detail)
-            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-            ?.trim()
-            .orEmpty()
+        var text = normalizeText(detail)
 
-        if (cleanedTitle.isNotBlank()) {
-            return cleanedTitle
+        val removalPatterns = listOf(
+            Regex("\\b(hoy|manana|pasado manana|ayer)\\b"),
+            Regex("\\b(para hoy|para manana|para pasado manana)\\b"),
+            Regex("\\b(esta noche|esta tarde|esta manana|esta madrugada)\\b"),
+            Regex("\\b(pronto|mas tarde)\\b"),
+
+            Regex("\\b(esta semana|proxima semana|la proxima semana|este fin de semana|el fin de semana)\\b"),
+            Regex("\\b(este mes|el proximo mes|proximo mes|este ano|el proximo ano|proximo ano)\\b"),
+
+            Regex("\\b(para el|para este|el|este)?\\s*(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\\b"),
+
+            Regex("\\b(el dia|dia|el)\\s+\\d{1,2}\\b"),
+            Regex("\\bpara el\\s+\\d{1,2}\\b"),
+            Regex("\\b\\d{1,2}\\s+de\\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\\b"),
+            Regex("\\b\\d{1,2}/\\d{1,2}(/\\d{2,4})?\\b"),
+            Regex("\\b\\d{1,2}-\\d{1,2}(-\\d{2,4})?\\b"),
+
+            Regex("\\ba\\s+las\\s+\\d{1,2}:\\d{1,2}\\s*(horas?|hrs?|am|pm)?\\b"),
+            Regex("\\ba\\s+la\\s+\\d{1,2}:\\d{1,2}\\s*(horas?|hrs?|am|pm)?\\b"),
+            Regex("\\ba\\s+las\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*(horas?|minutos?)?\\b"),
+            Regex("\\ba\\s+la\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*(horas?|minutos?)?\\b"),
+            Regex("\\ba\\s+las\\s+\\d{1,2}\\s*(horas?|hrs?|am|pm)\\b"),
+            Regex("\\ba\\s+la\\s+\\d{1,2}\\s*(hora|horas|hr|hrs|am|pm)\\b"),
+            Regex("\\ba\\s+las\\s+\\d{1,2}\\b"),
+            Regex("\\ba\\s+la\\s+\\d{1,2}\\b"),
+
+            Regex("\\b\\d{1,2}:\\d{1,2}\\s*(horas?|hrs?|am|pm)?\\b"),
+            Regex("\\b\\d{1,2}\\s+y\\s+\\d{1,2}\\s*(horas?|minutos?)\\b"),
+            Regex("\\b\\d{1,2}\\s*(am|pm)\\b"),
+            Regex("\\b\\d{1,2}\\s*horas?\\b"),
+            Regex("\\b\\d{1,2}\\s*hrs?\\b"),
+
+            Regex("\\b(de la|en la|por la)\\s+(manana|tarde|noche|madrugada)\\b"),
+            Regex("\\b(al mediodia|a medianoche|mediodia|medianoche)\\b"),
+
+            Regex("\\b(para el dia|para la fecha|para las|para la hora de|a eso de las|como a las)\\b"),
+            Regex("\\b\\d{1,2}\\b(?=\\s*(de la manana|de la tarde|de la noche|de la madrugada|am|pm|horas?|hrs?)\\b)")
+        )
+
+        removalPatterns.forEach { pattern ->
+            text = text.replace(pattern, " ")
         }
 
-        val normalizedDetail = detail.trim()
-        if (normalizedDetail.isBlank()) {
+        text = text
+            .replace(",", " ")
+            .replace(";", " ")
+            .replace(":", " ")
+            .replace(".", " ")
+            .replace("(", " ")
+            .replace(")", " ")
+            .replace("-", " ")
+            .replace("_", " ")
+
+        text = text
+            .replace(
+                Regex("^\\b(recordar|recuerda|recordarme|recuerdame|anotar|anota|agendar|agenda|programar|programa|guardar|guarda|crear|crea)\\b\\s*"),
+                ""
+            )
+
+        text = text
+            .replace(Regex("\\b(el|la|los|las|de|del|para|por|a|al|en|dia|hora|horas)\\b"), " ")
+            .replace(Regex("\\b\\d{1,2}\\b"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        if (text.isBlank()) {
             return "Recordatorio"
         }
 
-        return normalizedDetail
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        return text.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase() else it.toString()
+        }
     }
 
     private fun buildReminderDetail(detail: String, date: String, time: String): String {
