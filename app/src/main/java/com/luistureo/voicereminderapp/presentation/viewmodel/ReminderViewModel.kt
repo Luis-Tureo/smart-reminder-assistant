@@ -1107,11 +1107,11 @@ class ReminderViewModel(
             shouldKeepCurrentText -> currentDraft.text
             parsedDate != null || parsedTime != null -> {
                 mlKitReminderText?.takeIf { isUsefulReminderText(it) }
-                    ?: extractReminderText(normalizedMessage)
+                    ?: message.trim().takeIf { it.isNotBlank() }
             }
             else -> {
                 mlKitReminderText?.takeIf { isUsefulReminderText(it) }
-                    ?: normalizedMessage.takeIf { it.isNotBlank() }
+                    ?: message.trim().takeIf { it.isNotBlank() }
             }
         }
 
@@ -1589,5 +1589,9 @@ class ReminderViewModel(
 
         return normalizedDetail
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    }
+
+    private fun buildReminderDetail(detail: String, date: String, time: String): String {
+        return detail.trim().ifBlank { "Recordatorio" }
     }
 }
