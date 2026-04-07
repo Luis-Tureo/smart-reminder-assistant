@@ -4,7 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.TextView
+import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,20 +27,26 @@ import com.luistureo.voicereminderapp.domain.usecase.AddReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
+import com.luistureo.voicereminderapp.presentation.assistant.AssistantAnimator
+import com.luistureo.voicereminderapp.presentation.assistant.AssistantFaceState
+import com.luistureo.voicereminderapp.presentation.assistant.AssistantView
+import com.luistureo.voicereminderapp.presentation.assistant.AssistantVisualState
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
 import com.luistureo.voicereminderapp.presentation.ui.adapter.ReminderAdapter
 import com.luistureo.voicereminderapp.presentation.ui.swipe.SwipeToDeleteCallback
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModelFactory
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var selectedDateTimeTextView: TextView
-    private lateinit var resultTextView: TextView
+    private lateinit var assistantView: AssistantView
     private lateinit var voiceButton: MaterialButton
     private lateinit var remindersRecyclerView: RecyclerView
 
+    private lateinit var assistantAnimator: AssistantAnimator
     private lateinit var reminderAdapter: ReminderAdapter
     private lateinit var reminderViewModel: ReminderViewModel
     private lateinit var reminderScheduler: ReminderScheduler
@@ -48,13 +55,18 @@ class MainActivity : ComponentActivity() {
 
     private var lastVoiceAssistantMessage: String = ""
     private var isAssistantConversationMode: Boolean = false
+    private var currentAssistantVisualState: AssistantVisualState = AssistantVisualState.IDLE
+    private var hasPendingSuccessState: Boolean = false
+    private var assistantResetJob: Job? = null
+    private var lastDialogueText: String = AssistantVisualState.IDLE.label
+    private val dialoguePanelInterpolator = AccelerateDecelerateInterpolator()
 
     private val speechRecognitionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val text = speechManager.extractResult(result.resultCode, result.data)
 
             if (!text.isNullOrBlank()) {
-                resultTextView.text = "Te escuché: $text"
+                updateAssistantVisualState(AssistantVisualState.THINKING)
 
                 if (isAssistantConversationMode) {
                     reminderViewModel.processAssistantMessage(text)
@@ -62,9 +74,10 @@ class MainActivity : ComponentActivity() {
                     reminderViewModel.processVoiceInput(text)
                 }
             } else {
+                updateAssistantVisualState(AssistantVisualState.IDLE)
                 Toast.makeText(
                     this,
-                    "No se entendió el audio, intenta nuevamente",
+                    "No se entendio el audio, intenta nuevamente",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -86,6 +99,7 @@ class MainActivity : ComponentActivity() {
             if (isGranted) {
                 startAssistantConversation()
             } else {
+                updateAssistantVisualState(AssistantVisualState.IDLE)
                 Toast.makeText(
                     this,
                     getString(R.string.mic_permission_denied),
@@ -99,6 +113,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
 
         initViews()
+        setupAssistant()
         setupViewModel()
         setupCore()
         setupRecyclerView()
@@ -109,11 +124,25 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
     }
 
+    override fun onStart() {
+        super.onStart()
+        assistantAnimator.resume()
+    }
+
+    override fun onStop() {
+        assistantAnimator.stop()
+        super.onStop()
+    }
+
     private fun initViews() {
-        selectedDateTimeTextView = findViewById(R.id.tvSelectedDateTime)
-        resultTextView = findViewById(R.id.tvResult)
+        assistantView = findViewById(R.id.assistantView)
         voiceButton = findViewById(R.id.btnVoiceReminder)
         remindersRecyclerView = findViewById(R.id.recyclerReminders)
+    }
+
+    private fun setupAssistant() {
+        assistantAnimator = AssistantAnimator(assistantView)
+        renderAssistantState(AssistantVisualState.IDLE)
     }
 
     private fun setupViewModel() {
@@ -135,6 +164,15 @@ class MainActivity : ComponentActivity() {
         reminderScheduler = ReminderScheduler(this)
         speechManager = SpeechRecognizerManager()
         voiceAssistantSpeaker = VoiceAssistantSpeaker(this)
+        voiceAssistantSpeaker.setPlaybackListener(object : VoiceAssistantSpeaker.PlaybackListener {
+            override fun onPlaybackStarted() {
+                assistantAnimator.setSpeechPlaybackActive(true)
+            }
+
+            override fun onPlaybackFinished() {
+                assistantAnimator.setSpeechPlaybackActive(false)
+            }
+        })
     }
 
     private fun setupRecyclerView() {
@@ -170,6 +208,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startAssistantConversation() {
+        hasPendingSuccessState = false
         isAssistantConversationMode = true
         reminderViewModel.startAssistantSession()
     }
@@ -192,64 +231,9 @@ class MainActivity : ComponentActivity() {
                 }
 
                 launch {
-                    reminderViewModel.formState.collect { form ->
-                        val hasDate = form.selectedDay != -1 &&
-                                form.selectedMonth != -1 &&
-                                form.selectedYear != -1
-
-                        val hasTime = form.selectedHour != -1 &&
-                                form.selectedMinute != -1
-
-                        selectedDateTimeTextView.text = when {
-                            hasDate && hasTime -> {
-                                val dateText = String.format(
-                                    "%02d/%02d/%04d",
-                                    form.selectedDay,
-                                    form.selectedMonth,
-                                    form.selectedYear
-                                )
-
-                                val timeText = String.format(
-                                    "%02d:%02d",
-                                    form.selectedHour,
-                                    form.selectedMinute
-                                )
-
-                                "$dateText $timeText"
-                            }
-
-                            hasDate -> {
-                                String.format(
-                                    "%02d/%02d/%04d",
-                                    form.selectedDay,
-                                    form.selectedMonth,
-                                    form.selectedYear
-                                )
-                            }
-
-                            hasTime -> {
-                                String.format(
-                                    "%02d:%02d",
-                                    form.selectedHour,
-                                    form.selectedMinute
-                                )
-                            }
-
-                            else -> "Fecha y hora no seleccionadas"
-                        }
-                    }
-                }
-
-                launch {
                     reminderViewModel.assistantState.collect { state ->
-
-                        val assistantReply = state.assistantReply
-
-                        if (assistantReply.isNotBlank()) {
-                            resultTextView.text = assistantReply
-                        }
-
                         state.error?.let { error ->
+                            renderAssistantState(AssistantVisualState.IDLE)
                             Toast.makeText(
                                 this@MainActivity,
                                 error,
@@ -271,14 +255,22 @@ class MainActivity : ComponentActivity() {
                             message != lastVoiceAssistantMessage
                         ) {
                             lastVoiceAssistantMessage = message
+                            renderAssistantSpeech(message)
 
                             voiceAssistantSpeaker.speakText(message) {
                                 runOnUiThread {
+                                    if (hasPendingSuccessState) {
+                                        showSuccessAndReturnToIdle()
+                                        return@runOnUiThread
+                                    }
+
                                     if (
                                         reminderViewModel.voiceState.value.isVoiceFlowActive &&
                                         !isAssistantConversationMode
                                     ) {
                                         startSpeechRecognition()
+                                    } else {
+                                        renderAssistantState(AssistantVisualState.IDLE)
                                     }
                                 }
                             }
@@ -286,6 +278,10 @@ class MainActivity : ComponentActivity() {
 
                         if (!state.isVoiceFlowActive) {
                             lastVoiceAssistantMessage = ""
+
+                            if (!hasPendingSuccessState && !isAssistantConversationMode) {
+                                renderAssistantState(AssistantVisualState.IDLE)
+                            }
                         }
                     }
                 }
@@ -314,20 +310,34 @@ class MainActivity : ComponentActivity() {
                                 reminderTime = event.reminderTime,
                                 triggerTimeMillis = event.triggerTimeMillis
                             )
+
+                            hasPendingSuccessState = true
+
+                            if (!isAssistantConversationMode) {
+                                showSuccessAndReturnToIdle()
+                            }
                         }
 
                         is ReminderUiEvent.SpeakAssistantReply -> {
                             if (event.message.isNotBlank()) {
                                 val shouldContinueListening = isAssistantConversationMode
+                                renderAssistantSpeech(event.message)
 
                                 voiceAssistantSpeaker.speakText(event.message) {
                                     runOnUiThread {
+                                        if (hasPendingSuccessState) {
+                                            showSuccessAndReturnToIdle()
+                                            return@runOnUiThread
+                                        }
+
                                         if (
                                             shouldContinueListening &&
                                             isAssistantConversationMode &&
                                             reminderViewModel.assistantState.value.isConversationActive
                                         ) {
                                             startSpeechRecognition()
+                                        } else {
+                                            renderAssistantState(AssistantVisualState.IDLE)
                                         }
                                     }
                                 }
@@ -336,10 +346,13 @@ class MainActivity : ComponentActivity() {
 
                         ReminderUiEvent.StopAssistantConversation -> {
                             isAssistantConversationMode = false
+
+                            if (!hasPendingSuccessState) {
+                                renderAssistantState(AssistantVisualState.IDLE)
+                            }
                         }
 
                         ReminderUiEvent.ClearForm -> {
-                            resultTextView.text = getString(R.string.recognized_text_placeholder)
                             reminderViewModel.clearFormState()
                         }
                     }
@@ -350,9 +363,11 @@ class MainActivity : ComponentActivity() {
 
     private fun startSpeechRecognition() {
         try {
+            renderAssistantState(AssistantVisualState.LISTENING)
             speechManager.startRecognition(speechRecognitionLauncher)
         } catch (exception: Exception) {
             exception.printStackTrace()
+            renderAssistantState(AssistantVisualState.IDLE)
 
             Toast.makeText(
                 this,
@@ -375,6 +390,49 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun renderAssistantState(
+        state: AssistantVisualState,
+        dialogueText: String? = null,
+        faceState: AssistantFaceState = state.defaultFaceState
+    ) {
+        assistantResetJob?.cancel()
+        currentAssistantVisualState = state
+
+        val resolvedDialogueText = when {
+            !dialogueText.isNullOrBlank() -> dialogueText
+            state.label.isNotBlank() -> state.label
+            lastDialogueText.isNotBlank() -> lastDialogueText
+            else -> AssistantVisualState.IDLE.label
+        }
+
+        lastDialogueText = resolvedDialogueText
+        assistantAnimator.render(state, faceState)
+        animateDialoguePanel(resolvedDialogueText)
+    }
+
+    private fun updateAssistantVisualState(state: AssistantVisualState) {
+        renderAssistantState(state)
+    }
+
+    private fun renderAssistantSpeech(message: String) {
+        val visualState = message.toVisualState()
+        renderAssistantState(
+            state = visualState,
+            dialogueText = message,
+            faceState = message.toFaceState(visualState)
+        )
+    }
+
+    private fun showSuccessAndReturnToIdle() {
+        hasPendingSuccessState = false
+        renderAssistantState(AssistantVisualState.SUCCESS)
+
+        assistantResetJob = lifecycleScope.launch {
+            delay(950L)
+            renderAssistantState(AssistantVisualState.IDLE)
+        }
+    }
+
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (
@@ -389,7 +447,100 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        assistantResetJob?.cancel()
+        assistantAnimator.stop()
+        voiceAssistantSpeaker.setPlaybackListener(null)
         voiceAssistantSpeaker.shutdown()
+        super.onDestroy()
     }
+
+    private fun String.toVisualState(): AssistantVisualState {
+        val normalized = lowercase()
+
+        return when {
+            "hora" in normalized && "?" in this -> AssistantVisualState.ASKING_TIME
+            else -> AssistantVisualState.SPEAKING
+        }
+    }
+
+    private fun String.toFaceState(visualState: AssistantVisualState): AssistantFaceState {
+        val normalized = lowercase()
+
+        return when (visualState) {
+            AssistantVisualState.IDLE -> AssistantFaceState.RELAXED
+            AssistantVisualState.LISTENING -> AssistantFaceState.ATTENTIVE
+            AssistantVisualState.THINKING -> AssistantFaceState.NEUTRAL_PAUSE
+            AssistantVisualState.ASKING_TIME -> AssistantFaceState.SURPRISE
+            AssistantVisualState.SUCCESS -> AssistantFaceState.SATISFIED
+            AssistantVisualState.SPEAKING -> when {
+                listOf("listo", "guard", "hecho", "perfect", "claro", "confirm").any {
+                    normalized.contains(it)
+                } -> AssistantFaceState.CONFIRMATION
+
+                contains("?") || listOf("que", "como", "cuando").any {
+                    normalized.contains(it)
+                } -> AssistantFaceState.SURPRISE
+
+                else -> AssistantFaceState.NATURAL_SPEAKING
+            }
+        }
+    }
+
+    private fun animateDialoguePanel(targetText: String) {
+        if (
+            voiceButton.text?.toString() == targetText &&
+            voiceButton.alpha == 1f &&
+            voiceButton.translationY == 0f
+        ) {
+            return
+        }
+
+        val offsetY = 10f * resources.displayMetrics.density
+        voiceButton.animate().cancel()
+
+        val showPanel = {
+            voiceButton.text = targetText
+            voiceButton.visibility = View.VISIBLE
+            voiceButton.alpha = 0f
+            voiceButton.translationY = offsetY
+            voiceButton.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(200L)
+                .setInterpolator(dialoguePanelInterpolator)
+                .start()
+        }
+
+        if (voiceButton.visibility == View.VISIBLE && voiceButton.alpha > 0.05f) {
+            voiceButton.animate()
+                .alpha(0f)
+                .translationY(offsetY)
+                .setDuration(120L)
+                .setInterpolator(dialoguePanelInterpolator)
+                .withEndAction(showPanel)
+                .start()
+        } else {
+            showPanel()
+        }
+    }
+
+    private val AssistantVisualState.defaultFaceState: AssistantFaceState
+        get() = when (this) {
+            AssistantVisualState.IDLE -> AssistantFaceState.RELAXED
+            AssistantVisualState.LISTENING -> AssistantFaceState.ATTENTIVE
+            AssistantVisualState.THINKING -> AssistantFaceState.NEUTRAL_PAUSE
+            AssistantVisualState.ASKING_TIME -> AssistantFaceState.SURPRISE
+            AssistantVisualState.SPEAKING -> AssistantFaceState.NATURAL_SPEAKING
+            AssistantVisualState.SUCCESS -> AssistantFaceState.SATISFIED
+        }
+
+    private val AssistantVisualState.label: String
+        get() = when (this) {
+            AssistantVisualState.IDLE -> "Estoy lista"
+            AssistantVisualState.LISTENING -> "Te escucho"
+            AssistantVisualState.THINKING -> "Un momento..."
+            AssistantVisualState.ASKING_TIME -> "A que hora?"
+            AssistantVisualState.SPEAKING -> ""
+            AssistantVisualState.SUCCESS -> "Listo, ya lo guarde"
+        }
 }

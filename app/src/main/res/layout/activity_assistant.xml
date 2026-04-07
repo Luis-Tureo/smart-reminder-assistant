@@ -39,6 +39,7 @@
         android:clipChildren="false"
         android:clipToPadding="false"
         android:elevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="436:366"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -63,7 +64,7 @@
                 android:visibility="visible" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnVoiceReminder"
+                android:id="@+id/btnAssistantStatus"
                 android:layout_width="match_parent"
                 android:layout_height="66dp"
                 android:layout_gravity="bottom|center_horizontal"
@@ -72,8 +73,10 @@
                 android:layout_marginBottom="16dp"
                 android:background="@drawable/bg_assistant_dialog_panel"
                 android:backgroundTint="@android:color/transparent"
-                android:gravity="center"
+                android:clickable="false"
+                android:focusable="false"
                 android:fontFamily="monospace"
+                android:gravity="center"
                 android:insetBottom="0dp"
                 android:insetLeft="0dp"
                 android:insetRight="0dp"
@@ -90,19 +93,5 @@
                 app:strokeWidth="0dp" />
         </FrameLayout>
     </FrameLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerReminders"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingStart="16dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/assistantSceneContainer" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

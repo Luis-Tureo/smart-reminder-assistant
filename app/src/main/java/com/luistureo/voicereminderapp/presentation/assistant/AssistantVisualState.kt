@@ -1,4 +1,10 @@
 package com.luistureo.voicereminderapp.presentation.assistant
 
-class AssistantVisualState {
+enum class AssistantVisualState {
+    IDLE,
+    LISTENING,
+    THINKING,
+    ASKING_TIME,
+    SPEAKING,
+    SUCCESS
 }

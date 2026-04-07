@@ -22,4 +22,24 @@
 
     <string name="done_label">Completado</string>
     <string name="delete_reminder">Eliminar recordatorio</string>
+
+    <string name="assistant_screen_title">Asistente virtual</string>
+    <string name="assistant_screen_subtitle">Escena visual base para animacion, estados y transiciones del asistente.</string>
+    <string name="assistant_placeholder_badge">PIXEL PREVIEW</string>
+    <string name="assistant_placeholder_hint">Placeholder visual listo para futuras integraciones.</string>
+    <string name="assistant_placeholder_content_description">Placeholder del asistente pixel</string>
+    <string name="assistant_preview_button">Cambiar al siguiente estado</string>
+    <string name="assistant_scene_caption">Pulso, halo y micro movimientos segun el estado</string>
+    <string name="assistant_status_section_label">ESTADO ACTUAL</string>
+
+    <string name="assistant_state_idle_title">Idle</string>
+    <string name="assistant_state_idle_description">Respiracion suave y presencia en espera para un estado de reposo claro.</string>
+    <string name="assistant_state_listening_title">Listening</string>
+    <string name="assistant_state_listening_description">El halo se expande y aparecen pulsos para sugerir escucha activa.</string>
+    <string name="assistant_state_thinking_title">Thinking</string>
+    <string name="assistant_state_thinking_description">El asistente flota levemente y los orbitadores comunican procesamiento.</string>
+    <string name="assistant_state_speaking_title">Speaking</string>
+    <string name="assistant_state_speaking_description">Las barras y el brillo variable simulan una respuesta en reproduccion.</string>
+    <string name="assistant_state_success_title">Success</string>
+    <string name="assistant_state_success_description">La escena remata con expansion, burst visual y tono positivo.</string>
 </resources>
