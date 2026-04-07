@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+        android:id="@+id/tvAssistantDialogue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_assistant_dialogue_bubble"
+        android:fontFamily="monospace"
+        android:gravity="start|center_vertical"
+        android:includeFontPadding="false"
+        android:lineSpacingExtra="1dp"
+        android:maxWidth="292dp"
+        android:minWidth="128dp"
+        android:paddingStart="20dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="14dp"
+        android:textColor="#1D2433"
+        android:textSize="15sp" />
+</merge>

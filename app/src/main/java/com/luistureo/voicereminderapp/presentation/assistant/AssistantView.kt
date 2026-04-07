@@ -16,6 +16,9 @@ class AssistantView @JvmOverloads constructor(
     init {
         adjustViewBounds = false
         scaleType = ScaleType.FIT_CENTER
+        alpha = 1f
+        scaleX = 1f
+        scaleY = 1f
     }
 
     fun updateFrame(
@@ -28,19 +31,25 @@ class AssistantView @JvmOverloads constructor(
 
         if (!animateTransition) {
             alpha = 1f
+            scaleX = 1f
+            scaleY = 1f
             setImageResource(frameResId)
             return
         }
 
         animate().cancel()
         animate()
-            .alpha(0f)
-            .setDuration(70L)
+            .alpha(0.86f)
+            .scaleX(0.985f)
+            .scaleY(0.985f)
+            .setDuration(80L)
             .withEndAction {
                 setImageResource(frameResId)
                 animate()
                     .alpha(1f)
-                    .setDuration(110L)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(140L)
                     .start()
             }
             .start()

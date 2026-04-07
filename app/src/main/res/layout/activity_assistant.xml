@@ -20,7 +20,7 @@
             android:layout_gravity="center"
             android:fontFamily="monospace"
             android:includeFontPadding="false"
-            android:text="Asistente Virtual"
+            android:text="@string/assistant_screen_title"
             android:textColor="#F6F1E8"
             android:letterSpacing="0.05"
             android:textSize="22sp"
@@ -40,58 +40,49 @@
         android:clipToPadding="false"
         android:elevation="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintDimensionRatio="436:366"
+        app:layout_constraintDimensionRatio="432:338"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerBar">
 
-        <FrameLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/assistantSceneContent"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_margin="7dp"
             android:background="@drawable/bg_assistant_scene_content"
-            android:clipToOutline="true"
             android:clipChildren="true"
+            android:clipToOutline="true"
             android:clipToPadding="true">
 
             <com.luistureo.voicereminderapp.presentation.assistant.AssistantView
                 android:id="@+id/assistantView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:alpha="1"
-                android:contentDescription="Asistente virtual pixel art"
-                android:visibility="visible" />
+                android:contentDescription="@string/assistant_character_content_description"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAssistantStatus"
-                android:layout_width="match_parent"
-                android:layout_height="66dp"
-                android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginStart="32dp"
-                android:layout_marginEnd="32dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_assistant_dialog_panel"
-                android:backgroundTint="@android:color/transparent"
-                android:clickable="false"
-                android:focusable="false"
-                android:fontFamily="monospace"
-                android:gravity="center"
-                android:insetBottom="0dp"
-                android:insetLeft="0dp"
-                android:insetRight="0dp"
-                android:insetTop="0dp"
-                android:minHeight="0dp"
-                android:paddingStart="18dp"
-                android:paddingEnd="18dp"
-                android:text="Estoy lista"
-                android:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="0dp"
-                app:strokeWidth="0dp" />
-        </FrameLayout>
+            <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
+                android:id="@+id/assistantDialogueBubble"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginEnd="14dp"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="@string/assistant_dialogue_content_description"
+                android:visibility="invisible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="1" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

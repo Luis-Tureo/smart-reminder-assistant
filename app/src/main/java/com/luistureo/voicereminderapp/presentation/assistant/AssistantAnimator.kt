@@ -2,7 +2,6 @@ package com.luistureo.voicereminderapp.presentation.assistant
 
 import android.os.Handler
 import android.os.Looper
-import androidx.annotation.DrawableRes
 import com.luistureo.voicereminderapp.R
 
 class AssistantAnimator(
@@ -12,12 +11,10 @@ class AssistantAnimator(
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private var currentState: AssistantVisualState = AssistantVisualState.IDLE
-    private var currentFaceState: AssistantFaceState = AssistantFaceState.RELAXED
     private var currentSequence: AssistantFrameSequence = sequenceFor(AssistantVisualState.IDLE)
     private var currentFrameIndex: Int = 0
     private var currentSequenceVersion: Int = 0
     private var isResumed: Boolean = false
-    private var isSpeechPlaybackActive: Boolean = false
 
     fun render(
         state: AssistantVisualState,
@@ -25,8 +22,7 @@ class AssistantAnimator(
     ) {
         val previousState = currentState
         currentState = state
-        currentFaceState = faceState
-        currentSequence = resolvedSequenceFor(state)
+        currentSequence = sequenceFor(state)
         currentFrameIndex = 0
         currentSequenceVersion++
 
@@ -48,27 +44,17 @@ class AssistantAnimator(
     }
 
     fun setSpeechPlaybackActive(isActive: Boolean) {
-        isSpeechPlaybackActive = isActive
-
         if (currentState != AssistantVisualState.SPEAKING) return
 
-        currentSequence = resolvedSequenceFor(currentState)
+        currentSequence = sequenceFor(currentState)
         currentFrameIndex = 0
         currentSequenceVersion++
-        showFrame(0, false)
+        showFrame(0, isActive)
         scheduleNextFrame(currentSequenceVersion)
     }
 
     fun setSpeechIntensity(level: Float) {
         // Reservado para una futura seleccion de frames mas precisa.
-    }
-
-    private fun resolvedSequenceFor(state: AssistantVisualState): AssistantFrameSequence {
-        return if (state == AssistantVisualState.SPEAKING && !isSpeechPlaybackActive) {
-            sequenceFor(AssistantVisualState.IDLE)
-        } else {
-            sequenceFor(state)
-        }
     }
 
     private fun scheduleNextFrame(version: Int) {
@@ -100,37 +86,33 @@ class AssistantAnimator(
     private fun sequenceFor(state: AssistantVisualState): AssistantFrameSequence {
         return when (state) {
             AssistantVisualState.IDLE -> AssistantFrameSequence(
-                frames = intArrayOf(R.drawable.assistant_idle),
+                frames = intArrayOf(R.drawable.assistant_state_idle),
                 frameDurationMs = 820L
             )
 
             AssistantVisualState.LISTENING -> AssistantFrameSequence(
-                frames = intArrayOf(R.drawable.assistant_listening),
+                frames = intArrayOf(R.drawable.assistant_state_listening),
                 frameDurationMs = 760L
             )
 
             AssistantVisualState.THINKING -> AssistantFrameSequence(
-                frames = intArrayOf(R.drawable.assistant_thinking),
+                frames = intArrayOf(R.drawable.assistant_state_thinking),
                 frameDurationMs = 780L
             )
 
             AssistantVisualState.ASKING_TIME -> AssistantFrameSequence(
-                frames = intArrayOf(R.drawable.assistant_asking_time),
+                frames = intArrayOf(R.drawable.assistant_state_asking_time),
                 frameDurationMs = 760L
             )
 
             AssistantVisualState.SUCCESS -> AssistantFrameSequence(
-                frames = intArrayOf(R.drawable.assistant_success),
+                frames = intArrayOf(R.drawable.assistant_state_success),
                 frameDurationMs = 900L
             )
 
             AssistantVisualState.SPEAKING -> AssistantFrameSequence(
-                frames = intArrayOf(
-                    R.drawable.assistant_speaking_frame_2,
-                    R.drawable.assistant_speaking_frame_1,
-                    R.drawable.assistant_speaking_frame_2
-                ),
-                frameDurationMs = 150L
+                frames = intArrayOf(R.drawable.assistant_state_speaking),
+                frameDurationMs = 220L
             )
         }
     }

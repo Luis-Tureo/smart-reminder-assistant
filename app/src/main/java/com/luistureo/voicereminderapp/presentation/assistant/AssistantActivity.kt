@@ -2,13 +2,12 @@ package com.luistureo.voicereminderapp.presentation.assistant
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import com.google.android.material.button.MaterialButton
 import com.luistureo.voicereminderapp.R
 
 class AssistantActivity : ComponentActivity() {
 
     private lateinit var assistantView: AssistantView
-    private lateinit var statusButton: MaterialButton
+    private lateinit var assistantDialogueBubble: AssistantDialogueBubbleView
 
     private lateinit var assistantAnimator: AssistantAnimator
 
@@ -19,7 +18,7 @@ class AssistantActivity : ComponentActivity() {
         setContentView(R.layout.activity_assistant)
 
         assistantView = findViewById(R.id.assistantView)
-        statusButton = findViewById(R.id.btnAssistantStatus)
+        assistantDialogueBubble = findViewById(R.id.assistantDialogueBubble)
 
         assistantAnimator = AssistantAnimator(assistantView)
         renderAssistantState(AssistantVisualState.IDLE)
@@ -32,13 +31,29 @@ class AssistantActivity : ComponentActivity() {
 
     override fun onStop() {
         assistantAnimator.stop()
+        assistantDialogueBubble.stopAllEffects()
         super.onStop()
     }
 
     private fun renderAssistantState(state: AssistantVisualState) {
         currentState = state
         assistantAnimator.render(state)
-        statusButton.text = state.label
+        when (state) {
+            AssistantVisualState.IDLE -> assistantDialogueBubble.hideBubble()
+            AssistantVisualState.THINKING -> {
+                assistantDialogueBubble.showMessage("...", false, false)
+            }
+
+            AssistantVisualState.LISTENING,
+            AssistantVisualState.SUCCESS -> {
+                assistantDialogueBubble.showMessage(state.label, false, false)
+            }
+
+            AssistantVisualState.ASKING_TIME,
+            AssistantVisualState.SPEAKING -> {
+                assistantDialogueBubble.showMessage(state.label, true, false)
+            }
+        }
     }
 
     private val AssistantVisualState.label: String
@@ -46,8 +61,8 @@ class AssistantActivity : ComponentActivity() {
             AssistantVisualState.IDLE -> "Estoy lista"
             AssistantVisualState.LISTENING -> "Te escucho"
             AssistantVisualState.THINKING -> "Un momento..."
-            AssistantVisualState.ASKING_TIME -> "¿A qué hora?"
-            AssistantVisualState.SPEAKING -> ""
-            AssistantVisualState.SUCCESS -> "Listo, ya lo guardé"
+            AssistantVisualState.ASKING_TIME -> "\u00BFA qu\u00E9 hora?"
+            AssistantVisualState.SPEAKING -> "Hablando..."
+            AssistantVisualState.SUCCESS -> "Listo, ya lo guard\u00E9"
         }
 }
