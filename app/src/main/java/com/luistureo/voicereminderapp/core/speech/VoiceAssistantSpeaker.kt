@@ -3,13 +3,14 @@ package com.luistureo.voicereminderapp.core.speech
 import android.content.Context
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Locale
@@ -18,8 +19,14 @@ class VoiceAssistantSpeaker(
     context: Context
 ) : TextToSpeech.OnInitListener {
 
+    interface PlaybackListener {
+        fun onPlaybackStarted()
+        fun onPlaybackFinished()
+    }
+
     private val appContext = context.applicationContext
     private val speakerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private var textToSpeech: TextToSpeech? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -27,6 +34,8 @@ class VoiceAssistantSpeaker(
     private var pendingText: String? = null
     private var pendingOnFinished: (() -> Unit)? = null
     private var isLocalTtsReady = false
+    private var isPlaybackActive = false
+    private var playbackListener: PlaybackListener? = null
 
     private val tokenProvider = GoogleAuthTokenProvider(appContext)
     private val googleCloudTtsService = GoogleCloudTtsService(
@@ -48,20 +57,25 @@ class VoiceAssistantSpeaker(
         configureLocalTts()
 
         textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) = Unit
+            override fun onStart(utteranceId: String?) {
+                notifyPlaybackStarted()
+            }
 
             override fun onDone(utteranceId: String?) {
+                notifyPlaybackFinished()
                 pendingOnFinished?.invoke()
                 clearPendingData()
             }
 
             @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) {
+                notifyPlaybackFinished()
                 pendingOnFinished?.invoke()
                 clearPendingData()
             }
 
             override fun onError(utteranceId: String?, errorCode: Int) {
+                notifyPlaybackFinished()
                 pendingOnFinished?.invoke()
                 clearPendingData()
             }
@@ -75,6 +89,10 @@ class VoiceAssistantSpeaker(
         if (!text.isNullOrBlank()) {
             speakText(text, onFinished)
         }
+    }
+
+    fun setPlaybackListener(listener: PlaybackListener?) {
+        playbackListener = listener
     }
 
     fun speakText(
@@ -107,6 +125,7 @@ class VoiceAssistantSpeaker(
 
     fun shutdown() {
         stopCurrentPlayback()
+        notifyPlaybackFinished()
 
         textToSpeech?.stop()
         textToSpeech?.shutdown()
@@ -162,15 +181,16 @@ class VoiceAssistantSpeaker(
 
             setOnPreparedListener {
                 start()
+                notifyPlaybackStarted()
             }
 
             setOnCompletionListener { player ->
                 player.release()
                 mediaPlayer = null
                 file.delete()
+                notifyPlaybackFinished()
 
                 speakerScope.launch {
-                    delay(150)
                     onFinished?.invoke()
                     clearPendingData()
                 }
@@ -180,6 +200,7 @@ class VoiceAssistantSpeaker(
                 player.release()
                 mediaPlayer = null
                 file.delete()
+                notifyPlaybackFinished()
 
                 speakWithLocalTtsFallback(pendingText.orEmpty())
                 true
@@ -190,6 +211,8 @@ class VoiceAssistantSpeaker(
     }
 
     private fun stopCurrentPlayback() {
+        val hadActivePlayback = isPlaybackActive
+
         mediaPlayer?.apply {
             try {
                 if (isPlaying) {
@@ -202,10 +225,37 @@ class VoiceAssistantSpeaker(
         }
 
         mediaPlayer = null
+
+        try {
+            textToSpeech?.stop()
+        } catch (_: Exception) {
+        }
+
+        if (hadActivePlayback) {
+            notifyPlaybackFinished()
+        }
     }
 
     private fun clearPendingData() {
         pendingText = null
         pendingOnFinished = null
+    }
+
+    private fun notifyPlaybackStarted() {
+        if (isPlaybackActive) return
+
+        isPlaybackActive = true
+        mainHandler.post {
+            playbackListener?.onPlaybackStarted()
+        }
+    }
+
+    private fun notifyPlaybackFinished() {
+        if (!isPlaybackActive) return
+
+        isPlaybackActive = false
+        mainHandler.post {
+            playbackListener?.onPlaybackFinished()
+        }
     }
 }

@@ -39,6 +39,7 @@
         android:clipChildren="false"
         android:clipToPadding="false"
         android:elevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="432:338"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -73,50 +74,15 @@
                 android:layout_marginStart="14dp"
                 android:layout_marginTop="14dp"
                 android:layout_marginEnd="14dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="12dp"
                 android:contentDescription="@string/assistant_dialogue_content_description"
                 android:visibility="invisible"
-                app:layout_constraintBottom_toTopOf="@id/tvAssistantTapHint"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="1" />
-
-            <TextView
-                android:id="@+id/tvAssistantTapHint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="12dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_assistant_tap_hint"
-                android:fontFamily="monospace"
-                android:includeFontPadding="false"
-                android:letterSpacing="0.06"
-                android:paddingStart="14dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="10dp"
-                android:text="@string/assistant_tap_hint"
-                android:textColor="#1D2433"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </FrameLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerReminders"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingStart="16dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/assistantSceneContainer" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

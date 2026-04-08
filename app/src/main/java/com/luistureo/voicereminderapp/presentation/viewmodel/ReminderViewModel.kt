@@ -399,12 +399,12 @@ class ReminderViewModel(
             return
         }
 
-        val currentState = _voiceState.value
+        var currentState = _voiceState.value
         val normalizedInput = normalizeText(cleanedInput)
 
         if (!currentState.isVoiceFlowActive) {
             startVoiceReminderFlow()
-            return
+            currentState = _voiceState.value
         }
 
         if (currentState.step == VoiceReminderStep.WAITING_FOR_CONFIRMATION) {

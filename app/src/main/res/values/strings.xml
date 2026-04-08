@@ -1,10 +1,11 @@
 <resources>
     <string name="app_name">VoiceReminderApp</string>
 
-    <string name="mic_permission_denied">Permiso de micrófono denegado</string>
+    <string name="mic_permission_denied">Permiso de micr&#243;fono denegado</string>
     <string name="notification_permission_denied">Permiso de notificaciones denegado</string>
-    <string name="recognized_text_placeholder">El texto reconocido aparecerá aquí</string>
-    <string name="speech_not_available">El reconocimiento de voz no está disponible</string>
+    <string name="recognized_text_placeholder">El texto reconocido aparecer&#225; aqu&#237;</string>
+    <string name="speech_not_available">El reconocimiento de voz no est&#225; disponible</string>
+    <string name="speech_not_understood">No se entendi&#243; el audio, intenta nuevamente</string>
 
     <string name="no_date_time_selected">No hay fecha ni hora seleccionada</string>
     <string name="selected_date">Fecha seleccionada: %1$s</string>
@@ -14,7 +15,7 @@
     <string name="message_no_text_to_save">No hay texto para guardar</string>
     <string name="message_select_date_time">Selecciona fecha y hora</string>
     <string name="message_select_future_date_time">Selecciona una fecha y hora futura</string>
-    <string name="message_reminder_saved">Recordatorio guardado y notificación programada</string>
+    <string name="message_reminder_saved">Recordatorio guardado y notificaci&#243;n programada</string>
     <string name="message_error_saving_reminder">Error al guardar el recordatorio</string>
     <string name="message_unknown_error">Error desconocido</string>
     <string name="message_delete_reminder_failed">No se pudo eliminar el recordatorio</string>
@@ -22,4 +23,9 @@
 
     <string name="done_label">Completado</string>
     <string name="delete_reminder">Eliminar recordatorio</string>
+
+    <string name="assistant_screen_title">Asistente virtual</string>
+    <string name="assistant_character_content_description">Asistente virtual pixel art</string>
+    <string name="assistant_dialogue_content_description">Di&#225;logo del asistente</string>
+    <string name="assistant_tap_hint">TOCA PARA HABLAR</string>
 </resources>
