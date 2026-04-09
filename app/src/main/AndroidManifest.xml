@@ -21,6 +21,10 @@
             android:name=".core.alarm.ReminderReceiver"
             android:exported="false" />
         <activity
+            android:name=".presentation.calendar.CalendarActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"

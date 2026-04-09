@@ -53,7 +53,50 @@
     <color name="reminder_icon_blue_fg">#4261AF</color>
     <color name="reminder_icon_amber_bg">#FFD990</color>
     <color name="reminder_icon_amber_fg">#896114</color>
+    <color name="reminder_icon_birthday_bg">#FFE2F0</color>
+    <color name="reminder_icon_birthday_fg">#B33D70</color>
     <color name="reminder_done_unchecked">#D4D9E6</color>
+
+    <!-- Calendario -->
+    <color name="calendar_screen_background">#ECF1F6</color>
+    <color name="calendar_toolbar_background">#1F3147</color>
+    <color name="calendar_toolbar_text">#F7F6F2</color>
+    <color name="calendar_toolbar_icon">#F7F6F2</color>
+    <color name="calendar_card_background">#FCFAF4</color>
+    <color name="calendar_card_stroke">#D9E3EC</color>
+    <color name="calendar_title_text">#1F2E40</color>
+    <color name="calendar_body_text">#5E6B7A</color>
+    <color name="calendar_caption_text">#7E8A99</color>
+    <color name="calendar_selector_background">#F2F6FA</color>
+    <color name="calendar_selector_stroke">#C9D7E2</color>
+    <color name="calendar_selector_icon">#536476</color>
+    <color name="calendar_navigation_icon">#304357</color>
+    <color name="calendar_navigation_background">#EEF3F8</color>
+    <color name="calendar_legend_background">#F7F3EC</color>
+    <color name="calendar_detail_background">#FFFFFF</color>
+    <color name="calendar_detail_item_background">#F8FBFF</color>
+    <color name="calendar_detail_time_background">#E6EDF4</color>
+    <color name="calendar_detail_time_text">#34495D</color>
+    <color name="calendar_day_background">#FFFFFF</color>
+    <color name="calendar_day_stroke">#E2E9F0</color>
+    <color name="calendar_day_outside_background">#F6F8FB</color>
+    <color name="calendar_day_outside_stroke">#EDF2F7</color>
+    <color name="calendar_outside_month_text">#93A0AE</color>
+    <color name="calendar_day_today_background">#E7F6F0</color>
+    <color name="calendar_day_today_stroke">#7CB89F</color>
+    <color name="calendar_day_selected_background">#203047</color>
+    <color name="calendar_day_selected_stroke">#203047</color>
+    <color name="calendar_day_holiday_background">#FFF4EE</color>
+    <color name="calendar_day_holiday_stroke">#E9B8A6</color>
+    <color name="calendar_holiday_text">#B35A3F</color>
+    <color name="calendar_indicator_reminder_background">#DDE9FF</color>
+    <color name="calendar_indicator_reminder_text">#325D9F</color>
+    <color name="calendar_indicator_birthday_background">#FFE2F0</color>
+    <color name="calendar_indicator_birthday_text">#B13F72</color>
+    <color name="calendar_indicator_holiday_background">#FFE6DD</color>
+    <color name="calendar_indicator_holiday_text">#A85036</color>
+    <color name="calendar_indicator_completed_background">#E6EEF2</color>
+    <color name="calendar_indicator_completed_text">#4B6677</color>
 
     <!-- Compatibilidad -->
     <color name="white">#FFFFFF</color>

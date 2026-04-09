@@ -8,6 +8,7 @@ import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.ReminderTypeResolver
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.usecase.AddReminderUseCase
@@ -338,7 +339,8 @@ class ReminderViewModel(
             detail = reminderDetail,
             date = reminderDate,
             time = reminderTime,
-            isCompleted = false
+            isCompleted = false,
+            type = ReminderTypeResolver.resolve(reminderTitle, reminderDetail)
         )
 
         addReminderUseCase(reminder)
@@ -548,7 +550,11 @@ class ReminderViewModel(
                     form.selectedHour,
                     form.selectedMinute
                 ),
-                isCompleted = false
+                isCompleted = false,
+                type = ReminderTypeResolver.resolve(
+                    extractReminderTitle(reminderDetail),
+                    reminderDetail
+                )
             )
 
             try {
@@ -887,7 +893,11 @@ class ReminderViewModel(
                 reminderHour,
                 reminderMinute
             ),
-            isCompleted = false
+            isCompleted = false,
+            type = ReminderTypeResolver.resolve(
+                extractReminderTitle(reminderDetail),
+                reminderDetail
+            )
         )
 
         viewModelScope.launch {

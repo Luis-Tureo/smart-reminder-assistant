@@ -28,4 +28,27 @@
     <string name="assistant_character_content_description">Asistente virtual pixel art</string>
     <string name="assistant_dialogue_content_description">Di&#225;logo del asistente</string>
     <string name="assistant_tap_hint">TOCA PARA HABLAR</string>
+    <string name="open_calendar_button">Abrir calendario</string>
+    <string name="calendar_screen_title">Calendario mensual</string>
+    <string name="calendar_planner_overline">Agenda mensual</string>
+    <string name="calendar_previous_month">Mes anterior</string>
+    <string name="calendar_next_month">Mes siguiente</string>
+    <string name="calendar_month_label">Mes</string>
+    <string name="calendar_year_label">A&#241;o</string>
+    <string name="calendar_weekday_monday">LUN</string>
+    <string name="calendar_weekday_tuesday">MAR</string>
+    <string name="calendar_weekday_wednesday">MI&#201;</string>
+    <string name="calendar_weekday_thursday">JUE</string>
+    <string name="calendar_weekday_friday">VIE</string>
+    <string name="calendar_weekday_saturday">S&#193;B</string>
+    <string name="calendar_weekday_sunday">DOM</string>
+    <string name="calendar_today_short">Hoy</string>
+    <string name="calendar_legend_title">Leyenda visual</string>
+    <string name="calendar_legend_reminder">Recordatorio</string>
+    <string name="calendar_legend_birthday">Cumplea&#241;os</string>
+    <string name="calendar_legend_holiday">Feriado</string>
+    <string name="calendar_legend_completed">Completado</string>
+    <string name="calendar_type_default">Recordatorio</string>
+    <string name="calendar_type_birthday">Cumplea&#241;os</string>
+    <string name="calendar_completed_label">Completado</string>
 </resources>
