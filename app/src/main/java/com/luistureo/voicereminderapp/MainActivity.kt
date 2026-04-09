@@ -1,10 +1,12 @@
 package com.luistureo.voicereminderapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -36,6 +38,7 @@ import com.luistureo.voicereminderapp.presentation.ui.adapter.ReminderAdapter
 import com.luistureo.voicereminderapp.presentation.ui.swipe.SwipeToDeleteCallback
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModelFactory
+import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -46,6 +49,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var assistantView: AssistantView
     private lateinit var assistantDialogueBubble: AssistantDialogueBubbleView
     private lateinit var assistantTapHint: TextView
+    private lateinit var openCalendarButton: Button
     private lateinit var remindersRecyclerView: RecyclerView
 
     private lateinit var assistantAnimator: AssistantAnimator
@@ -101,6 +105,7 @@ class MainActivity : ComponentActivity() {
         setupCore()
         setupRecyclerView()
         setupSwipeToDelete()
+        setupCalendarButton()
         setupAssistantInteraction()
         observeState()
         observeEvents()
@@ -125,6 +130,7 @@ class MainActivity : ComponentActivity() {
         assistantView = findViewById(R.id.assistantView)
         assistantDialogueBubble = findViewById(R.id.assistantDialogueBubble)
         assistantTapHint = findViewById(R.id.tvAssistantTapHint)
+        openCalendarButton = findViewById(R.id.btnOpenCalendar)
         remindersRecyclerView = findViewById(R.id.recyclerReminders)
     }
 
@@ -212,6 +218,12 @@ class MainActivity : ComponentActivity() {
         }
 
         ItemTouchHelper(swipeHandler).attachToRecyclerView(remindersRecyclerView)
+    }
+
+    private fun setupCalendarButton() {
+        openCalendarButton.setOnClickListener {
+            startActivity(Intent(this, CalendarActivity::class.java))
+        }
     }
 
     private fun setupAssistantInteraction() {

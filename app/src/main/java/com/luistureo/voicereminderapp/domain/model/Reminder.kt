@@ -7,5 +7,6 @@ data class Reminder(
     val detail: String,
     val date: String,
     val time: String,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val type: ReminderType = ReminderType.DEFAULT
 )
