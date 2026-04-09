@@ -27,6 +27,7 @@ class ReminderAdapter(
         val time: TextView = itemView.findViewById(R.id.tvReminderTime)
         val separator: TextView = itemView.findViewById(R.id.tvReminderSeparator)
         val check: CheckBox = itemView.findViewById(R.id.checkCompleted)
+        val completedLabel: TextView = itemView.findViewById(R.id.tvCompletedLabel)
         val delete: ImageButton = itemView.findViewById(R.id.btnDelete)
         val iconContainer: FrameLayout = itemView.findViewById(R.id.iconContainer)
         val icon: ImageView = itemView.findViewById(R.id.ivReminderIcon)
@@ -131,6 +132,7 @@ class ReminderAdapter(
         animateAlpha(holder.iconContainer, actionAlpha)
         animateAlpha(holder.delete, actionAlpha)
         animateAlpha(holder.check, actionAlpha)
+        animateAlpha(holder.completedLabel, actionAlpha)
     }
 
     private fun animateAlpha(view: View, targetAlpha: Float) {
