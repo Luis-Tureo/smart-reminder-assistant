@@ -1,98 +1,158 @@
 package com.luistureo.voicereminderapp.core.alarm
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.luistureo.voicereminderapp.core.notification.NotificationHelper
+import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.speech.ReminderVoiceAssistant
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
+import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
+import com.luistureo.voicereminderapp.domain.model.Reminder
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val reminderTitle = intent.getStringExtra("reminder_title")
-            ?: "Tienes un recordatorio"
+        val reminderId = intent.getIntExtra(EXTRA_REMINDER_ID, 0)
+        if (reminderId == 0) return
 
-        val reminderDetail = intent.getStringExtra("reminder_detail")
-            ?: "Tienes un recordatorio pendiente"
-
-        val reminderDate = intent.getStringExtra("reminder_date")
-            ?: "--/--/----"
-
-        val reminderTime = intent.getStringExtra("reminder_time")
-            ?: "--:--"
-
-        val repeatCount = intent.getIntExtra("repeat_count", 0)
-        val requestCodeBase = intent.getIntExtra("request_code_base", 0)
-
-        val notificationHelper = NotificationHelper(context)
-        notificationHelper.showReminderNotification(
-            reminderTitle = reminderTitle,
-            reminderDetail = reminderDetail,
-            reminderDate = reminderDate,
-            reminderTime = reminderTime
-        )
-
+        val isUrgentRepeat = intent.getBooleanExtra(EXTRA_IS_URGENT_REPEAT, false)
+        val requestedOccurrenceAtEpochMillis = intent
+            .getLongExtra(EXTRA_OCCURRENCE_AT, 0L)
+            .takeIf { it > 0L }
         val pendingResult = goAsync()
 
-        val voiceAssistant = ReminderVoiceAssistant(context)
-        voiceAssistant.speakReminder(
-            reminderText = reminderDetail,
-            reminderDate = reminderDate,
-            reminderTime = reminderTime,
-            onFinished = {
-                voiceAssistant.shutdown()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                handleReminderTrigger(
+                    context = context,
+                    reminderId = reminderId,
+                    isUrgentRepeat = isUrgentRepeat,
+                    requestedOccurrenceAtEpochMillis = requestedOccurrenceAtEpochMillis
+                )
+            } finally {
                 pendingResult.finish()
             }
-        )
-
-        // Repite una segunda vez la alerta 5 segundos después
-        if (repeatCount < 1) {
-            scheduleRepeat(
-                context = context,
-                reminderTitle = reminderTitle,
-                reminderDetail = reminderDetail,
-                reminderDate = reminderDate,
-                reminderTime = reminderTime,
-                requestCodeBase = requestCodeBase,
-                nextRepeatCount = repeatCount + 1
-            )
         }
     }
 
-    private fun scheduleRepeat(
+    private suspend fun handleReminderTrigger(
         context: Context,
-        reminderTitle: String,
-        reminderDetail: String,
-        reminderDate: String,
-        reminderTime: String,
-        requestCodeBase: Int,
-        nextRepeatCount: Int
+        reminderId: Int,
+        isUrgentRepeat: Boolean,
+        requestedOccurrenceAtEpochMillis: Long?
     ) {
-        val repeatIntent = Intent(context, ReminderReceiver::class.java).apply {
-            putExtra("reminder_title", reminderTitle)
-            putExtra("reminder_detail", reminderDetail)
-            putExtra("reminder_date", reminderDate)
-            putExtra("reminder_time", reminderTime)
-            putExtra("repeat_count", nextRepeatCount)
-            putExtra("request_code_base", requestCodeBase)
+        val repository = ReminderRepositoryImpl(
+            ReminderDatabase.getDatabase(context).reminderDao()
+        )
+        val scheduler = ReminderScheduler(context)
+        val scheduleStateResolver = ReminderScheduleStateResolver()
+        val reminder = repository.getReminderById(reminderId)
+
+        if (reminder == null || reminder.isCompleted) {
+            scheduler.cancelReminder(reminderId)
+            scheduler.scheduleNextDaySummary()
+            return
         }
 
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            requestCodeBase + nextRepeatCount,
-            repeatIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val occurrenceAtEpochMillis = requestedOccurrenceAtEpochMillis ?: resolveOccurrenceAt(
+            reminder = reminder,
+            isUrgentRepeat = isUrgentRepeat
         )
 
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val triggerAtMillis = System.currentTimeMillis() + 5000L
+        if (occurrenceAtEpochMillis == null) {
+            scheduler.syncReminderSchedule(reminder)
+            return
+        }
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAtMillis,
-            pendingIntent
+        val isCurrentTrigger = if (isUrgentRepeat) {
+            scheduleStateResolver.isCurrentUrgentRepeat(reminder, occurrenceAtEpochMillis)
+        } else {
+            scheduleStateResolver.isCurrentPrimaryTrigger(reminder, occurrenceAtEpochMillis)
+        }
+
+        if (!isCurrentTrigger) {
+            scheduler.syncReminderSchedule(reminder)
+            return
+        }
+
+        val notificationId = scheduleStateResolver.buildNotificationId(
+            reminderId = reminder.id,
+            occurrenceAtEpochMillis = occurrenceAtEpochMillis,
+            alertCount = resolveAlertCount(reminder, isUrgentRepeat)
         )
+
+        NotificationHelper(context).showReminderNotification(
+            reminder = reminder,
+            occurrenceAtEpochMillis = occurrenceAtEpochMillis,
+            notificationId = notificationId
+        )
+
+        if (!isUrgentRepeat) {
+            speakReminder(context, reminder, occurrenceAtEpochMillis)
+        }
+
+        val updatedReminder = reminder.copy(
+            scheduleState = if (isUrgentRepeat) {
+                scheduleStateResolver.resolveAfterUrgentRepeat(reminder)
+            } else {
+                scheduleStateResolver.resolveAfterPrimaryTrigger(
+                    reminder = reminder,
+                    occurrenceAtEpochMillis = occurrenceAtEpochMillis
+                )
+            }
+        )
+
+        repository.updateReminder(updatedReminder)
+        scheduler.syncReminderSchedule(updatedReminder)
+    }
+
+    private fun resolveOccurrenceAt(
+        reminder: Reminder,
+        isUrgentRepeat: Boolean
+    ): Long? {
+        return if (isUrgentRepeat) {
+            reminder.scheduleState.activeAlertAtEpochMillis
+        } else {
+            reminder.scheduleState.nextTriggerAtEpochMillis
+        }
+    }
+
+    private fun resolveAlertCount(
+        reminder: Reminder,
+        isUrgentRepeat: Boolean
+    ): Int {
+        return if (isUrgentRepeat) {
+            reminder.scheduleState.activeAlertRepeatCount + 1
+        } else {
+            1
+        }
+    }
+
+    private fun speakReminder(
+        context: Context,
+        reminder: Reminder,
+        occurrenceAtEpochMillis: Long
+    ) {
+        val voiceAssistant = ReminderVoiceAssistant(context)
+
+        voiceAssistant.speakReminder(
+            reminderText = reminder.detail,
+            reminderDate = DateTimeFormatter.formatDateFromEpoch(occurrenceAtEpochMillis),
+            reminderTime = DateTimeFormatter.formatTimeFromEpoch(occurrenceAtEpochMillis),
+            onFinished = {
+                voiceAssistant.shutdown()
+            }
+        )
+    }
+
+    companion object {
+        const val EXTRA_REMINDER_ID = "extra_reminder_id"
+        const val EXTRA_OCCURRENCE_AT = "extra_occurrence_at"
+        const val EXTRA_IS_URGENT_REPEAT = "extra_is_urgent_repeat"
     }
 }

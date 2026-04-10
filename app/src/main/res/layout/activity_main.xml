@@ -1,146 +1,358 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#C4CBD6">
+    android:background="#C4CBD6"
+    android:fillViewport="true"
+    android:clipToPadding="false">
 
-    <FrameLayout
-        android:id="@+id/headerBar"
-        android:layout_width="0dp"
-        android:layout_height="84dp"
-        android:background="@drawable/bg_assistant_header_panel"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:fontFamily="monospace"
-            android:includeFontPadding="false"
-            android:text="@string/assistant_screen_title"
-            android:textColor="#F6F1E8"
-            android:letterSpacing="0.05"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/assistantSceneContainer"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="18dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="18dp"
-        android:background="@drawable/bg_assistant_scene_frame"
-        android:clipChildren="false"
-        android:clipToPadding="false"
-        android:elevation="10dp"
-        app:layout_constraintDimensionRatio="432:338"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerBar">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/assistantSceneContent"
+            android:id="@+id/headerBar"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="7dp"
-            android:background="@drawable/bg_assistant_scene_content"
-            android:clipChildren="true"
-            android:clipToOutline="true"
-            android:clipToPadding="true">
+            android:layout_height="84dp"
+            android:background="@drawable/bg_assistant_header_panel"
+            android:paddingHorizontal="16dp">
 
-            <com.luistureo.voicereminderapp.presentation.assistant.AssistantView
-                android:id="@+id/assistantView"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:alpha="1"
-                android:contentDescription="@string/assistant_character_content_description"
-                android:visibility="visible"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.05"
+                android:text="@string/assistant_screen_title"
+                android:textColor="#F6F1E8"
+                android:textSize="22sp"
+                android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
-                android:id="@+id/assistantDialogueBubble"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_marginTop="14dp"
-                android:layout_marginEnd="14dp"
-                android:layout_marginBottom="8dp"
-                android:contentDescription="@string/assistant_dialogue_content_description"
-                android:visibility="invisible"
-                app:layout_constraintBottom_toTopOf="@id/tvAssistantTapHint"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenCalendar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="0dp"
+                android:text=""
+                app:backgroundTint="@android:color/transparent"
+                app:cornerRadius="20dp"
+                app:icon="@drawable/ic_reminder_calendar"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="20dp"
+                app:iconTint="#F6F1E8"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="1" />
+                app:rippleColor="@color/ripple_soft" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/assistantSceneContainer"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:backgroundTint="@color/card_background"
+            app:cardCornerRadius="30dp"
+            app:cardElevation="8dp"
+            app:strokeColor="@color/card_stroke"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/assistantSceneContent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="8dp"
+                android:background="@drawable/bg_assistant_scene_content"
+                android:clipChildren="true"
+                android:clipToOutline="true"
+                android:clipToPadding="true">
+
+                <TextView
+                    android:id="@+id/tvAssistantCardTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_assistant_tap_hint"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="0.05"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="8dp"
+                    android:text="@string/home_virtual_assistant_title"
+                    android:textColor="#1D2433"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <com.luistureo.voicereminderapp.presentation.assistant.AssistantView
+                    android:id="@+id/assistantView"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:contentDescription="@string/assistant_character_content_description"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
+                    android:id="@+id/assistantDialogueBubble"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginEnd="14dp"
+                    android:layout_marginBottom="12dp"
+                    android:contentDescription="@string/assistant_dialogue_content_description"
+                    android:visibility="invisible"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.56" />
+
+                <TextView
+                    android:id="@+id/tvAssistantTapHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_assistant_tap_hint"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="0.06"
+                    android:paddingStart="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp"
+                    android:text="@string/assistant_tap_hint"
+                    android:textColor="#1D2433"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardManualReminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/manualIconContainer"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_reminder_icon_amber"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_reminder_note"
+                        android:tint="@color/reminder_icon_amber_fg" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvManualReminderTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/home_manual_reminder_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/manualIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/manualIconContainer" />
+
+                <TextView
+                    android:id="@+id/tvManualReminderSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="5dp"
+                    android:text="@string/home_manual_reminder_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/manualIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvManualReminderTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCameraReminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/cameraIconContainer"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_reminder_icon_blue"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@android:drawable/ic_menu_camera"
+                        android:tint="@color/reminder_icon_blue_fg" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvCameraReminderTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/home_camera_reminder_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/cameraIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/cameraIconContainer" />
+
+                <TextView
+                    android:id="@+id/tvCameraReminderSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="5dp"
+                    android:text="@string/home_camera_reminder_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/cameraIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvCameraReminderTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="vertical"
+            android:paddingHorizontal="18dp">
 
             <TextView
-                android:id="@+id/tvAssistantTapHint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="12dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_assistant_tap_hint"
                 android:fontFamily="monospace"
                 android:includeFontPadding="false"
-                android:letterSpacing="0.06"
+                android:letterSpacing="0.05"
+                android:text="@string/home_today_tomorrow_title"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/home_today_tomorrow_subtitle"
+                android:textColor="@color/reminder_text_secondary"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNextDaySummaryTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:minHeight="0dp"
                 android:paddingStart="14dp"
-                android:paddingTop="10dp"
+                android:paddingTop="9dp"
                 android:paddingEnd="14dp"
-                android:paddingBottom="10dp"
-                android:text="@string/assistant_tap_hint"
-                android:textColor="#1D2433"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </FrameLayout>
+                android:paddingBottom="9dp"
+                android:text="@string/home_next_day_summary_time_button"
+                android:textAllCaps="false"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="12sp"
+                app:backgroundTint="@color/reminder_card_background"
+                app:cornerRadius="18dp"
+                app:icon="@android:drawable/ic_menu_recent_history"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconSize="14dp"
+                app:iconTint="@color/reminder_text_secondary"
+                app:rippleColor="@color/ripple_soft"
+                app:strokeColor="@color/reminder_card_stroke"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnOpenCalendar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="@dimen/main_calendar_button_top_spacing"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="@dimen/main_calendar_button_bottom_spacing"
-        android:paddingVertical="14dp"
-        android:text="@string/open_calendar_button"
-        android:textAllCaps="false"
-        android:textColor="@color/calendar_toolbar_text"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:backgroundTint="@color/calendar_toolbar_background"
-        app:cornerRadius="22dp"
-        app:icon="@drawable/ic_reminder_calendar"
-        app:iconPadding="10dp"
-        app:iconTint="@color/calendar_toolbar_text"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/assistantSceneContainer"
-        app:rippleColor="@color/ripple_soft" />
+        <include
+            android:id="@+id/homeEmptyStateCard"
+            layout="@layout/view_home_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerReminders"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingStart="16dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btnOpenCalendar" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerReminders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:visibility="gone"
+            android:nestedScrollingEnabled="false"
+            android:paddingStart="8dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="20dp" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

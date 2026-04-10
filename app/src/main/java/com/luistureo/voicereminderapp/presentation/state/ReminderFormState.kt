@@ -1,11 +1,16 @@
 package com.luistureo.voicereminderapp.presentation.state
 
-// Estado del formulario de recordatorio (solo datos, sin textos UI)
+import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
+import com.luistureo.voicereminderapp.domain.model.ReminderSource
+
+// Estado estructurado del editor manual reutilizable por camara.
 data class ReminderFormState(
-    val text: String = "",
-    val selectedYear: Int = -1,
-    val selectedMonth: Int = -1,
-    val selectedDay: Int = -1,
-    val selectedHour: Int = -1,
-    val selectedMinute: Int = -1
+    val reminderId: Int = 0,
+    val title: String = "",
+    val detail: String = "",
+    val date: String = "",
+    val time: String = "",
+    val isUrgent: Boolean = false,
+    val source: ReminderSource = ReminderSource.MANUAL,
+    val recurrence: ReminderRecurrence? = null
 )

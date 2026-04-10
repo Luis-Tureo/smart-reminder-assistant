@@ -8,6 +8,7 @@ data class VoiceReminderState(
     val reminderDay: Int? = null,
     val reminderMonth: Int? = null,
     val reminderYear: Int? = null,
+    val isUrgent: Boolean = false,
     val isVoiceFlowActive: Boolean = false,
     val lastAssistantMessage: String = ""
 )

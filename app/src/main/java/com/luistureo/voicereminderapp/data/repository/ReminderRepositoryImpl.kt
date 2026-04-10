@@ -10,12 +10,16 @@ class ReminderRepositoryImpl(
     private val reminderDao: ReminderDao
 ) : ReminderRepository {
 
-    override suspend fun insertReminder(reminder: Reminder) {
-        reminderDao.insertReminder(reminder.toEntity())
+    override suspend fun insertReminder(reminder: Reminder): Int {
+        return reminderDao.insertReminder(reminder.toEntity()).toInt()
     }
 
     override suspend fun getAllReminders(): List<Reminder> {
         return reminderDao.getAllReminders().map { it.toDomain() }
+    }
+
+    override suspend fun getReminderById(reminderId: Int): Reminder? {
+        return reminderDao.getReminderById(reminderId)?.toDomain()
     }
 
     override suspend fun deleteReminder(reminder: Reminder) {
