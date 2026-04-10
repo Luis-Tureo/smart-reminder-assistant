@@ -79,6 +79,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation("com.google.mlkit:entity-extraction:16.0.0-beta5")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
 

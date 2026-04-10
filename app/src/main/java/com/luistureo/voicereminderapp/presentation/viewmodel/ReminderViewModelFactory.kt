@@ -3,15 +3,17 @@ package com.luistureo.voicereminderapp.presentation.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.luistureo.voicereminderapp.domain.usecase.AddReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
+import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
+import com.luistureo.voicereminderapp.domain.usecase.SaveReminderDraftUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 
 class ReminderViewModelFactory(
     private val context: Context,
-    private val addReminderUseCase: AddReminderUseCase,
+    private val saveReminderDraftUseCase: SaveReminderDraftUseCase,
     private val getRemindersUseCase: GetRemindersUseCase,
+    private val getReminderByIdUseCase: GetReminderByIdUseCase,
     private val deleteReminderUseCase: DeleteReminderUseCase,
     private val updateReminderUseCase: UpdateReminderUseCase
 ) : ViewModelProvider.Factory {
@@ -21,8 +23,9 @@ class ReminderViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return ReminderViewModel(
                 context = context.applicationContext,
-                addReminderUseCase = addReminderUseCase,
+                saveReminderDraftUseCase = saveReminderDraftUseCase,
                 getRemindersUseCase = getRemindersUseCase,
+                getReminderByIdUseCase = getReminderByIdUseCase,
                 deleteReminderUseCase = deleteReminderUseCase,
                 updateReminderUseCase = updateReminderUseCase
             ) as T

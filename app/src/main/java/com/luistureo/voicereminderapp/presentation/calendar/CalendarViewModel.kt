@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luistureo.voicereminderapp.core.calendar.ChileanHoliday
 import com.luistureo.voicereminderapp.core.calendar.ChileanHolidayProvider
+import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter as ReminderDateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
@@ -17,7 +19,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.Month
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatter as JavaDateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.max
@@ -36,17 +38,17 @@ class CalendarViewModel(
 
     private val locale = Locale.forLanguageTag("es-CL")
     private val today = LocalDate.now()
-    private val storedDateFormatter = DateTimeFormatter.ofPattern("dd/MM/uuuu")
-    private val storedTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    private val monthTitleFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", locale)
-    private val selectedDateFormatter = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", locale)
+    private val storedTimeFormatter = JavaDateTimeFormatter.ofPattern("HH:mm")
+    private val monthTitleFormatter = JavaDateTimeFormatter.ofPattern("LLLL yyyy", locale)
+    private val selectedDateFormatter = JavaDateTimeFormatter.ofPattern("EEEE d 'de' MMMM", locale)
     private val monthOptions = Month.entries.map { month ->
         month.getDisplayName(TextStyle.FULL_STANDALONE, locale).toUiTitleCase()
     }
+    private val occurrenceCalculator = ReminderOccurrenceCalculator()
 
     private var visibleMonth: YearMonth = YearMonth.now()
     private var selectedDate: LocalDate = today
-    private var reminderEntries: List<ReminderEntry> = emptyList()
+    private var reminders: List<Reminder> = emptyList()
 
     private val _uiState = MutableStateFlow(
         CalendarUiState(
@@ -70,20 +72,11 @@ class CalendarViewModel(
 
         viewModelScope.launch {
             try {
-                reminderEntries = getRemindersUseCase()
-                    .mapNotNull { reminder ->
-                        parseReminderDate(reminder.date)?.let { reminderDate ->
-                            ReminderEntry(
-                                reminder = reminder,
-                                date = reminderDate,
-                                time = parseReminderTime(reminder.time)
-                            )
-                        }
-                    }
+                reminders = getRemindersUseCase()
                     .sortedWith(
-                        compareBy<ReminderEntry> { it.date }
-                            .thenBy { it.time ?: LocalTime.MAX }
-                            .thenBy { it.reminder.title }
+                        compareBy<Reminder> { it.scheduleState.nextTriggerAtEpochMillis ?: it.scheduledAtEpochMillis }
+                            .thenByDescending { it.isUrgent }
+                            .thenBy { it.title }
                     )
 
                 publishState()
@@ -129,6 +122,7 @@ class CalendarViewModel(
     }
 
     private fun publishState() {
+        val reminderEntries = buildReminderEntriesForMonth(reminders, visibleMonth)
         val remindersByDate = reminderEntries.groupBy { it.date }
         val holidaysByDate = holidayProvider.getHolidaysForMonth(visibleMonth)
         val selectedDateReminders = remindersByDate[selectedDate].orEmpty()
@@ -154,14 +148,14 @@ class CalendarViewModel(
                         id = entry.reminder.id,
                         title = entry.reminder.title,
                         detail = entry.reminder.detail,
-                        time = entry.reminder.time,
+                        time = entry.time?.format(storedTimeFormatter) ?: entry.reminder.time,
                         type = entry.reminder.type,
                         isCompleted = entry.reminder.isCompleted
                     )
                 },
                 emptyStateMessage = if (selectedDateReminders.isEmpty()) {
                     if (selectedDateHolidays.isEmpty()) {
-                        "No hay recordatorios para este día."
+                        "No hay recordatorios para este dia."
                     } else {
                         "No hay recordatorios, pero el feriado sigue visible para esta fecha."
                     }
@@ -170,6 +164,45 @@ class CalendarViewModel(
                 }
             )
         }
+    }
+
+    private fun buildReminderEntriesForMonth(
+        reminders: List<Reminder>,
+        month: YearMonth
+    ): List<ReminderEntry> {
+        val startDate = month.atDay(1)
+        val endDate = month.atEndOfMonth()
+
+        return reminders.flatMap { reminder ->
+            buildReminderEntries(reminder, startDate, endDate)
+        }.sortedWith(
+            compareBy<ReminderEntry> { it.date }
+                .thenBy { it.time ?: LocalTime.MAX }
+                .thenBy { it.reminder.title }
+        )
+    }
+
+    private fun buildReminderEntries(
+        reminder: Reminder,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): List<ReminderEntry> {
+        val reminderTime = ReminderDateTimeFormatter.toLocalTime(reminder.scheduledAtEpochMillis)
+        val entries = mutableListOf<ReminderEntry>()
+        var currentDate = startDate
+
+        while (!currentDate.isAfter(endDate)) {
+            if (occurrenceCalculator.occursOnDate(reminder, currentDate)) {
+                entries += ReminderEntry(
+                    reminder = reminder,
+                    date = currentDate,
+                    time = reminderTime
+                )
+            }
+            currentDate = currentDate.plusDays(1)
+        }
+
+        return entries
     }
 
     private fun buildCalendarDays(
@@ -281,18 +314,6 @@ class CalendarViewModel(
     private fun alignSelectedDate(date: LocalDate, targetMonth: YearMonth): LocalDate {
         val resolvedDay = min(date.dayOfMonth, targetMonth.lengthOfMonth())
         return targetMonth.atDay(resolvedDay)
-    }
-
-    private fun parseReminderDate(value: String): LocalDate? {
-        return runCatching {
-            LocalDate.parse(value, storedDateFormatter)
-        }.getOrNull()
-    }
-
-    private fun parseReminderTime(value: String): LocalTime? {
-        return runCatching {
-            LocalTime.parse(value, storedTimeFormatter)
-        }.getOrNull()
     }
 
     private fun String.toUiTitleCase(): String {

@@ -1,21 +1,26 @@
 package com.luistureo.voicereminderapp.presentation.viewmodel
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
+import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
+import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
-import com.luistureo.voicereminderapp.core.utils.ReminderTypeResolver
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
-import com.luistureo.voicereminderapp.domain.usecase.AddReminderUseCase
+import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
+import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
+import com.luistureo.voicereminderapp.domain.usecase.SaveReminderDraftUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import com.luistureo.voicereminderapp.presentation.common.UiText
+import com.luistureo.voicereminderapp.presentation.state.HomeReminderListItem
 import com.luistureo.voicereminderapp.presentation.state.AssistantUiState
 import com.luistureo.voicereminderapp.presentation.state.ReminderFormState
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
@@ -30,20 +35,18 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Calendar
 
 class ReminderViewModel(
     context: Context,
-    private val addReminderUseCase: AddReminderUseCase,
+    private val saveReminderDraftUseCase: SaveReminderDraftUseCase,
     private val getRemindersUseCase: GetRemindersUseCase,
+    private val getReminderByIdUseCase: GetReminderByIdUseCase,
     private val deleteReminderUseCase: DeleteReminderUseCase,
     private val updateReminderUseCase: UpdateReminderUseCase
 ) : ViewModel() {
-
-    companion object {
-        private const val ASSISTANT_TAG = "AssistantDebug"
-        private const val MLKIT_TAG = "MLKitDebug"
-    }
 
     private data class ParsedVoiceInput(
         val reminderText: String? = null,
@@ -51,7 +54,8 @@ class ReminderViewModel(
         val resolvedMonth: Int? = null,
         val resolvedYear: Int? = null,
         val resolvedHour: Int? = null,
-        val resolvedMinute: Int? = null
+        val resolvedMinute: Int? = null,
+        val isUrgent: Boolean = false
     )
 
     private data class ResolvedDate(
@@ -80,6 +84,12 @@ class ReminderViewModel(
 
     private val entityExtractor = ReminderEntityExtractor(context.applicationContext)
     private val textCleaner = ReminderTextCleaner()
+    private val occurrenceCalculator = ReminderOccurrenceCalculator()
+    private val scheduleStateResolver = ReminderScheduleStateResolver(occurrenceCalculator)
+    private val reminderScheduler = ReminderScheduler(context.applicationContext, occurrenceCalculator)
+    private val zoneId = ZoneId.systemDefault()
+    private val singleReminderOnlyReply =
+        "Las repeticiones debes configurarlas manualmente. Por voz solo puedo crear recordatorios de una sola vez."
 
     private val _uiState = MutableStateFlow(ReminderUiState())
     val uiState: StateFlow<ReminderUiState> = _uiState.asStateFlow()
@@ -102,13 +112,9 @@ class ReminderViewModel(
 
     init {
         loadReminders()
-
         viewModelScope.launch {
             runCatching {
                 entityExtractor.prepare()
-                Log.d(MLKIT_TAG, "Modelo ML Kit preparado correctamente.")
-            }.onFailure { exception ->
-                Log.e(MLKIT_TAG, "No se pudo preparar ML Kit.", exception)
             }
         }
     }
@@ -122,8 +128,6 @@ class ReminderViewModel(
         pendingDraft = null
         hasSavedInCurrentSession = false
         pendingAssistantAmbiguousTime = null
-
-        Log.d(ASSISTANT_TAG, "Nueva sesión de asistente iniciada.")
 
         _assistantState.update {
             it.copy(
@@ -142,20 +146,16 @@ class ReminderViewModel(
     }
 
     fun processAssistantMessage(message: String) {
-        if (message.isBlank()) return
-        if (hasSavedInCurrentSession) return
-
-        Log.d(ASSISTANT_TAG, "Mensaje usuario: $message")
+        if (message.isBlank() || hasSavedInCurrentSession) return
 
         val normalizedMessage = normalizeText(message)
 
         if (isGeneralCancelCommand(normalizedMessage)) {
             viewModelScope.launch {
-                Log.d(ASSISTANT_TAG, "El usuario canceló la conversación.")
                 clearAssistantConversation()
                 _assistantState.update {
                     it.copy(
-                        assistantReply = "De acuerdo. He cancelado la conversación.",
+                        assistantReply = "De acuerdo. He cancelado la conversacion.",
                         recognizedText = message,
                         isLoading = false,
                         error = null,
@@ -164,10 +164,27 @@ class ReminderViewModel(
                 }
                 _events.emit(
                     ReminderUiEvent.SpeakAssistantReply(
-                        "De acuerdo. He cancelado la conversación."
+                        "De acuerdo. He cancelado la conversacion."
                     )
                 )
                 _events.emit(ReminderUiEvent.StopAssistantConversation)
+            }
+            return
+        }
+
+        if (containsRecurringRequest(normalizedMessage)) {
+            viewModelScope.launch {
+                val reply = singleReminderOnlyReply
+                _assistantState.update {
+                    it.copy(
+                        recognizedText = message,
+                        assistantReply = reply,
+                        isLoading = false,
+                        error = null,
+                        isConversationActive = true
+                    )
+                }
+                _events.emit(ReminderUiEvent.SpeakAssistantReply(reply))
             }
             return
         }
@@ -184,21 +201,9 @@ class ReminderViewModel(
 
             val parsedDate = parseNaturalDate(normalizedMessage)
             val parsedTime = parseTime(normalizedMessage)
-
-            Log.d(ASSISTANT_TAG, "Fecha detectada localmente: $parsedDate")
-            Log.d(ASSISTANT_TAG, "Hora detectada localmente: $parsedTime")
-
             val mlKitCleanedText = extractReminderTextWithMlKit(message)
-            Log.d(ASSISTANT_TAG, "Texto útil detectado por ML Kit: $mlKitCleanedText")
-
-            val resolvedPendingAmbiguousTime = resolvePendingAssistantAmbiguousTime(normalizedMessage)
-
-            if (resolvedPendingAmbiguousTime != null) {
-                Log.d(
-                    ASSISTANT_TAG,
-                    "Se resolvió una hora ambigua pendiente: $resolvedPendingAmbiguousTime"
-                )
-            }
+            val resolvedPendingAmbiguousTime =
+                resolvePendingAssistantAmbiguousTime(normalizedMessage)
 
             val localDraft = mergeDraftFromRawMessage(
                 message = message,
@@ -206,10 +211,9 @@ class ReminderViewModel(
                 mlKitReminderText = mlKitCleanedText,
                 parsedDate = parsedDate,
                 parsedTime = parsedTime,
-                resolvedPendingAmbiguousTime = resolvedPendingAmbiguousTime
+                resolvedPendingAmbiguousTime = resolvedPendingAmbiguousTime,
+                isUrgent = containsUrgentSignal(normalizedMessage)
             )
-
-            Log.d(ASSISTANT_TAG, "Draft local: $localDraft")
 
             val mergedDraft = mergeDraftSources(
                 message = message,
@@ -217,28 +221,18 @@ class ReminderViewModel(
                 currentDraft = pendingDraft
             )
 
-            Log.d(ASSISTANT_TAG, "Draft fusionado: $mergedDraft")
-
             pendingDraft = mergedDraft.takeIf { hasAnyDraftData(it) }
-
-            Log.d(ASSISTANT_TAG, "Pending draft final: $pendingDraft")
-            Log.d(
-                ASSISTANT_TAG,
-                "Hora ambigua pendiente actual: $pendingAssistantAmbiguousTime"
-            )
 
             if (
                 !hasSavedInCurrentSession &&
                 pendingDraft?.isReadyToSave() == true &&
                 pendingAssistantAmbiguousTime == null
             ) {
-                Log.d(ASSISTANT_TAG, "El draft está completo. Se guardará automáticamente.")
-                saveDraftReminder(pendingDraft!!)
+                saveAssistantDraft(pendingDraft!!)
                 return@launch
             }
 
             val assistantReply = buildQuestionForMissingData(pendingDraft)
-            Log.d(ASSISTANT_TAG, "Respuesta asistente: $assistantReply")
 
             _assistantState.update {
                 it.copy(
@@ -259,137 +253,20 @@ class ReminderViewModel(
         hasSavedInCurrentSession = false
         pendingAssistantAmbiguousTime = null
 
-        Log.d(ASSISTANT_TAG, "Conversación limpiada.")
-
         _assistantState.value = AssistantUiState(
             reminders = _assistantState.value.reminders,
             isConversationActive = false
         )
     }
 
-    private suspend fun saveDraftReminder(draft: ReminderDraft) {
-        val reminderDetail = draft.text.orEmpty().trim()
-        val reminderDate = draft.date.orEmpty()
-        val reminderTime = draft.time.orEmpty()
-
-        if (pendingAssistantAmbiguousTime != null) {
-            val ambiguityReply = buildQuestionForMissingData(draft)
-
-            _assistantState.update {
-                it.copy(
-                    isLoading = false,
-                    assistantReply = ambiguityReply,
-                    pendingDraft = draft,
-                    error = null,
-                    isConversationActive = true
-                )
-            }
-
-            _events.emit(ReminderUiEvent.SpeakAssistantReply(ambiguityReply))
-            return
-        }
-
-        if (reminderDetail.isBlank() || reminderDate.isBlank() || reminderTime.isBlank()) {
-            val missingDataReply = buildQuestionForMissingData(draft)
-
-            _assistantState.update {
-                it.copy(
-                    isLoading = false,
-                    assistantReply = missingDataReply,
-                    pendingDraft = draft,
-                    error = null,
-                    isConversationActive = true
-                )
-            }
-
-            _events.emit(ReminderUiEvent.SpeakAssistantReply(missingDataReply))
-            return
-        }
-
-        val triggerTimeMillis = buildTriggerTimeMillisFromDraft(
-            reminderDate = reminderDate,
-            reminderTime = reminderTime
-        )
-
-        if (triggerTimeMillis == null || triggerTimeMillis <= System.currentTimeMillis()) {
-            val invalidDateReply =
-                "La fecha u hora indicadas ya pasaron o no son válidas. Indícame una fecha u hora futura."
-
-            _assistantState.update {
-                it.copy(
-                    isLoading = false,
-                    assistantReply = invalidDateReply,
-                    pendingDraft = draft.copy(date = null, time = null),
-                    error = null,
-                    isConversationActive = true
-                )
-            }
-
-            pendingDraft = draft.copy(date = null, time = null)
-            pendingAssistantAmbiguousTime = null
-
-            _events.emit(ReminderUiEvent.SpeakAssistantReply(invalidDateReply))
-            return
-        }
-
-        val reminderTitle = extractReminderTitle(reminderDetail)
-
-        val reminder = Reminder(
-            title = reminderTitle,
-            detail = reminderDetail,
-            date = reminderDate,
-            time = reminderTime,
-            isCompleted = false,
-            type = ReminderTypeResolver.resolve(reminderTitle, reminderDetail)
-        )
-
-        addReminderUseCase(reminder)
-        loadReminders()
-
-        _events.emit(
-            ReminderUiEvent.ScheduleReminder(
-                reminderTitle = reminder.title,
-                reminderDetail = reminder.detail,
-                reminderDate = reminder.date,
-                reminderTime = reminder.time,
-                triggerTimeMillis = triggerTimeMillis
-            )
-        )
-
-        hasSavedInCurrentSession = true
-
-        _events.emit(ReminderUiEvent.ShowMessage("Recordatorio guardado correctamente."))
-        _events.emit(
-            ReminderUiEvent.SpeakAssistantReply(
-                "Perfecto, tu recordatorio fue guardado con éxito."
-            )
-        )
-
-        pendingDraft = null
-        pendingAssistantAmbiguousTime = null
-
-        _assistantState.update {
-            it.copy(
-                isLoading = false,
-                pendingDraft = null,
-                assistantReply = "Perfecto, tu recordatorio fue guardado con éxito.",
-                error = null,
-                isConversationActive = false
-            )
-        }
-
-        _events.emit(ReminderUiEvent.StopAssistantConversation)
-    }
-
     fun startVoiceReminderFlow() {
         val calendar = Calendar.getInstance()
-
         _voiceState.value = VoiceReminderState(
             step = VoiceReminderStep.WAITING_FOR_REMINDER_TEXT,
             reminderMonth = calendar.get(Calendar.MONTH) + 1,
             reminderYear = calendar.get(Calendar.YEAR),
             isVoiceFlowActive = true,
-            lastAssistantMessage = "Hola. Dime qué recordatorio deseas programar."
+            lastAssistantMessage = "Hola. Dime que recordatorio deseas programar."
         )
     }
 
@@ -397,13 +274,30 @@ class ReminderViewModel(
         val cleanedInput = input.trim()
 
         if (cleanedInput.isBlank()) {
-            emitVoiceMessage("No logré entenderte bien. Intenta nuevamente.")
+            emitVoiceMessage("No logre entenderte bien. Intenta nuevamente.")
+            return
+        }
+
+        val normalizedInput = normalizeText(cleanedInput)
+
+        if (containsRecurringRequest(normalizedInput)) {
+            emitVoiceMessage(singleReminderOnlyReply)
+            return
+        }
+
+        if (isGeneralCancelCommand(normalizedInput)) {
+            viewModelScope.launch {
+                resetVoiceState()
+                _events.emit(
+                    ReminderUiEvent.SpeakAssistantReply(
+                        "De acuerdo. Cancele este recordatorio."
+                    )
+                )
+            }
             return
         }
 
         var currentState = _voiceState.value
-        val normalizedInput = normalizeText(cleanedInput)
-
         if (!currentState.isVoiceFlowActive) {
             startVoiceReminderFlow()
             currentState = _voiceState.value
@@ -417,59 +311,69 @@ class ReminderViewModel(
                 }
 
                 isNegativeConfirmation(normalizedInput) -> {
-                    emitVoiceMessage("De acuerdo. No guardaré ese recordatorio.")
-                    resetVoiceState()
+                    viewModelScope.launch {
+                        resetVoiceState()
+                        _events.emit(
+                            ReminderUiEvent.SpeakAssistantReply(
+                                "De acuerdo. No guardare ese recordatorio."
+                            )
+                        )
+                    }
                     return
                 }
 
                 else -> {
                     val correctedState = mergeVoiceStateWithInput(currentState, cleanedInput)
-                    _voiceState.value = correctedState
                     guideVoiceConversation(correctedState)
                     return
                 }
             }
         }
 
-        if (isGeneralCancelCommand(normalizedInput)) {
-            emitVoiceMessage("De acuerdo. Cancelé este recordatorio.")
-            resetVoiceState()
-            return
-        }
-
         val newState = mergeVoiceStateWithInput(currentState, cleanedInput)
-        _voiceState.value = newState
         guideVoiceConversation(newState)
     }
 
     fun loadReminders() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                error = null
-            )
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    error = null,
+                    formState = _formState.value
+                )
+            }
 
             try {
                 val reminders = getRemindersUseCase()
+                val homeTimelineItems = buildHomeTimelineItems(reminders)
+                reminderScheduler.syncReminderSchedules(reminders)
 
-                _uiState.value = _uiState.value.copy(
-                    reminders = reminders,
-                    isLoading = false,
-                    error = null
-                )
+                _uiState.update {
+                    it.copy(
+                        reminders = reminders,
+                        homeTimelineItems = homeTimelineItems,
+                        isLoading = false,
+                        error = null,
+                        formState = _formState.value
+                    )
+                }
 
-                _assistantState.update {
-                    it.copy(reminders = reminders)
+                _assistantState.update { state ->
+                    state.copy(reminders = reminders)
                 }
             } catch (exception: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = if (exception.message.isNullOrBlank()) {
-                        UiText.StringResource(R.string.message_unknown_error)
-                    } else {
-                        UiText.DynamicString(exception.message!!)
-                    }
-                )
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = if (exception.message.isNullOrBlank()) {
+                            UiText.StringResource(R.string.message_unknown_error)
+                        } else {
+                            UiText.DynamicString(exception.message!!)
+                        },
+                        formState = _formState.value
+                    )
+                }
 
                 _assistantState.update {
                     it.copy(
@@ -481,125 +385,111 @@ class ReminderViewModel(
         }
     }
 
-    fun onDateSelected(year: Int, month: Int, day: Int) {
-        val current = _formState.value
-        _formState.value = current.copy(
-            selectedYear = year,
-            selectedMonth = month,
-            selectedDay = day
-        )
-    }
-
-    fun onTimeSelected(hour: Int, minute: Int) {
-        val current = _formState.value
-        _formState.value = current.copy(
-            selectedHour = hour,
-            selectedMinute = minute
-        )
-    }
-
-    fun saveReminder(text: String) {
+    fun saveReminderDraft(draft: ReminderDraft) {
         viewModelScope.launch {
-            val form = _formState.value
-
-            val hasDate = DateTimeFormatter.hasValidDate(
-                form.selectedYear,
-                form.selectedMonth,
-                form.selectedDay
-            )
-
-            val hasTime = DateTimeFormatter.hasValidTime(
-                form.selectedHour,
-                form.selectedMinute
-            )
-
-            val reminderDetail = text.trim()
-
-            if (reminderDetail.isBlank()) {
-                _events.emit(ReminderUiEvent.ShowMessage("No hay texto para guardar"))
+            val validationMessage = validateDraftForSaving(draft, allowRecurrence = true)
+            if (validationMessage != null) {
+                _events.emit(ReminderUiEvent.ShowMessage(validationMessage))
                 return@launch
             }
 
-            if (!hasDate || !hasTime) {
-                _events.emit(ReminderUiEvent.ShowMessage("Selecciona una fecha y hora válidas"))
-                return@launch
-            }
-
-            val triggerTimeMillis = DateTimeFormatter.buildTriggerTimeMillis(
-                year = form.selectedYear,
-                month = form.selectedMonth,
-                day = form.selectedDay,
-                hour = form.selectedHour,
-                minute = form.selectedMinute
-            )
-
-            if (triggerTimeMillis <= System.currentTimeMillis()) {
-                _events.emit(ReminderUiEvent.ShowMessage("Selecciona una fecha y hora futuras"))
-                return@launch
-            }
-
-            val reminder = Reminder(
-                title = extractReminderTitle(reminderDetail),
-                detail = reminderDetail,
-                date = DateTimeFormatter.formatDate(
-                    form.selectedDay,
-                    form.selectedMonth,
-                    form.selectedYear
-                ),
-                time = DateTimeFormatter.formatTime(
-                    form.selectedHour,
-                    form.selectedMinute
-                ),
-                isCompleted = false,
-                type = ReminderTypeResolver.resolve(
-                    extractReminderTitle(reminderDetail),
-                    reminderDetail
-                )
-            )
-
-            try {
-                addReminderUseCase(reminder)
+            runCatching {
+                val savedReminder = saveReminderDraftUseCase(draft)
+                reminderScheduler.syncReminderSchedule(savedReminder)
                 loadReminders()
-
-                _events.emit(
-                    ReminderUiEvent.ScheduleReminder(
-                        reminderTitle = reminder.title,
-                        reminderDetail = reminder.detail,
-                        reminderDate = reminder.date,
-                        reminderTime = reminder.time,
-                        triggerTimeMillis = triggerTimeMillis
-                    )
-                )
-
-                _events.emit(ReminderUiEvent.ClearForm)
-                _events.emit(ReminderUiEvent.ShowMessage("Recordatorio guardado correctamente"))
-            } catch (exception: Exception) {
+            }.onSuccess {
+                clearFormState()
                 _events.emit(
                     ReminderUiEvent.ShowMessage(
-                        exception.message ?: "Error al guardar el recordatorio"
+                        if (draft.reminderId == 0) {
+                            "Recordatorio guardado correctamente."
+                        } else {
+                            "Recordatorio actualizado correctamente."
+                        }
+                    )
+                )
+            }.onFailure { exception ->
+                _events.emit(
+                    ReminderUiEvent.ShowMessage(
+                        exception.message ?: "No fue posible guardar el recordatorio."
                     )
                 )
             }
         }
     }
 
+    fun fillFormState(reminder: Reminder) {
+        val formState = ReminderFormState(
+            reminderId = reminder.id,
+            title = reminder.title,
+            detail = reminder.detail,
+            date = reminder.date,
+            time = reminder.time,
+            isUrgent = reminder.isUrgent,
+            source = reminder.source,
+            recurrence = reminder.recurrence
+        )
+        _formState.value = formState
+        _uiState.update { it.copy(formState = formState) }
+    }
+
     fun clearFormState() {
         _formState.value = ReminderFormState()
+        _uiState.update { it.copy(formState = _formState.value) }
+    }
+
+    fun startManualReminderForm(defaultSource: ReminderSource = ReminderSource.MANUAL) {
+        val formState = ReminderFormState(source = defaultSource)
+        _formState.value = formState
+        _uiState.update { it.copy(formState = formState) }
+    }
+
+    fun applyDraftToForm(
+        draft: ReminderDraft,
+        source: ReminderSource = draft.source
+    ) {
+        val currentFormState = _formState.value
+        val formState = currentFormState.copy(
+            title = draft.title ?: currentFormState.title,
+            detail = draft.text ?: currentFormState.detail,
+            date = draft.date ?: currentFormState.date,
+            time = draft.time ?: currentFormState.time,
+            isUrgent = currentFormState.isUrgent || draft.isUrgent,
+            source = source
+        )
+        _formState.value = formState
+        _uiState.update { it.copy(formState = formState) }
+    }
+
+    fun loadReminderForEditing(
+        reminderId: Int,
+        defaultSource: ReminderSource = ReminderSource.MANUAL
+    ) {
+        viewModelScope.launch {
+            val reminder = getReminderByIdUseCase(reminderId)
+            val formState = reminder?.toFormState() ?: ReminderFormState(source = defaultSource)
+            _formState.value = formState
+            _uiState.update { it.copy(formState = formState) }
+        }
     }
 
     fun deleteReminder(reminder: Reminder) {
         viewModelScope.launch {
             try {
                 deleteReminderUseCase(reminder)
+                reminderScheduler.cancelReminder(reminder.id)
+                reminderScheduler.scheduleNextDaySummary()
                 loadReminders()
             } catch (exception: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = if (exception.message.isNullOrBlank()) {
-                        UiText.StringResource(R.string.message_delete_reminder_failed)
-                    } else {
-                        UiText.DynamicString(exception.message!!)
-                    }
-                )
+                _uiState.update {
+                    it.copy(
+                        error = if (exception.message.isNullOrBlank()) {
+                            UiText.StringResource(R.string.message_delete_reminder_failed)
+                        } else {
+                            UiText.DynamicString(exception.message!!)
+                        }
+                    )
+                }
             }
         }
     }
@@ -607,16 +497,120 @@ class ReminderViewModel(
     fun updateReminder(reminder: Reminder) {
         viewModelScope.launch {
             try {
-                updateReminderUseCase(reminder)
+                val resolvedReminder = reminder.copy(
+                    scheduleState = scheduleStateResolver.resolveOnSave(reminder)
+                )
+
+                updateReminderUseCase(resolvedReminder)
+                reminderScheduler.syncReminderSchedule(resolvedReminder)
                 loadReminders()
             } catch (exception: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = if (exception.message.isNullOrBlank()) {
-                        UiText.StringResource(R.string.message_update_reminder_failed)
-                    } else {
-                        UiText.DynamicString(exception.message!!)
-                    }
+                _uiState.update {
+                    it.copy(
+                        error = if (exception.message.isNullOrBlank()) {
+                            UiText.StringResource(R.string.message_update_reminder_failed)
+                        } else {
+                            UiText.DynamicString(exception.message!!)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun saveAssistantDraft(draft: ReminderDraft) {
+        val validationMessage = validateDraftForSaving(draft, allowRecurrence = false)
+
+        if (validationMessage != null) {
+            _assistantState.update {
+                it.copy(
+                    isLoading = false,
+                    assistantReply = validationMessage,
+                    pendingDraft = draft,
+                    error = null,
+                    isConversationActive = true
                 )
+            }
+            _events.emit(ReminderUiEvent.SpeakAssistantReply(validationMessage))
+            return
+        }
+
+        val savedReminder = saveReminderDraftUseCase(
+            draft.copy(
+                source = ReminderSource.VOICE,
+                recurrence = null
+            )
+        )
+        reminderScheduler.syncReminderSchedule(savedReminder)
+        loadReminders()
+
+        hasSavedInCurrentSession = true
+        pendingDraft = null
+        pendingAssistantAmbiguousTime = null
+
+        val successReply = "Perfecto, tu recordatorio fue guardado con exito."
+
+        _assistantState.update {
+            it.copy(
+                isLoading = false,
+                pendingDraft = null,
+                assistantReply = successReply,
+                error = null,
+                isConversationActive = false
+            )
+        }
+
+        _events.emit(ReminderUiEvent.ShowMessage("Recordatorio guardado correctamente."))
+        _events.emit(ReminderUiEvent.SpeakAssistantReply(successReply))
+        _events.emit(ReminderUiEvent.StopAssistantConversation)
+    }
+
+    private fun Reminder.toFormState(): ReminderFormState {
+        return ReminderFormState(
+            reminderId = id,
+            title = title,
+            detail = detail,
+            date = date,
+            time = time,
+            isUrgent = isUrgent,
+            source = source,
+            recurrence = recurrence
+        )
+    }
+
+    private fun buildHomeTimelineItems(reminders: List<Reminder>): List<HomeReminderListItem> {
+        val today = LocalDate.now(zoneId)
+        val tomorrow = today.plusDays(1)
+
+        return listOf(
+            today to "Hoy",
+            tomorrow to "Mañana"
+        ).flatMap { (date, label) ->
+            val dayReminders = reminders.mapNotNull { reminder ->
+                val occurrenceAtEpochMillis =
+                    occurrenceCalculator.resolveOccurrenceAtEpochMillis(reminder, date)
+                        ?: return@mapNotNull null
+
+                HomeReminderListItem.ReminderRow(
+                    reminder = reminder,
+                    occurrenceAtEpochMillis = occurrenceAtEpochMillis
+                )
+            }.sortedWith(
+                compareByDescending<HomeReminderListItem.ReminderRow> { it.reminder.isUrgent }
+                    .thenBy { it.occurrenceAtEpochMillis }
+            )
+
+            if (dayReminders.isEmpty()) {
+                emptyList()
+            } else {
+                listOf(
+                    HomeReminderListItem.DayHeader(
+                        title = label,
+                        subtitle = DateTimeFormatter.formatDateFromEpoch(
+                            date.atStartOfDay(zoneId).toInstant().toEpochMilli()
+                        )
+                    )
+                ) + dayReminders
             }
         }
     }
@@ -634,7 +628,7 @@ class ReminderViewModel(
                 _voiceState.value = state.copy(
                     step = VoiceReminderStep.WAITING_FOR_REMINDER_TEXT,
                     isVoiceFlowActive = true,
-                    lastAssistantMessage = "Entiendo. ¿Qué recordatorio deseas programar?"
+                    lastAssistantMessage = "Entiendo. Que recordatorio deseas programar?"
                 )
             }
 
@@ -642,7 +636,7 @@ class ReminderViewModel(
                 _voiceState.value = state.copy(
                     step = VoiceReminderStep.WAITING_FOR_TIME,
                     isVoiceFlowActive = true,
-                    lastAssistantMessage = "Perfecto. ¿A qué hora deseas este recordatorio?"
+                    lastAssistantMessage = "Perfecto. A que hora deseas este recordatorio?"
                 )
             }
 
@@ -650,12 +644,16 @@ class ReminderViewModel(
                 _voiceState.value = state.copy(
                     step = VoiceReminderStep.WAITING_FOR_DAY,
                     isVoiceFlowActive = true,
-                    lastAssistantMessage = "Muy bien. ¿Para qué día deseas programarlo?"
+                    lastAssistantMessage = "Muy bien. Para que dia deseas programarlo?"
                 )
             }
 
             else -> {
-                saveVoiceReminder()
+                _voiceState.value = state.copy(
+                    step = VoiceReminderStep.WAITING_FOR_CONFIRMATION,
+                    isVoiceFlowActive = true,
+                    lastAssistantMessage = buildVoiceConfirmationMessage(state)
+                )
             }
         }
     }
@@ -664,26 +662,33 @@ class ReminderViewModel(
         currentState: VoiceReminderState,
         input: String
     ): VoiceReminderState {
+        val normalizedInput = normalizeText(input)
         val parsedInput = parseVoiceInput(input)
+        val shouldKeepCurrentText = currentState.reminderText.isNotBlank() &&
+                isLikelyOnlyTemporalMessage(normalizedInput)
 
         return currentState.copy(
-            reminderText = parsedInput.reminderText ?: currentState.reminderText,
+            reminderText = when {
+                shouldKeepCurrentText -> currentState.reminderText
+                !parsedInput.reminderText.isNullOrBlank() -> parsedInput.reminderText
+                else -> currentState.reminderText
+            },
             reminderHour = parsedInput.resolvedHour ?: currentState.reminderHour,
             reminderMinute = parsedInput.resolvedMinute ?: currentState.reminderMinute,
             reminderDay = parsedInput.resolvedDay ?: currentState.reminderDay,
             reminderMonth = parsedInput.resolvedMonth ?: currentState.reminderMonth,
             reminderYear = parsedInput.resolvedYear ?: currentState.reminderYear,
+            isUrgent = currentState.isUrgent || parsedInput.isUrgent,
             isVoiceFlowActive = true
         )
     }
 
     private fun parseVoiceInput(input: String): ParsedVoiceInput {
         val normalizedInput = normalizeText(input)
-
         val parsedDate = parseNaturalDate(normalizedInput)
         val parsedTime = parseTime(normalizedInput)
-
-        val parsedReminderText = input.trim().takeIf { it.isNotBlank() }
+        val parsedReminderText = VoiceReminderLanguageHelper.stripUrgencyPhrases(input)
+            .takeIf { it.isNotBlank() }
 
         return ParsedVoiceInput(
             reminderText = parsedReminderText,
@@ -691,8 +696,82 @@ class ReminderViewModel(
             resolvedMonth = parsedDate?.month,
             resolvedYear = parsedDate?.year,
             resolvedHour = parsedTime?.hour,
-            resolvedMinute = parsedTime?.minute
+            resolvedMinute = parsedTime?.minute,
+            isUrgent = containsUrgentSignal(normalizedInput)
         )
+    }
+
+    private fun saveVoiceReminder() {
+        val state = _voiceState.value
+        val reminderDay = state.reminderDay ?: return
+        val reminderMonth = state.reminderMonth ?: return
+        val reminderYear = state.reminderYear ?: return
+        val reminderHour = state.reminderHour ?: return
+        val reminderMinute = state.reminderMinute ?: return
+        val reminderDetail = state.reminderText.trim()
+
+        val draft = ReminderDraft(
+            text = reminderDetail,
+            date = DateTimeFormatter.formatDate(reminderDay, reminderMonth, reminderYear),
+            time = DateTimeFormatter.formatTime(reminderHour, reminderMinute),
+            isUrgent = state.isUrgent,
+            source = ReminderSource.VOICE
+        )
+
+        viewModelScope.launch {
+            val validationMessage = validateDraftForSaving(draft, allowRecurrence = false)
+            if (validationMessage != null) {
+                emitVoiceMessage(validationMessage)
+                return@launch
+            }
+
+            runCatching {
+                val savedReminder = saveReminderDraftUseCase(draft)
+                reminderScheduler.syncReminderSchedule(savedReminder)
+                loadReminders()
+            }.onSuccess {
+                resetVoiceState()
+                _events.emit(ReminderUiEvent.ShowMessage("Recordatorio guardado correctamente."))
+                _events.emit(
+                    ReminderUiEvent.SpeakAssistantReply(
+                        "Perfecto, tu recordatorio fue guardado con exito."
+                    )
+                )
+            }.onFailure { exception ->
+                resetVoiceState()
+                _events.emit(
+                    ReminderUiEvent.SpeakAssistantReply(
+                        exception.message ?: "Ocurrio un error al guardar el recordatorio."
+                    )
+                )
+            }
+        }
+    }
+
+    private fun buildVoiceConfirmationMessage(state: VoiceReminderState): String {
+        val date = DateTimeFormatter.formatDate(
+            state.reminderDay ?: return "Confirma tu recordatorio.",
+            state.reminderMonth ?: return "Confirma tu recordatorio.",
+            state.reminderYear ?: return "Confirma tu recordatorio."
+        )
+        val time = DateTimeFormatter.formatTime(
+            state.reminderHour ?: return "Confirma tu recordatorio.",
+            state.reminderMinute ?: return "Confirma tu recordatorio."
+        )
+        val urgencyLabel = if (state.isUrgent) " urgente" else ""
+
+        return "Confirma guardar este recordatorio$urgencyLabel para el $date a las $time."
+    }
+
+    private fun emitVoiceMessage(message: String) {
+        _voiceState.value = _voiceState.value.copy(
+            isVoiceFlowActive = true,
+            lastAssistantMessage = message
+        )
+    }
+
+    private fun resetVoiceState() {
+        _voiceState.value = VoiceReminderState()
     }
 
     private suspend fun extractReminderTextWithMlKit(message: String): String? {
@@ -702,20 +781,12 @@ class ReminderViewModel(
                 referenceTimeMillis = System.currentTimeMillis()
             )
 
-            Log.d(MLKIT_TAG, "Texto original: $message")
-            Log.d(MLKIT_TAG, "Entidades detectadas: $annotations")
-
-            val cleanedText = textCleaner.removeDetectedSpans(
+            textCleaner.removeDetectedSpans(
                 originalText = message,
                 annotations = annotations
             )
-
-            Log.d(MLKIT_TAG, "Texto limpio ML Kit: $cleanedText")
-
-            cleanedText
-        }.onFailure { exception ->
-            Log.e(MLKIT_TAG, "Error procesando texto con ML Kit.", exception)
         }.getOrNull()
+            ?.let { VoiceReminderLanguageHelper.stripUrgencyPhrases(it) }
             ?.let { normalizeText(it) }
             ?.takeIf { it.isNotBlank() }
     }
@@ -726,9 +797,7 @@ class ReminderViewModel(
 
         when {
             containsWholeWord(normalizedInput, "pasado manana") -> {
-                val calendar = Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_MONTH, 2)
-                }
+                val calendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, 2) }
                 return ResolvedDate(
                     day = calendar.get(Calendar.DAY_OF_MONTH),
                     month = calendar.get(Calendar.MONTH) + 1,
@@ -737,9 +806,7 @@ class ReminderViewModel(
             }
 
             containsWholeWord(normalizedInput, "manana") -> {
-                val calendar = Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_MONTH, 1)
-                }
+                val calendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, 1) }
                 return ResolvedDate(
                     day = calendar.get(Calendar.DAY_OF_MONTH),
                     month = calendar.get(Calendar.MONTH) + 1,
@@ -780,14 +847,8 @@ class ReminderViewModel(
 
                 val currentDow = candidate.get(Calendar.DAY_OF_WEEK)
                 var diff = (calendarDay - currentDow + 7) % 7
-
-                if (diff == 0) {
-                    diff = 7
-                }
-
-                if (nextWeek) {
-                    diff += 7
-                }
+                if (diff == 0) diff = 7
+                if (nextWeek) diff += 7
 
                 candidate.add(Calendar.DAY_OF_MONTH, diff)
 
@@ -845,109 +906,14 @@ class ReminderViewModel(
         )
     }
 
-    private fun saveVoiceReminder() {
-        val state = _voiceState.value
-
-        val reminderDay = state.reminderDay ?: return
-        val reminderMonth = state.reminderMonth ?: return
-        val reminderYear = state.reminderYear ?: return
-        val reminderHour = state.reminderHour ?: return
-        val reminderMinute = state.reminderMinute ?: return
-        val reminderDetail = state.reminderText.trim()
-
-        if (reminderDetail.isBlank()) {
-            emitVoiceMessage("Todavía no tengo claro el texto del recordatorio. Dímelo nuevamente.")
-            _voiceState.value = _voiceState.value.copy(
-                step = VoiceReminderStep.WAITING_FOR_REMINDER_TEXT,
-                isVoiceFlowActive = true
-            )
-            return
-        }
-
-        val triggerTimeMillis = DateTimeFormatter.buildTriggerTimeMillis(
-            year = reminderYear,
-            month = reminderMonth,
-            day = reminderDay,
-            hour = reminderHour,
-            minute = reminderMinute
-        )
-
-        if (triggerTimeMillis <= System.currentTimeMillis()) {
-            emitVoiceMessage("La fecha y hora indicadas ya pasaron. Dime una nueva fecha u hora.")
-            _voiceState.value = _voiceState.value.copy(
-                step = VoiceReminderStep.WAITING_FOR_DAY,
-                isVoiceFlowActive = true
-            )
-            return
-        }
-
-        val reminder = Reminder(
-            title = extractReminderTitle(reminderDetail),
-            detail = reminderDetail,
-            date = DateTimeFormatter.formatDate(
-                reminderDay,
-                reminderMonth,
-                reminderYear
-            ),
-            time = DateTimeFormatter.formatTime(
-                reminderHour,
-                reminderMinute
-            ),
-            isCompleted = false,
-            type = ReminderTypeResolver.resolve(
-                extractReminderTitle(reminderDetail),
-                reminderDetail
-            )
-        )
-
-        viewModelScope.launch {
-            try {
-                addReminderUseCase(reminder)
-                loadReminders()
-
-                _events.emit(
-                    ReminderUiEvent.ScheduleReminder(
-                        reminderTitle = reminder.title,
-                        reminderDetail = reminder.detail,
-                        reminderDate = reminder.date,
-                        reminderTime = reminder.time,
-                        triggerTimeMillis = triggerTimeMillis
-                    )
-                )
-
-                emitVoiceMessage("Perfecto, tu recordatorio fue guardado con éxito.")
-                resetVoiceState()
-            } catch (exception: Exception) {
-                emitVoiceMessage(
-                    exception.message ?: "Ocurrió un error al guardar el recordatorio."
-                )
-                resetVoiceState()
-            }
-        }
-    }
-
-    private fun emitVoiceMessage(message: String) {
-        _voiceState.value = _voiceState.value.copy(
-            isVoiceFlowActive = true,
-            lastAssistantMessage = message
-        )
-    }
-
-    private fun resetVoiceState() {
-        _voiceState.value = VoiceReminderState()
-    }
-
     private fun mergeDraftSources(
         message: String,
         localDraft: ReminderDraft?,
         currentDraft: ReminderDraft?
     ): ReminderDraft {
-
         val normalizedMessage = normalizeText(message)
-
         val hasDateInMessage = parseNaturalDate(normalizedMessage) != null
         val hasTimeInMessage = parseTime(normalizedMessage) != null
-
         val hasRealText = !localDraft?.text.isNullOrBlank()
 
         val shouldPreserveCurrentText =
@@ -963,31 +929,22 @@ class ReminderViewModel(
         }
 
         return ReminderDraft(
+            reminderId = currentDraft?.reminderId ?: 0,
+            title = currentDraft?.title,
             text = resolvedText,
-            date = localDraft?.date ?: resolveReliableDate(
-                message = message,
-                currentDraft = currentDraft
-            ),
-            time = localDraft?.time ?: currentDraft?.time
+            date = localDraft?.date ?: resolveReliableDate(message, currentDraft),
+            time = localDraft?.time ?: currentDraft?.time,
+            isUrgent = (localDraft?.isUrgent == true) || (currentDraft?.isUrgent == true),
+            source = ReminderSource.VOICE,
+            recurrence = null
         )
     }
 
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
-        if (draft == null) {
-            return "¿Qué deseas recordar?"
-        }
-
-        if (draft.text.isNullOrBlank()) {
-            return "¿Qué deseas recordar?"
-        }
-
-        if (draft.date.isNullOrBlank()) {
-            return "¿Para qué día deseas este recordatorio?"
-        }
-
-        if (draft.time.isNullOrBlank()) {
-            return "¿A qué hora deseas este recordatorio?"
-        }
+        if (draft == null) return "Que deseas recordar?"
+        if (draft.text.isNullOrBlank()) return "Que deseas recordar?"
+        if (draft.date.isNullOrBlank()) return "Para que dia deseas este recordatorio?"
+        if (draft.time.isNullOrBlank()) return "A que hora deseas este recordatorio?"
 
         pendingAssistantAmbiguousTime?.let { ambiguousTime ->
             return buildAmbiguousTimeQuestion(ambiguousTime)
@@ -1002,7 +959,8 @@ class ReminderViewModel(
         mlKitReminderText: String?,
         parsedDate: ResolvedDate?,
         parsedTime: ParsedTime?,
-        resolvedPendingAmbiguousTime: String?
+        resolvedPendingAmbiguousTime: String?,
+        isUrgent: Boolean
     ): ReminderDraft? {
         val normalizedMessage = normalizeText(message)
 
@@ -1010,7 +968,9 @@ class ReminderViewModel(
             return ReminderDraft(
                 text = currentDraft?.text,
                 date = currentDraft?.date,
-                time = resolvedPendingAmbiguousTime
+                time = resolvedPendingAmbiguousTime,
+                isUrgent = isUrgent || (currentDraft?.isUrgent == true),
+                source = ReminderSource.VOICE
             ).takeIf { hasAnyDraftData(it) }
         }
 
@@ -1019,7 +979,9 @@ class ReminderViewModel(
 
         val parsedText = when {
             shouldKeepCurrentText -> currentDraft.text
-            else -> message.trim().takeIf { it.isNotBlank() }
+            !mlKitReminderText.isNullOrBlank() -> mlKitReminderText
+            else -> VoiceReminderLanguageHelper.stripUrgencyPhrases(message)
+                .takeIf { it.isNotBlank() }
         }
 
         if (parsedTime != null) {
@@ -1040,7 +1002,9 @@ class ReminderViewModel(
             } ?: currentDraft?.date,
             time = parsedTime?.let {
                 DateTimeFormatter.formatTime(it.hour, it.minute)
-            } ?: currentDraft?.time
+            } ?: currentDraft?.time,
+            isUrgent = isUrgent || (currentDraft?.isUrgent == true),
+            source = ReminderSource.VOICE
         )
 
         return mergedDraft.takeIf { hasAnyDraftData(it) }
@@ -1062,23 +1026,18 @@ class ReminderViewModel(
             Regex("\\ba\\s+la\\s+(\\d{1,2}):(\\d{1,2})\\s*horas?\\b"),
             Regex("\\ba\\s+las\\s+(\\d{1,2}):(\\d{1,2})\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2}):(\\d{1,2})\\b"),
-
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\s*horas?\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\s*horas?\\b"),
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s+y\\s+(\\d{1,2})\\b"),
-
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s*(am|pm)\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s*(am|pm)\\b"),
-
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s+de\\s+la\\s+(manana|tarde|noche|madrugada)\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s+de\\s+la\\s+(manana|tarde|noche|madrugada)\\b"),
-
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\s*horas\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\s*horas\\b"),
             Regex("\\blas\\s+(\\d{1,2})\\s*horas\\b"),
             Regex("\\bla\\s+(\\d{1,2})\\s*hora\\b"),
-
             Regex("\\ba\\s+las\\s+(\\d{1,2})\\b"),
             Regex("\\ba\\s+la\\s+(\\d{1,2})\\b")
         )
@@ -1124,11 +1083,7 @@ class ReminderViewModel(
                     ParsedTime(hour = hour, minute = minute, isAmbiguous = false)
                 } else {
                     val hour = rawHour.takeIf { it in 0..23 } ?: return null
-                    ParsedTime(
-                        hour = hour,
-                        minute = minute,
-                        isAmbiguous = isAmbiguousHourWithoutContext(hour)
-                    )
+                    ParsedTime(hour = hour, minute = minute, isAmbiguous = isAmbiguousHourWithoutContext(hour))
                 }
             }
 
@@ -1142,11 +1097,7 @@ class ReminderViewModel(
                     ParsedTime(hour = hour, minute = minute, isAmbiguous = false)
                 } else {
                     val hour = rawHour.takeIf { it in 0..23 } ?: return null
-                    ParsedTime(
-                        hour = hour,
-                        minute = minute,
-                        isAmbiguous = isAmbiguousHourWithoutContext(hour)
-                    )
+                    ParsedTime(hour = hour, minute = minute, isAmbiguous = isAmbiguousHourWithoutContext(hour))
                 }
             }
 
@@ -1170,11 +1121,7 @@ class ReminderViewModel(
             values.size >= 2 -> {
                 val rawHour = values[1].toIntOrNull() ?: return null
                 val hour = rawHour.takeIf { it in 0..23 } ?: return null
-                ParsedTime(
-                    hour = hour,
-                    minute = 0,
-                    isAmbiguous = isAmbiguousHourWithoutContext(hour)
-                )
+                ParsedTime(hour = hour, minute = 0, isAmbiguous = isAmbiguousHourWithoutContext(hour))
             }
 
             else -> null
@@ -1183,7 +1130,6 @@ class ReminderViewModel(
 
     private fun hasExplicitTimeContext(text: String): Boolean {
         val normalizedText = normalizeText(text)
-
         return normalizedText.contains("am") ||
                 normalizedText.contains("pm") ||
                 normalizedText.contains("manana") ||
@@ -1200,10 +1146,10 @@ class ReminderViewModel(
 
     private fun buildAmbiguousTimeQuestion(ambiguousTime: PendingAmbiguousTime): String {
         return when (ambiguousTime.hour) {
-            in 1..8 -> "¿Es en la mañana o en la tarde?"
-            in 9..11 -> "¿Es en la mañana o en la noche?"
-            12 -> "¿Es a las 12 de la mañana o de la tarde?"
-            else -> "¿Ese horario es en la mañana, tarde o noche?"
+            in 1..8 -> "Ese horario es en la manana o en la tarde?"
+            in 9..11 -> "Ese horario es en la manana o en la noche?"
+            12 -> "Ese horario es a las 12 de la manana o de la tarde?"
+            else -> "Ese horario es en la manana, tarde o noche?"
         }
     }
 
@@ -1217,10 +1163,7 @@ class ReminderViewModel(
 
         pendingAssistantAmbiguousTime = null
 
-        return DateTimeFormatter.formatTime(
-            resolvedHour,
-            pendingTime.minute
-        )
+        return DateTimeFormatter.formatTime(resolvedHour, pendingTime.minute)
     }
 
     private fun extractDayPeriod(text: String): DayPeriod? {
@@ -1228,11 +1171,11 @@ class ReminderViewModel(
 
         return when {
             containsWholeWord(normalizedText, "madrugada") -> DayPeriod.DAWN
-            containsWholeWord(normalizedText, "manana") ||
-                    containsWholeWord(normalizedText, "am") -> DayPeriod.MORNING
+            containsWholeWord(normalizedText, "manana") || containsWholeWord(normalizedText, "am") ->
+                DayPeriod.MORNING
             containsWholeWord(normalizedText, "tarde") -> DayPeriod.AFTERNOON
-            containsWholeWord(normalizedText, "noche") ||
-                    containsWholeWord(normalizedText, "pm") -> DayPeriod.NIGHT
+            containsWholeWord(normalizedText, "noche") || containsWholeWord(normalizedText, "pm") ->
+                DayPeriod.NIGHT
             else -> null
         }
     }
@@ -1243,30 +1186,21 @@ class ReminderViewModel(
     ): Int? {
         return when (period) {
             DayPeriod.DAWN,
-            DayPeriod.MORNING -> {
-                when (rawHour) {
-                    in 1..11 -> rawHour
-                    12 -> 0
-                    0 -> 0
-                    else -> null
-                }
+            DayPeriod.MORNING -> when (rawHour) {
+                in 1..11 -> rawHour
+                12, 0 -> 0
+                else -> null
             }
-
-            DayPeriod.AFTERNOON -> {
-                when (rawHour) {
-                    in 1..8 -> rawHour + 12
-                    12 -> 12
-                    in 13..20 -> rawHour
-                    else -> null
-                }
+            DayPeriod.AFTERNOON -> when (rawHour) {
+                in 1..8 -> rawHour + 12
+                12 -> 12
+                in 13..20 -> rawHour
+                else -> null
             }
-
-            DayPeriod.NIGHT -> {
-                when (rawHour) {
-                    in 9..11 -> rawHour + 12
-                    in 21..23 -> rawHour
-                    else -> null
-                }
+            DayPeriod.NIGHT -> when (rawHour) {
+                in 9..11 -> rawHour + 12
+                in 21..23 -> rawHour
+                else -> null
             }
         }
     }
@@ -1274,19 +1208,13 @@ class ReminderViewModel(
     private fun adjustHourByPeriod(text: String, rawHour: Int): Int? {
         val normalizedText = normalizeText(text)
 
-        if (normalizedText.contains("medianoche")) {
-            return 0
-        }
-
-        if (normalizedText.contains("mediodia")) {
-            return 12
-        }
+        if (normalizedText.contains("medianoche")) return 0
+        if (normalizedText.contains("mediodia")) return 12
 
         if (normalizedText.contains("madrugada")) {
             return when (rawHour) {
                 in 1..11 -> rawHour
-                12 -> 0
-                0 -> 0
+                12, 0 -> 0
                 else -> null
             }
         }
@@ -1329,9 +1257,7 @@ class ReminderViewModel(
 
     private fun isAffirmativeConfirmation(input: String): Boolean {
         val normalizedInput = normalizeText(input)
-
         return normalizedInput == "si" ||
-                normalizedInput == "sí" ||
                 normalizedInput == "confirmo" ||
                 normalizedInput == "guardar" ||
                 normalizedInput == "guarda" ||
@@ -1343,7 +1269,6 @@ class ReminderViewModel(
 
     private fun isNegativeConfirmation(input: String): Boolean {
         val normalizedInput = normalizeText(input)
-
         return normalizedInput == "no" ||
                 normalizedInput == "cancelar" ||
                 normalizedInput == "cancela" ||
@@ -1353,11 +1278,18 @@ class ReminderViewModel(
 
     private fun isGeneralCancelCommand(input: String): Boolean {
         val normalizedInput = normalizeText(input)
-
         return normalizedInput == "cancelar" ||
                 normalizedInput == "cancela" ||
                 normalizedInput == "salir" ||
                 normalizedInput == "detener"
+    }
+
+    private fun containsRecurringRequest(input: String): Boolean {
+        return VoiceReminderLanguageHelper.containsRecurringRequest(input)
+    }
+
+    private fun containsUrgentSignal(input: String): Boolean {
+        return VoiceReminderLanguageHelper.containsUrgentSignal(input)
     }
 
     private fun normalizeText(text: String): String {
@@ -1381,7 +1313,6 @@ class ReminderViewModel(
         currentDraft: ReminderDraft?
     ): String? {
         val normalizedMessage = normalizeText(message)
-
         val localParsedDate = parseNaturalDate(normalizedMessage)?.let {
             DateTimeFormatter.formatDate(it.day, it.month, it.year)
         }
@@ -1424,114 +1355,29 @@ class ReminderViewModel(
         return hasKeyword || hasOnlyNumbersAndTime
     }
 
-    private fun buildTriggerTimeMillisFromDraft(
-        reminderDate: String,
-        reminderTime: String
-    ): Long? {
-        val dateParts = reminderDate.split("/")
-        val timeParts = reminderTime.split(":")
-
-        if (dateParts.size != 3 || timeParts.size != 2) {
-            return null
+    private fun validateDraftForSaving(
+        draft: ReminderDraft,
+        allowRecurrence: Boolean
+    ): String? {
+        if (draft.text.isNullOrBlank()) {
+            return "No hay texto para guardar."
         }
 
-        val day = dateParts[0].toIntOrNull() ?: return null
-        val month = dateParts[1].toIntOrNull() ?: return null
-        val year = dateParts[2].toIntOrNull() ?: return null
-        val hour = timeParts[0].toIntOrNull() ?: return null
-        val minute = timeParts[1].toIntOrNull() ?: return null
-
-        if (day !in 1..31 || month !in 1..12 || hour !in 0..23 || minute !in 0..59) {
-            return null
+        if (draft.date.isNullOrBlank() || draft.time.isNullOrBlank()) {
+            return buildQuestionForMissingData(draft)
         }
 
-        return DateTimeFormatter.buildTriggerTimeMillis(
-            year = year,
-            month = month,
-            day = day,
-            hour = hour,
-            minute = minute
-        )
-    }
-
-    private fun extractReminderTitle(detail: String): String {
-        var text = normalizeText(detail)
-
-        val removalPatterns = listOf(
-            Regex("\\b(hoy|manana|pasado manana|ayer)\\b"),
-            Regex("\\b(para hoy|para manana|para pasado manana)\\b"),
-            Regex("\\b(esta noche|esta tarde|esta manana|esta madrugada)\\b"),
-            Regex("\\b(pronto|mas tarde)\\b"),
-
-            Regex("\\b(esta semana|proxima semana|la proxima semana|este fin de semana|el fin de semana)\\b"),
-            Regex("\\b(este mes|el proximo mes|proximo mes|este ano|el proximo ano|proximo ano)\\b"),
-
-            Regex("\\b(para el|para este|el|este)?\\s*(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\\b"),
-
-            Regex("\\b(el dia|dia|el)\\s+\\d{1,2}\\b"),
-            Regex("\\bpara el\\s+\\d{1,2}\\b"),
-            Regex("\\b\\d{1,2}\\s+de\\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\\b"),
-            Regex("\\b\\d{1,2}/\\d{1,2}(/\\d{2,4})?\\b"),
-            Regex("\\b\\d{1,2}-\\d{1,2}(-\\d{2,4})?\\b"),
-
-            Regex("\\ba\\s+las\\s+\\d{1,2}:\\d{1,2}\\s*(horas?|hrs?|am|pm)?\\b"),
-            Regex("\\ba\\s+la\\s+\\d{1,2}:\\d{1,2}\\s*(horas?|hrs?|am|pm)?\\b"),
-            Regex("\\ba\\s+las\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*(horas?|minutos?)?\\b"),
-            Regex("\\ba\\s+la\\s+\\d{1,2}\\s+y\\s+\\d{1,2}\\s*(horas?|minutos?)?\\b"),
-            Regex("\\ba\\s+las\\s+\\d{1,2}\\s*(horas?|hrs?|am|pm)\\b"),
-            Regex("\\ba\\s+la\\s+\\d{1,2}\\s*(hora|horas|hr|hrs|am|pm)\\b"),
-            Regex("\\ba\\s+las\\s+\\d{1,2}\\b"),
-            Regex("\\ba\\s+la\\s+\\d{1,2}\\b"),
-
-            Regex("\\b\\d{1,2}:\\d{1,2}\\s*(horas?|hrs?|am|pm)?\\b"),
-            Regex("\\b\\d{1,2}\\s+y\\s+\\d{1,2}\\s*(horas?|minutos?)\\b"),
-            Regex("\\b\\d{1,2}\\s*(am|pm)\\b"),
-            Regex("\\b\\d{1,2}\\s*horas?\\b"),
-            Regex("\\b\\d{1,2}\\s*hrs?\\b"),
-
-            Regex("\\b(de la|en la|por la)\\s+(manana|tarde|noche|madrugada)\\b"),
-            Regex("\\b(al mediodia|a medianoche|mediodia|medianoche)\\b"),
-
-            Regex("\\b(para el dia|para la fecha|para las|para la hora de|a eso de las|como a las)\\b"),
-            Regex("\\b\\d{1,2}\\b(?=\\s*(de la manana|de la tarde|de la noche|de la madrugada|am|pm|horas?|hrs?)\\b)")
-        )
-
-        removalPatterns.forEach { pattern ->
-            text = text.replace(pattern, " ")
+        if (!allowRecurrence && draft.recurrence != null) {
+            return "Las repeticiones debes configurarlas manualmente."
         }
 
-        text = text
-            .replace(",", " ")
-            .replace(";", " ")
-            .replace(":", " ")
-            .replace(".", " ")
-            .replace("(", " ")
-            .replace(")", " ")
-            .replace("-", " ")
-            .replace("_", " ")
+        val triggerTimeMillis = draft.buildScheduledAtEpochMillis()
+            ?: return "La fecha u hora indicadas no son validas."
 
-        text = text
-            .replace(
-                Regex("^\\b(recordar|recuerda|recordarme|recuerdame|anotar|anota|agendar|agenda|programar|programa|guardar|guarda|crear|crea)\\b\\s*"),
-                ""
-            )
-
-        text = text
-            .replace(Regex("\\b(el|la|los|las|de|del|para|por|a|al|en|dia|hora|horas)\\b"), " ")
-            .replace(Regex("\\b\\d{1,2}\\b"), " ")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-
-        if (text.isBlank()) {
-            return "Recordatorio"
+        if (triggerTimeMillis <= System.currentTimeMillis()) {
+            return "La fecha y hora indicadas ya pasaron. Indica una fecha u hora futura."
         }
 
-        return text.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase() else it.toString()
-        }
-    }
-
-    private fun buildReminderDetail(detail: String, date: String, time: String): String {
-        return detail.trim().ifBlank { "Recordatorio" }
+        return null
     }
 }

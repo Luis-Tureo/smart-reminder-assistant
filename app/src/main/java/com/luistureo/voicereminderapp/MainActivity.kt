@@ -6,36 +6,42 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.app.TimePickerDialog
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
+import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.speech.SpeechRecognizerManager
 import com.luistureo.voicereminderapp.core.speech.VoiceAssistantSpeaker
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
-import com.luistureo.voicereminderapp.domain.usecase.AddReminderUseCase
+import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
+import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
+import com.luistureo.voicereminderapp.domain.usecase.SaveReminderDraftUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantAnimator
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantFaceState
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantView
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantVisualState
+import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
-import com.luistureo.voicereminderapp.presentation.ui.adapter.ReminderAdapter
-import com.luistureo.voicereminderapp.presentation.ui.swipe.SwipeToDeleteCallback
+import com.luistureo.voicereminderapp.presentation.ui.adapter.HomeReminderAdapter
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModelFactory
 import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
@@ -49,13 +55,19 @@ class MainActivity : ComponentActivity() {
     private lateinit var assistantView: AssistantView
     private lateinit var assistantDialogueBubble: AssistantDialogueBubbleView
     private lateinit var assistantTapHint: TextView
+    private lateinit var manualReminderCard: View
+    private lateinit var cameraReminderCard: View
     private lateinit var openCalendarButton: Button
+    private lateinit var nextDaySummaryTimeButton: MaterialButton
     private lateinit var remindersRecyclerView: RecyclerView
+    private lateinit var homeEmptyStateContainer: View
+    private lateinit var homeEmptyStateButton: Button
 
     private lateinit var assistantAnimator: AssistantAnimator
-    private lateinit var reminderAdapter: ReminderAdapter
+    private lateinit var reminderAdapter: HomeReminderAdapter
     private lateinit var reminderViewModel: ReminderViewModel
     private lateinit var reminderScheduler: ReminderScheduler
+    private lateinit var summaryPreferenceStore: NextDaySummaryPreferenceStore
     private lateinit var speechManager: SpeechRecognizerManager
     private lateinit var voiceAssistantSpeaker: VoiceAssistantSpeaker
 
@@ -104,8 +116,7 @@ class MainActivity : ComponentActivity() {
         setupViewModel()
         setupCore()
         setupRecyclerView()
-        setupSwipeToDelete()
-        setupCalendarButton()
+        setupActionButtons()
         setupAssistantInteraction()
         observeState()
         observeEvents()
@@ -130,8 +141,13 @@ class MainActivity : ComponentActivity() {
         assistantView = findViewById(R.id.assistantView)
         assistantDialogueBubble = findViewById(R.id.assistantDialogueBubble)
         assistantTapHint = findViewById(R.id.tvAssistantTapHint)
+        manualReminderCard = findViewById(R.id.cardManualReminder)
+        cameraReminderCard = findViewById(R.id.cardCameraReminder)
         openCalendarButton = findViewById(R.id.btnOpenCalendar)
+        nextDaySummaryTimeButton = findViewById(R.id.btnNextDaySummaryTime)
         remindersRecyclerView = findViewById(R.id.recyclerReminders)
+        homeEmptyStateContainer = findViewById(R.id.homeEmptyStateCard)
+        homeEmptyStateButton = findViewById(R.id.btnHomeEmptyStateCreateReminder)
     }
 
     private fun setupAssistant() {
@@ -145,8 +161,9 @@ class MainActivity : ComponentActivity() {
 
         val factory = ReminderViewModelFactory(
             context = applicationContext,
-            addReminderUseCase = AddReminderUseCase(repository),
+            saveReminderDraftUseCase = SaveReminderDraftUseCase(repository),
             getRemindersUseCase = GetRemindersUseCase(repository),
+            getReminderByIdUseCase = GetReminderByIdUseCase(repository),
             deleteReminderUseCase = DeleteReminderUseCase(repository),
             updateReminderUseCase = UpdateReminderUseCase(repository)
         )
@@ -155,7 +172,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun setupCore() {
-        reminderScheduler = ReminderScheduler(this)
+        summaryPreferenceStore = NextDaySummaryPreferenceStore(applicationContext)
+        reminderScheduler = ReminderScheduler(applicationContext)
         speechManager = SpeechRecognizerManager(this)
         speechManager.setListener(object : SpeechRecognizerManager.Listener {
             override fun onPartialTranscription(text: String) {
@@ -195,13 +213,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun setupRecyclerView() {
-        reminderAdapter = ReminderAdapter(
-            reminders = emptyList(),
+        reminderAdapter = HomeReminderAdapter(
+            items = emptyList(),
             onDelete = { reminder ->
                 reminderViewModel.deleteReminder(reminder)
             },
             onUpdate = { reminder ->
                 reminderViewModel.updateReminder(reminder)
+            },
+            onEdit = { reminder ->
+                openManualReminderScreen(reminder.id, reminder.source)
             }
         )
 
@@ -209,21 +230,43 @@ class MainActivity : ComponentActivity() {
         remindersRecyclerView.adapter = reminderAdapter
     }
 
-    private fun setupSwipeToDelete() {
-        val swipeHandler = SwipeToDeleteCallback { position ->
-            val reminders = reminderViewModel.uiState.value.reminders
-            if (position in reminders.indices) {
-                reminderViewModel.deleteReminder(reminders[position])
-            }
+    private fun setupActionButtons() {
+        manualReminderCard.setOnClickListener {
+            openManualReminderScreen(null, ReminderSource.MANUAL)
         }
 
-        ItemTouchHelper(swipeHandler).attachToRecyclerView(remindersRecyclerView)
-    }
+        cameraReminderCard.setOnClickListener {
+            openManualReminderScreen(null, ReminderSource.CAMERA)
+        }
 
-    private fun setupCalendarButton() {
         openCalendarButton.setOnClickListener {
             startActivity(Intent(this, CalendarActivity::class.java))
         }
+
+        nextDaySummaryTimeButton.setOnClickListener {
+            showNextDaySummaryTimePicker()
+        }
+
+        homeEmptyStateButton.setOnClickListener {
+            openManualReminderScreen(null, ReminderSource.MANUAL)
+        }
+
+        refreshNextDaySummaryTimeButtonLabel()
+    }
+
+    private fun openManualReminderScreen(
+        reminderId: Int?,
+        defaultSource: ReminderSource
+    ) {
+        val intent = Intent(this, ManualReminderActivity::class.java).apply {
+            if (reminderId != null) {
+                putExtra(ManualReminderActivity.EXTRA_REMINDER_ID, reminderId)
+            }
+
+            putExtra(ManualReminderActivity.EXTRA_DEFAULT_SOURCE, defaultSource.name)
+        }
+
+        startActivity(intent)
     }
 
     private fun setupAssistantInteraction() {
@@ -244,7 +287,9 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     reminderViewModel.uiState.collect { state ->
-                        reminderAdapter.updateData(state.reminders)
+                        reminderAdapter.updateData(state.homeTimelineItems)
+                        homeEmptyStateContainer.isVisible = state.homeTimelineItems.isEmpty()
+                        remindersRecyclerView.isVisible = state.homeTimelineItems.isNotEmpty()
 
                         state.error?.let { error ->
                             Toast.makeText(
@@ -326,21 +371,16 @@ class MainActivity : ComponentActivity() {
                                 event.message,
                                 Toast.LENGTH_SHORT
                             ).show()
-                        }
 
-                        is ReminderUiEvent.ScheduleReminder -> {
-                            reminderScheduler.scheduleReminder(
-                                reminderTitle = event.reminderTitle,
-                                reminderDetail = event.reminderDetail,
-                                reminderDate = event.reminderDate,
-                                reminderTime = event.reminderTime,
-                                triggerTimeMillis = event.triggerTimeMillis
-                            )
+                            if (
+                                event.message.contains("guardado", ignoreCase = true) ||
+                                event.message.contains("actualizado", ignoreCase = true)
+                            ) {
+                                hasPendingSuccessState = true
 
-                            hasPendingSuccessState = true
-
-                            if (!isAssistantConversationMode) {
-                                showSuccessAndReturnToIdle()
+                                if (!isAssistantConversationMode) {
+                                    showSuccessAndReturnToIdle()
+                                }
                             }
                         }
 
@@ -377,10 +417,6 @@ class MainActivity : ComponentActivity() {
                             if (!hasPendingSuccessState) {
                                 renderAssistantState(AssistantVisualState.IDLE)
                             }
-                        }
-
-                        ReminderUiEvent.ClearForm -> {
-                            reminderViewModel.clearFormState()
                         }
                     }
                 }
@@ -661,6 +697,38 @@ class MainActivity : ComponentActivity() {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+    }
+
+    private fun showNextDaySummaryTimePicker() {
+        val summaryTime = summaryPreferenceStore.getSummaryTime()
+
+        TimePickerDialog(
+            this,
+            { _, hourOfDay, minute ->
+                summaryPreferenceStore.setSummaryTime(hourOfDay, minute)
+                reminderScheduler.scheduleNextDaySummary()
+                refreshNextDaySummaryTimeButtonLabel()
+
+                val formattedTime = DateTimeFormatter.formatTime(hourOfDay, minute)
+                Toast.makeText(
+                    this,
+                    getString(R.string.home_next_day_summary_time_saved, formattedTime),
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            summaryTime.hour,
+            summaryTime.minute,
+            true
+        ).show()
+    }
+
+    private fun refreshNextDaySummaryTimeButtonLabel() {
+        val summaryTime = summaryPreferenceStore.getSummaryTime()
+        val formattedTime = DateTimeFormatter.formatTime(summaryTime.hour, summaryTime.minute)
+        nextDaySummaryTimeButton.text = getString(
+            R.string.home_next_day_summary_time_button,
+            formattedTime
+        )
     }
 
     override fun onDestroy() {

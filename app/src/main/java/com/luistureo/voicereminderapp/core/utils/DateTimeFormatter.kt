@@ -1,22 +1,29 @@
 package com.luistureo.voicereminderapp.core.utils
 
-import java.util.Calendar
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter as JavaDateTimeFormatter
 
 object DateTimeFormatter {
 
-    // Formatea la fecha en formato dd/MM/yyyy
-    // month debe venir en rango 1..12
+    private val zoneId: ZoneId = ZoneId.systemDefault()
+    private val storedDateFormatter = JavaDateTimeFormatter.ofPattern("dd/MM/yyyy")
+    private val storedTimeFormatter = JavaDateTimeFormatter.ofPattern("HH:mm")
+
+    // Formatea la fecha en formato dd/MM/yyyy.
     fun formatDate(day: Int, month: Int, year: Int): String {
         return String.format("%02d/%02d/%04d", day, month, year)
     }
 
-    // Formatea la hora en formato HH:mm
+    // Formatea la hora en formato HH:mm.
     fun formatTime(hour: Int, minute: Int): String {
         return String.format("%02d:%02d", hour, minute)
     }
 
-    // Construye el tiempo exacto en milisegundos para programar la alarma
-    // month debe venir en rango 1..12
+    // Convierte la fecha y hora seleccionadas a milisegundos.
     fun buildTriggerTimeMillis(
         year: Int,
         month: Int,
@@ -24,25 +31,80 @@ object DateTimeFormatter {
         hour: Int,
         minute: Int
     ): Long {
-        val calendar = Calendar.getInstance().apply {
-            set(Calendar.YEAR, year)
-            set(Calendar.MONTH, month - 1)
-            set(Calendar.DAY_OF_MONTH, day)
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        return calendar.timeInMillis
+        val dateTime = LocalDateTime.of(year, month, day, hour, minute)
+        return dateTime.atZone(zoneId).toInstant().toEpochMilli()
     }
 
-    // Verifica si la fecha es válida
+    // Convierte fecha y hora persistidas a un instante absoluto.
+    fun parseDateTimeToEpochMillis(
+        date: String,
+        time: String
+    ): Long? {
+        return runCatching {
+            val parsedDate = LocalDate.parse(date, storedDateFormatter)
+            val parsedTime = LocalTime.parse(time, storedTimeFormatter)
+            LocalDateTime.of(parsedDate, parsedTime)
+                .atZone(zoneId)
+                .toInstant()
+                .toEpochMilli()
+        }.getOrNull()
+    }
+
+    fun formatDateFromEpoch(epochMillis: Long): String {
+        return Instant.ofEpochMilli(epochMillis)
+            .atZone(zoneId)
+            .toLocalDate()
+            .format(storedDateFormatter)
+    }
+
+    fun formatTimeFromEpoch(epochMillis: Long): String {
+        return Instant.ofEpochMilli(epochMillis)
+            .atZone(zoneId)
+            .toLocalTime()
+            .format(storedTimeFormatter)
+    }
+
+    fun toLocalDate(epochMillis: Long): LocalDate {
+        return Instant.ofEpochMilli(epochMillis)
+            .atZone(zoneId)
+            .toLocalDate()
+    }
+
+    fun toLocalTime(epochMillis: Long): LocalTime {
+        return Instant.ofEpochMilli(epochMillis)
+            .atZone(zoneId)
+            .toLocalTime()
+    }
+
+    fun toLocalDateTime(epochMillis: Long): LocalDateTime {
+        return Instant.ofEpochMilli(epochMillis)
+            .atZone(zoneId)
+            .toLocalDateTime()
+    }
+
+    fun parseDate(value: String): LocalDate? {
+        return runCatching {
+            LocalDate.parse(value, storedDateFormatter)
+        }.getOrNull()
+    }
+
+    fun parseTime(value: String): LocalTime? {
+        return runCatching {
+            LocalTime.parse(value, storedTimeFormatter)
+        }.getOrNull()
+    }
+
+    // Verifica si la fecha es valida.
     fun hasValidDate(year: Int, month: Int, day: Int): Boolean {
-        return year != -1 && month in 1..12 && day in 1..31
+        return runCatching {
+            LocalDate.of(year, month, day)
+        }.isSuccess
     }
 
-    // Verifica si la hora es válida
+    // Verifica si la hora es valida.
     fun hasValidTime(hour: Int, minute: Int): Boolean {
-        return hour in 0..23 && minute in 0..59
+        return runCatching {
+            LocalTime.of(hour, minute)
+        }.isSuccess
     }
 }

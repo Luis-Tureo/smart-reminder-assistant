@@ -4,9 +4,11 @@ import com.luistureo.voicereminderapp.domain.model.Reminder
 
 interface ReminderRepository {
 
-    suspend fun insertReminder(reminder: Reminder)
+    suspend fun insertReminder(reminder: Reminder): Int
 
     suspend fun getAllReminders(): List<Reminder>
+
+    suspend fun getReminderById(reminderId: Int): Reminder?
 
     suspend fun deleteReminder(reminder: Reminder)
 

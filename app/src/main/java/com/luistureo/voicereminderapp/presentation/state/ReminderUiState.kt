@@ -5,6 +5,8 @@ import com.luistureo.voicereminderapp.presentation.common.UiText
 
 data class ReminderUiState(
     val reminders: List<Reminder> = emptyList(),
+    val homeTimelineItems: List<HomeReminderListItem> = emptyList(),
     val isLoading: Boolean = false,
-    val error: UiText? = null
+    val error: UiText? = null,
+    val formState: ReminderFormState = ReminderFormState()
 )

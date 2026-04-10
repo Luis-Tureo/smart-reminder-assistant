@@ -12,24 +12,39 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.card.MaterialCardView
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
+import com.luistureo.voicereminderapp.presentation.state.HomeReminderListItem
 
-class ReminderAdapter(
-    private var reminders: List<Reminder>,
+class HomeReminderAdapter(
+    private var items: List<HomeReminderListItem>,
     private val onDelete: (Reminder) -> Unit,
     private val onUpdate: (Reminder) -> Unit,
     private val onEdit: (Reminder) -> Unit
-) : RecyclerView.Adapter<ReminderAdapter.ReminderViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    private companion object {
+        const val VIEW_TYPE_HEADER = 0
+        const val VIEW_TYPE_REMINDER = 1
+    }
+
+    class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val title: TextView = itemView.findViewById(R.id.tvDayHeaderTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.tvDayHeaderSubtitle)
+    }
 
     class ReminderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val card: MaterialCardView = itemView as MaterialCardView
         val title: TextView = itemView.findViewById(R.id.tvReminderText)
         val detail: TextView = itemView.findViewById(R.id.tvReminderDetail)
         val date: TextView = itemView.findViewById(R.id.tvReminderDate)
         val time: TextView = itemView.findViewById(R.id.tvReminderTime)
         val separator: TextView = itemView.findViewById(R.id.tvReminderSeparator)
         val scheduleMeta: TextView = itemView.findViewById(R.id.tvReminderScheduleMeta)
+        val urgentBadge: TextView = itemView.findViewById(R.id.tvReminderUrgentBadge)
         val check: CheckBox = itemView.findViewById(R.id.checkCompleted)
         val delete: ImageButton = itemView.findViewById(R.id.btnDelete)
         val iconContainer: FrameLayout = itemView.findViewById(R.id.iconContainer)
@@ -38,21 +53,73 @@ class ReminderAdapter(
         val clockIcon: ImageView = itemView.findViewById(R.id.ivClock)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReminderViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_reminder, parent, false)
-        return ReminderViewHolder(view)
+    override fun getItemViewType(position: Int): Int {
+        return when (items[position]) {
+            is HomeReminderListItem.DayHeader -> VIEW_TYPE_HEADER
+            is HomeReminderListItem.ReminderRow -> VIEW_TYPE_REMINDER
+        }
     }
 
-    override fun onBindViewHolder(holder: ReminderViewHolder, position: Int) {
-        val reminder = reminders[position]
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return when (viewType) {
+            VIEW_TYPE_HEADER -> {
+                val view = inflater.inflate(
+                    R.layout.item_home_day_header,
+                    parent,
+                    false
+                )
+                HeaderViewHolder(view)
+            }
+
+            else -> {
+                val view = inflater.inflate(R.layout.item_reminder, parent, false)
+                ReminderViewHolder(view)
+            }
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val item = items[position]) {
+            is HomeReminderListItem.DayHeader -> bindHeader(holder as HeaderViewHolder, item)
+            is HomeReminderListItem.ReminderRow -> bindReminder(
+                holder as ReminderViewHolder,
+                item
+            )
+        }
+    }
+
+    override fun getItemCount(): Int = items.size
+
+    fun updateData(newItems: List<HomeReminderListItem>) {
+        items = newItems
+        notifyDataSetChanged()
+    }
+
+    private fun bindHeader(holder: HeaderViewHolder, item: HomeReminderListItem.DayHeader) {
+        holder.title.text = item.title
+        holder.subtitle.text = item.subtitle
+    }
+
+    private fun bindReminder(
+        holder: ReminderViewHolder,
+        item: HomeReminderListItem.ReminderRow
+    ) {
+        val reminder = item.reminder
+
+        holder.card.strokeColor = ContextCompat.getColor(
+            holder.itemView.context,
+            if (reminder.isUrgent) R.color.accent_purple else R.color.reminder_card_stroke
+        )
 
         holder.title.text = reminder.title
         holder.detail.text = reminder.detail
-        holder.date.text = reminder.nextTriggerDate ?: reminder.date
-        holder.time.text = reminder.nextTriggerTime ?: reminder.time
+        holder.date.text = DateTimeFormatter.formatDateFromEpoch(item.occurrenceAtEpochMillis)
+        holder.time.text = DateTimeFormatter.formatTimeFromEpoch(item.occurrenceAtEpochMillis)
         bindCategoryIcon(holder, reminder)
         bindScheduleMeta(holder, reminder)
+        holder.urgentBadge.isVisible = reminder.isUrgent
+        holder.urgentBadge.text = holder.itemView.context.getString(R.string.home_urgent_badge)
 
         holder.check.setOnCheckedChangeListener(null)
         holder.check.isChecked = reminder.isCompleted
@@ -70,13 +137,6 @@ class ReminderAdapter(
         holder.itemView.setOnClickListener {
             onEdit(reminder)
         }
-    }
-
-    override fun getItemCount(): Int = reminders.size
-
-    fun updateData(newReminders: List<Reminder>) {
-        reminders = newReminders
-        notifyDataSetChanged()
     }
 
     private fun bindCategoryIcon(holder: ReminderViewHolder, reminder: Reminder) {
@@ -115,7 +175,7 @@ class ReminderAdapter(
         }
 
         holder.scheduleMeta.isVisible = parts.isNotEmpty()
-        holder.scheduleMeta.text = parts.joinToString(separator = " • ")
+        holder.scheduleMeta.text = parts.joinToString(separator = " \u2022 ")
     }
 
     private fun usesFitnessIcon(reminder: Reminder): Boolean {
@@ -163,6 +223,7 @@ class ReminderAdapter(
         animateAlpha(holder.time, metaAlpha)
         animateAlpha(holder.separator, metaAlpha)
         animateAlpha(holder.scheduleMeta, metaAlpha)
+        animateAlpha(holder.urgentBadge, metaAlpha)
         animateAlpha(holder.calendarIcon, metaAlpha)
         animateAlpha(holder.clockIcon, metaAlpha)
         animateAlpha(holder.iconContainer, actionAlpha)
