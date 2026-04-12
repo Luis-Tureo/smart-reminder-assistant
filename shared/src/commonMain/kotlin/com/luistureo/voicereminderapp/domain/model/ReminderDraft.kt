@@ -1,6 +1,6 @@
 package com.luistureo.voicereminderapp.domain.model
 
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 
 // Borrador reutilizable por flujos manuales, voz y camara.
 data class ReminderDraft(
@@ -22,6 +22,6 @@ data class ReminderDraft(
     fun buildScheduledAtEpochMillis(): Long? {
         val resolvedDate = date ?: return null
         val resolvedTime = time ?: return null
-        return DateTimeFormatter.parseDateTimeToEpochMillis(resolvedDate, resolvedTime)
+        return DateTimeFormatterCore.parseDateTimeToEpochMillis(resolvedDate, resolvedTime)
     }
 }
