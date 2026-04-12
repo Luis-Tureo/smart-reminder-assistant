@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "VoiceReminderApp"
 include(":app")
+include(":shared")
