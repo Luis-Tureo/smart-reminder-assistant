@@ -17,8 +17,8 @@ object ReminderRecurrenceFormatter {
 
         if (recurrence.unit == ReminderRecurrenceUnit.WEEK && recurrence.weekdays.isNotEmpty()) {
             return recurrence.weekdays
-                .sortedBy { it.dayOfWeek.value }
-                .joinToString(separator = " • ") { it.shortLabel }
+                .sortedBy { it.isoDayNumber }
+                .joinToString(separator = " - ") { it.shortLabel }
         }
 
         return when (recurrence.unit) {

@@ -1,6 +1,6 @@
 package com.luistureo.voicereminderapp.domain.model
 
-// Patrón explícito de repetición del recordatorio.
+// Patron explicito de repeticion del recordatorio.
 data class ReminderRecurrence(
     val unit: ReminderRecurrenceUnit,
     val interval: Int = 1,

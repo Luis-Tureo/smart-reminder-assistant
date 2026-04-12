@@ -64,6 +64,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
                 // Add KMP dependencies here
             }
         }

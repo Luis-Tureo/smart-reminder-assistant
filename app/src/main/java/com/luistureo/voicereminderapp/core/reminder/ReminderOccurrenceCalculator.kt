@@ -26,11 +26,13 @@ class ReminderOccurrenceCalculator(
         )
         val reminderDateTime = DateTimeFormatter.toLocalDateTime(reminder.scheduledAtEpochMillis)
 
-        if (reminder.recurrence == null) {
+        val recurrence = reminder.recurrence
+
+        if (recurrence == null) {
             return reminder.scheduledAtEpochMillis.takeIf { it > fromEpochMillis }
         }
 
-        if (!reminder.recurrence.isActive) {
+        if (!recurrence.isActive) {
             return null
         }
 
@@ -149,10 +151,10 @@ class ReminderOccurrenceCalculator(
         }
 
         val targetWeekdays = recurrence.weekdays.ifEmpty {
-            setOf(ReminderWeekday.fromDayOfWeek(reminderDate.dayOfWeek))
+            setOf(ReminderWeekday.fromIsoDayNumber(reminderDate.dayOfWeek.value))
         }
 
-        return targetWeekdays.any { it.dayOfWeek == date.dayOfWeek }
+        return targetWeekdays.any { it.isoDayNumber == date.dayOfWeek.value }
     }
 
     companion object {
