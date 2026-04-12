@@ -6,7 +6,7 @@ object ReminderTypeResolver {
 
     private val birthdayKeywords = listOf(
         "cumpleanos",
-        "cumpleaños",
+        "cumpleaÃ±os",
         "cumple",
         "birthday"
     )
