@@ -15,12 +15,12 @@ object DateTimeFormatter {
 
     // Formatea la fecha en formato dd/MM/yyyy.
     fun formatDate(day: Int, month: Int, year: Int): String {
-        return String.format("%02d/%02d/%04d", day, month, year)
+        return DateTimeFormatterCore.formatDate(day, month, year)
     }
 
     // Formatea la hora en formato HH:mm.
     fun formatTime(hour: Int, minute: Int): String {
-        return String.format("%02d:%02d", hour, minute)
+        return DateTimeFormatterCore.formatTime(hour, minute)
     }
 
     // Convierte la fecha y hora seleccionadas a milisegundos.
@@ -31,8 +31,13 @@ object DateTimeFormatter {
         hour: Int,
         minute: Int
     ): Long {
-        val dateTime = LocalDateTime.of(year, month, day, hour, minute)
-        return dateTime.atZone(zoneId).toInstant().toEpochMilli()
+        return DateTimeFormatterCore.buildTriggerTimeMillis(
+            year = year,
+            month = month,
+            day = day,
+            hour = hour,
+            minute = minute
+        )
     }
 
     // Convierte fecha y hora persistidas a un instante absoluto.
@@ -40,30 +45,18 @@ object DateTimeFormatter {
         date: String,
         time: String
     ): Long? {
-        return runCatching {
-            val parsedDate = LocalDate.parse(date, storedDateFormatter)
-            val parsedTime = LocalTime.parse(time, storedTimeFormatter)
-            LocalDateTime.of(parsedDate, parsedTime)
-                .atZone(zoneId)
-                .toInstant()
-                .toEpochMilli()
-        }.getOrNull()
+        return DateTimeFormatterCore.parseDateTimeToEpochMillis(date, time)
     }
 
     fun formatDateFromEpoch(epochMillis: Long): String {
-        return Instant.ofEpochMilli(epochMillis)
-            .atZone(zoneId)
-            .toLocalDate()
-            .format(storedDateFormatter)
+        return DateTimeFormatterCore.formatDateFromEpoch(epochMillis)
     }
 
     fun formatTimeFromEpoch(epochMillis: Long): String {
-        return Instant.ofEpochMilli(epochMillis)
-            .atZone(zoneId)
-            .toLocalTime()
-            .format(storedTimeFormatter)
+        return DateTimeFormatterCore.formatTimeFromEpoch(epochMillis)
     }
 
+    // Mantiene adaptadores JVM mientras existan consumidores Android de java.time.
     fun toLocalDate(epochMillis: Long): LocalDate {
         return Instant.ofEpochMilli(epochMillis)
             .atZone(zoneId)
@@ -96,15 +89,11 @@ object DateTimeFormatter {
 
     // Verifica si la fecha es valida.
     fun hasValidDate(year: Int, month: Int, day: Int): Boolean {
-        return runCatching {
-            LocalDate.of(year, month, day)
-        }.isSuccess
+        return DateTimeFormatterCore.hasValidDate(year, month, day)
     }
 
     // Verifica si la hora es valida.
     fun hasValidTime(hour: Int, minute: Int): Boolean {
-        return runCatching {
-            LocalTime.of(hour, minute)
-        }.isSuccess
+        return DateTimeFormatterCore.hasValidTime(hour, minute)
     }
 }
