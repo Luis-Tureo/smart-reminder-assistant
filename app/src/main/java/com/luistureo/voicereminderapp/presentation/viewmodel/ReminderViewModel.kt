@@ -8,10 +8,9 @@ import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftField
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftSemanticAction
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftSemanticActionGuidanceResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftPromptIntent
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftPromptIntentResolver
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
@@ -955,29 +954,28 @@ class ReminderViewModel(
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
         if (draft == null) return "Que deseas recordar?"
 
-        val guidance = ReminderDraftSemanticActionGuidanceResolver.resolve(draft)
+        return when (ReminderDraftPromptIntentResolver.resolve(draft).promptIntent) {
+            ReminderDraftPromptIntent.ASK_REMINDER_TEXT,
+            ReminderDraftPromptIntent.CORRECT_INCOMPLETE_TEXT,
+            ReminderDraftPromptIntent.CORRECT_INVALID_TEXT -> "Que deseas recordar?"
 
-        when (guidance.nextAction) {
-            ReminderDraftSemanticAction.REQUEST_MISSING_FIELD,
-            ReminderDraftSemanticAction.CORRECT_INCOMPLETE_FIELD,
-            ReminderDraftSemanticAction.CORRECT_INVALID_FIELD -> {
-                return when (guidance.field) {
-                    ReminderDraftField.TEXT -> "Que deseas recordar?"
-                    ReminderDraftField.DATE -> "Para que dia deseas este recordatorio?"
-                    ReminderDraftField.TIME -> "A que hora deseas este recordatorio?"
-                    null -> "Perfecto."
+            ReminderDraftPromptIntent.ASK_REMINDER_DATE,
+            ReminderDraftPromptIntent.CORRECT_INCOMPLETE_DATE,
+            ReminderDraftPromptIntent.CORRECT_INVALID_DATE -> "Para que dia deseas este recordatorio?"
+
+            ReminderDraftPromptIntent.ASK_REMINDER_TIME,
+            ReminderDraftPromptIntent.CORRECT_INCOMPLETE_TIME,
+            ReminderDraftPromptIntent.CORRECT_INVALID_TIME -> "A que hora deseas este recordatorio?"
+
+            ReminderDraftPromptIntent.SHOW_CONFIRMATION,
+            ReminderDraftPromptIntent.ALLOW_SAVE_OR_CONTINUE -> {
+                pendingAssistantAmbiguousTime?.let { ambiguousTime ->
+                    return buildAmbiguousTimeQuestion(ambiguousTime)
                 }
+
+                "Perfecto."
             }
-
-            ReminderDraftSemanticAction.CONFIRM_DRAFT,
-            ReminderDraftSemanticAction.ALLOW_SAVE_OR_CONTINUE -> Unit
         }
-
-        pendingAssistantAmbiguousTime?.let { ambiguousTime ->
-            return buildAmbiguousTimeQuestion(ambiguousTime)
-        }
-
-        return "Perfecto."
     }
 
     private fun mergeDraftFromRawMessage(
