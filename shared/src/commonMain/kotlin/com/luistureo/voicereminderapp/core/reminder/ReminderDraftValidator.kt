@@ -1,6 +1,5 @@
 package com.luistureo.voicereminderapp.core.reminder
 
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormStateResolver
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import kotlinx.datetime.Clock
 
@@ -21,20 +20,17 @@ object ReminderDraftValidator {
         allowRecurrence: Boolean,
         nowEpochMillis: Long = Clock.System.now().toEpochMilliseconds()
     ): ReminderDraftValidationIssue? {
-        if (draft.text.isNullOrBlank()) {
+        val formState = ReminderDraftFormStateResolver.resolve(draft)
+
+        if (formState.hasMissingText) {
             return ReminderDraftValidationIssue.MISSING_TEXT
         }
 
-        val formState = DateTimeFormStateResolver.resolve(
-            dateValue = draft.date,
-            timeValue = draft.time
-        )
-
-        if (formState.date.isMissing) {
+        if (formState.hasMissingDate) {
             return ReminderDraftValidationIssue.MISSING_DATE
         }
 
-        if (formState.time.isMissing) {
+        if (formState.hasMissingTime) {
             return ReminderDraftValidationIssue.MISSING_TIME
         }
 

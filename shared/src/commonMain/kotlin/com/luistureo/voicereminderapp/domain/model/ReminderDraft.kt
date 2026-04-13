@@ -1,5 +1,6 @@
 package com.luistureo.voicereminderapp.domain.model
 
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 
 // Borrador reutilizable por flujos manuales, voz y camara.
@@ -14,9 +15,7 @@ data class ReminderDraft(
     val recurrence: ReminderRecurrence? = null
 ) {
     fun isReadyToSave(): Boolean {
-        return !text.isNullOrBlank() &&
-                !date.isNullOrBlank() &&
-                !time.isNullOrBlank()
+        return ReminderDraftFormStateResolver.resolve(this).isReadyToSave
     }
 
     fun buildScheduledAtEpochMillis(): Long? {

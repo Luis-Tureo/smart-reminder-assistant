@@ -8,6 +8,7 @@ import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
@@ -224,10 +225,11 @@ class ReminderViewModel(
             )
 
             pendingDraft = mergedDraft.takeIf { hasAnyDraftData(it) }
+            val pendingDraftFormState = pendingDraft?.let(ReminderDraftFormStateResolver::resolve)
 
             if (
                 !hasSavedInCurrentSession &&
-                pendingDraft?.isReadyToSave() == true &&
+                pendingDraftFormState?.isReadyToSave == true &&
                 pendingAssistantAmbiguousTime == null
             ) {
                 saveAssistantDraft(pendingDraft!!)
