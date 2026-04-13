@@ -2,7 +2,6 @@ package com.luistureo.voicereminderapp.core.utils
 
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter as JavaDateTimeFormatter
@@ -23,31 +22,6 @@ object DateTimeFormatter {
         return DateTimeFormatterCore.formatTime(hour, minute)
     }
 
-    // Convierte la fecha y hora seleccionadas a milisegundos.
-    fun buildTriggerTimeMillis(
-        year: Int,
-        month: Int,
-        day: Int,
-        hour: Int,
-        minute: Int
-    ): Long {
-        return DateTimeFormatterCore.buildTriggerTimeMillis(
-            year = year,
-            month = month,
-            day = day,
-            hour = hour,
-            minute = minute
-        )
-    }
-
-    // Convierte fecha y hora persistidas a un instante absoluto.
-    fun parseDateTimeToEpochMillis(
-        date: String,
-        time: String
-    ): Long? {
-        return DateTimeFormatterCore.parseDateTimeToEpochMillis(date, time)
-    }
-
     fun formatDateFromEpoch(epochMillis: Long): String {
         return DateTimeFormatterCore.formatDateFromEpoch(epochMillis)
     }
@@ -57,22 +31,10 @@ object DateTimeFormatter {
     }
 
     // Mantiene adaptadores JVM mientras existan consumidores Android de java.time.
-    fun toLocalDate(epochMillis: Long): LocalDate {
-        return Instant.ofEpochMilli(epochMillis)
-            .atZone(zoneId)
-            .toLocalDate()
-    }
-
     fun toLocalTime(epochMillis: Long): LocalTime {
         return Instant.ofEpochMilli(epochMillis)
             .atZone(zoneId)
             .toLocalTime()
-    }
-
-    fun toLocalDateTime(epochMillis: Long): LocalDateTime {
-        return Instant.ofEpochMilli(epochMillis)
-            .atZone(zoneId)
-            .toLocalDateTime()
     }
 
     fun parseDate(value: String): LocalDate? {
