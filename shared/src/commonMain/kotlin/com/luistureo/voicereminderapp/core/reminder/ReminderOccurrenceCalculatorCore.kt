@@ -229,6 +229,7 @@ object ReminderOccurrenceCalculatorCore {
         DayOfWeek.FRIDAY -> 5
         DayOfWeek.SATURDAY -> 6
         DayOfWeek.SUNDAY -> 7
+        else -> error("Unsupported day of week: $dayOfWeek")
     }
 
     private fun maxDate(first: LocalDate, second: LocalDate): LocalDate {

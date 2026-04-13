@@ -8,10 +8,9 @@ import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftField
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftResponseFamily
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftResponseFamilyResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftResponseTemplateKey
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftResponseTemplateKeyResolver
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
@@ -955,22 +954,26 @@ class ReminderViewModel(
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
         if (draft == null) return "Que deseas recordar?"
 
-        val guidance = ReminderDraftResponseFamilyResolver.resolve(draft)
+        val templateKey = ReminderDraftResponseTemplateKeyResolver.resolve(draft)
 
-        return when (guidance.responseFamily) {
-            ReminderDraftResponseFamily.REQUEST_MISSING_VALUE,
-            ReminderDraftResponseFamily.CORRECT_INCOMPLETE_VALUE,
-            ReminderDraftResponseFamily.CORRECT_INVALID_VALUE -> {
-                when (guidance.targetField) {
-                    ReminderDraftField.TEXT -> "Que deseas recordar?"
-                    ReminderDraftField.DATE -> "Para que dia deseas este recordatorio?"
-                    ReminderDraftField.TIME -> "A que hora deseas este recordatorio?"
-                    null -> "Perfecto."
-                }
-            }
+        return when (templateKey) {
+            ReminderDraftResponseTemplateKey.REQUEST_MISSING_TEXT,
+            ReminderDraftResponseTemplateKey.CORRECT_INCOMPLETE_TEXT,
+            ReminderDraftResponseTemplateKey.CORRECT_INVALID_TEXT ->
+                "Que deseas recordar?"
 
-            ReminderDraftResponseFamily.CONFIRMATION_SCENARIO,
-            ReminderDraftResponseFamily.READY_TO_CONTINUE_SCENARIO -> {
+            ReminderDraftResponseTemplateKey.REQUEST_MISSING_DATE,
+            ReminderDraftResponseTemplateKey.CORRECT_INCOMPLETE_DATE,
+            ReminderDraftResponseTemplateKey.CORRECT_INVALID_DATE ->
+                "Para que dia deseas este recordatorio?"
+
+            ReminderDraftResponseTemplateKey.REQUEST_MISSING_TIME,
+            ReminderDraftResponseTemplateKey.CORRECT_INCOMPLETE_TIME,
+            ReminderDraftResponseTemplateKey.CORRECT_INVALID_TIME ->
+                "A que hora deseas este recordatorio?"
+
+            ReminderDraftResponseTemplateKey.CONFIRMATION,
+            ReminderDraftResponseTemplateKey.READY_TO_CONTINUE -> {
                 pendingAssistantAmbiguousTime?.let { ambiguousTime ->
                     return buildAmbiguousTimeQuestion(ambiguousTime)
                 }
