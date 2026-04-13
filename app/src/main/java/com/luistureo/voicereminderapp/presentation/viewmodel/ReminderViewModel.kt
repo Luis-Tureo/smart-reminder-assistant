@@ -10,7 +10,8 @@ import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftField
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftMissingDataGuidanceResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftSemanticAction
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftSemanticActionGuidanceResolver
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
@@ -954,11 +955,22 @@ class ReminderViewModel(
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
         if (draft == null) return "Que deseas recordar?"
 
-        when (ReminderDraftMissingDataGuidanceResolver.resolve(draft).nextMissingField) {
-            ReminderDraftField.TEXT -> return "Que deseas recordar?"
-            ReminderDraftField.DATE -> return "Para que dia deseas este recordatorio?"
-            ReminderDraftField.TIME -> return "A que hora deseas este recordatorio?"
-            null -> Unit
+        val guidance = ReminderDraftSemanticActionGuidanceResolver.resolve(draft)
+
+        when (guidance.nextAction) {
+            ReminderDraftSemanticAction.REQUEST_MISSING_FIELD,
+            ReminderDraftSemanticAction.CORRECT_INCOMPLETE_FIELD,
+            ReminderDraftSemanticAction.CORRECT_INVALID_FIELD -> {
+                return when (guidance.field) {
+                    ReminderDraftField.TEXT -> "Que deseas recordar?"
+                    ReminderDraftField.DATE -> "Para que dia deseas este recordatorio?"
+                    ReminderDraftField.TIME -> "A que hora deseas este recordatorio?"
+                    null -> "Perfecto."
+                }
+            }
+
+            ReminderDraftSemanticAction.CONFIRM_DRAFT,
+            ReminderDraftSemanticAction.ALLOW_SAVE_OR_CONTINUE -> Unit
         }
 
         pendingAssistantAmbiguousTime?.let { ambiguousTime ->
