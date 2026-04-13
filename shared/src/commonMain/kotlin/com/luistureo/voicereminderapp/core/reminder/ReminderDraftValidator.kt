@@ -1,8 +1,6 @@
 package com.luistureo.voicereminderapp.core.reminder
 
-import com.luistureo.voicereminderapp.core.utils.DateInputValidationResult
-import com.luistureo.voicereminderapp.core.utils.DateTimeInputValidator
-import com.luistureo.voicereminderapp.core.utils.TimeInputValidationResult
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormStateResolver
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import kotlinx.datetime.Clock
 
@@ -27,18 +25,21 @@ object ReminderDraftValidator {
             return ReminderDraftValidationIssue.MISSING_TEXT
         }
 
-        when (DateTimeInputValidator.validateDateInput(draft.date)) {
-            DateInputValidationResult.Missing -> return ReminderDraftValidationIssue.MISSING_DATE
-            DateInputValidationResult.Incomplete,
-            DateInputValidationResult.Invalid -> return ReminderDraftValidationIssue.INVALID_DATE_TIME
-            is DateInputValidationResult.Valid -> Unit
+        val formState = DateTimeFormStateResolver.resolve(
+            dateValue = draft.date,
+            timeValue = draft.time
+        )
+
+        if (formState.date.isMissing) {
+            return ReminderDraftValidationIssue.MISSING_DATE
         }
 
-        when (DateTimeInputValidator.validateTimeInput(draft.time)) {
-            TimeInputValidationResult.Missing -> return ReminderDraftValidationIssue.MISSING_TIME
-            TimeInputValidationResult.Incomplete,
-            TimeInputValidationResult.Invalid -> return ReminderDraftValidationIssue.INVALID_DATE_TIME
-            is TimeInputValidationResult.Valid -> Unit
+        if (formState.time.isMissing) {
+            return ReminderDraftValidationIssue.MISSING_TIME
+        }
+
+        if (formState.hasIncompleteField || formState.hasInvalidField) {
+            return ReminderDraftValidationIssue.INVALID_DATE_TIME
         }
 
         if (!allowRecurrence && draft.recurrence != null) {
