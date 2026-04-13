@@ -14,7 +14,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.luistureo.voicereminderapp.R
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
@@ -115,8 +115,8 @@ class HomeReminderAdapter(
 
         holder.title.text = reminder.title
         holder.detail.text = reminder.detail
-        holder.date.text = DateTimeFormatter.formatDateFromEpoch(item.occurrenceAtEpochMillis)
-        holder.time.text = DateTimeFormatter.formatTimeFromEpoch(item.occurrenceAtEpochMillis)
+        holder.date.text = DateTimeFormatterCore.formatDateFromEpoch(item.occurrenceAtEpochMillis)
+        holder.time.text = DateTimeFormatterCore.formatTimeFromEpoch(item.occurrenceAtEpochMillis)
         bindCategoryIcon(holder, reminder)
         bindScheduleMeta(holder, reminder)
         holder.urgentBadge.isVisible = reminder.isUrgent
