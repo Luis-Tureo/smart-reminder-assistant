@@ -18,6 +18,56 @@ import kotlinx.datetime.toLocalDateTime
 // Contiene la parte multiplataforma del calculo de ocurrencias.
 object ReminderOccurrenceCalculatorCore {
 
+    fun occursOnDate(
+        reminder: Reminder,
+        year: Int,
+        monthNumber: Int,
+        dayOfMonth: Int,
+        timeZoneId: String
+    ): Boolean {
+        val timeZone = TimeZone.of(timeZoneId)
+        val date = LocalDate(
+            year = year,
+            monthNumber = monthNumber,
+            dayOfMonth = dayOfMonth
+        )
+
+        return occursOnDate(reminder, date, timeZone)
+    }
+
+    fun resolveOccurrenceAtEpochMillis(
+        reminder: Reminder,
+        year: Int,
+        monthNumber: Int,
+        dayOfMonth: Int,
+        timeZoneId: String
+    ): Long? {
+        val timeZone = TimeZone.of(timeZoneId)
+        val date = LocalDate(
+            year = year,
+            monthNumber = monthNumber,
+            dayOfMonth = dayOfMonth
+        )
+
+        if (!occursOnDate(reminder, date, timeZone)) {
+            return null
+        }
+
+        val reminderDateTime = Instant.fromEpochMilliseconds(reminder.scheduledAtEpochMillis)
+            .toLocalDateTime(timeZone)
+        val occurrenceDateTime = LocalDateTime(
+            year = date.year,
+            monthNumber = date.monthNumber,
+            dayOfMonth = date.dayOfMonth,
+            hour = reminderDateTime.hour,
+            minute = reminderDateTime.minute,
+            second = reminderDateTime.second,
+            nanosecond = reminderDateTime.nanosecond
+        )
+
+        return occurrenceDateTime.toInstant(timeZone).toEpochMilliseconds()
+    }
+
     fun resolveNextTriggerAtEpochMillis(
         reminder: Reminder,
         fromEpochMillis: Long,
