@@ -31,7 +31,11 @@ import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftField
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftPromptIntentResolver
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormStateResolver
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
@@ -436,19 +440,20 @@ class ManualReminderActivity : ComponentActivity() {
     }
 
     private fun showDatePicker() {
-        val parsedDate = DateTimeFormatter.parseDate(selectedDate)
+        val dateFieldState = DateTimeFormStateResolver.resolveDateField(selectedDate)
+        val parsedDate = dateFieldState.parts.takeIf { dateFieldState.canUsePrefill }
         val calendar = Calendar.getInstance().apply {
             if (parsedDate != null) {
                 set(Calendar.YEAR, parsedDate.year)
-                set(Calendar.MONTH, parsedDate.monthValue - 1)
-                set(Calendar.DAY_OF_MONTH, parsedDate.dayOfMonth)
+                set(Calendar.MONTH, parsedDate.month - 1)
+                set(Calendar.DAY_OF_MONTH, parsedDate.day)
             }
         }
 
         DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
-                selectedDate = DateTimeFormatter.formatDate(dayOfMonth, month + 1, year)
+                selectedDate = DateTimeFormatterCore.formatDate(dayOfMonth, month + 1, year)
                 updateDateTimeButtons()
             },
             calendar.get(Calendar.YEAR),
@@ -458,7 +463,8 @@ class ManualReminderActivity : ComponentActivity() {
     }
 
     private fun showTimePicker() {
-        val parsedTime = DateTimeFormatter.parseTime(selectedTime)
+        val timeFieldState = DateTimeFormStateResolver.resolveTimeField(selectedTime)
+        val parsedTime = timeFieldState.parts.takeIf { timeFieldState.canUsePrefill }
         val calendar = Calendar.getInstance().apply {
             if (parsedTime != null) {
                 set(Calendar.HOUR_OF_DAY, parsedTime.hour)
@@ -469,7 +475,7 @@ class ManualReminderActivity : ComponentActivity() {
         TimePickerDialog(
             this,
             { _, hourOfDay, minute ->
-                selectedTime = DateTimeFormatter.formatTime(hourOfDay, minute)
+                selectedTime = DateTimeFormatterCore.formatTime(hourOfDay, minute)
                 updateDateTimeButtons()
             },
             calendar.get(Calendar.HOUR_OF_DAY),
@@ -483,26 +489,31 @@ class ManualReminderActivity : ComponentActivity() {
         val title = titleInput.text?.toString()?.trim().takeIf { !it.isNullOrBlank() }
         val selectedDateValue = selectedDate.trim()
         val selectedTimeValue = selectedTime.trim()
+        val draft = ReminderDraft(
+            reminderId = currentReminderId,
+            title = title,
+            text = detail,
+            date = selectedDateValue,
+            time = selectedTimeValue,
+            isUrgent = urgentSwitch.isChecked,
+            source = currentSource,
+            recurrence = null
+        )
+        val formState = ReminderDraftFormStateResolver.resolve(draft)
 
-        if (detail.isBlank()) {
+        if (formState.hasMissingText) {
             Toast.makeText(this, R.string.reminder_error_detail_required, Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (selectedDateValue.isBlank()) {
+        if (formState.hasMissingDate) {
             Toast.makeText(this, R.string.reminder_error_date_required, Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (selectedTimeValue.isBlank()) {
+        if (formState.hasMissingTime) {
             Toast.makeText(this, R.string.reminder_error_time_required, Toast.LENGTH_SHORT).show()
             return
-        }
-
-        val recurrence = if (recurringEnabledSwitch.isChecked) {
-            buildRecurrence()
-        } else {
-            null
         }
 
         if (recurringEnabledSwitch.isChecked &&
@@ -513,18 +524,13 @@ class ManualReminderActivity : ComponentActivity() {
             return
         }
 
-        val draft = ReminderDraft(
-            reminderId = currentReminderId,
-            title = title,
-            text = detail,
-            date = selectedDateValue,
-            time = selectedTimeValue,
-            isUrgent = urgentSwitch.isChecked,
-            source = currentSource,
-            recurrence = recurrence
-        )
+        val recurrence = if (recurringEnabledSwitch.isChecked) {
+            buildRecurrence()
+        } else {
+            null
+        }
 
-        reminderViewModel.saveReminderDraft(draft)
+        reminderViewModel.saveReminderDraft(draft.copy(recurrence = recurrence))
     }
 
     private fun openCameraForReminder() {
@@ -629,14 +635,16 @@ class ManualReminderActivity : ComponentActivity() {
         action: String?,
         draft: ReminderDraft
     ): String {
+        val formState = ReminderDraftFormStateResolver.resolve(draft)
+
         return when {
-            draft.date.isNullOrBlank() && draft.time.isNullOrBlank() ->
+            formState.hasMissingDate && formState.hasMissingTime ->
                 getString(R.string.camera_post_edit_missing_date_time)
 
-            draft.date.isNullOrBlank() ->
+            formState.hasMissingDate ->
                 getString(R.string.camera_post_edit_missing_date)
 
-            draft.time.isNullOrBlank() ->
+            formState.hasMissingTime ->
                 getString(R.string.camera_post_edit_missing_time)
 
             action == CameraReminderDraftContract.ACTION_EDIT ->
@@ -651,26 +659,21 @@ class ManualReminderActivity : ComponentActivity() {
         draft: ReminderDraft,
         action: String?
     ) {
-        // Prioriza el primer dato faltante para reducir errores antes de guardar.
-        when {
-            draft.text.isNullOrBlank() -> {
-                detailInput.requestFocus()
-            }
+        val guidance = ReminderDraftPromptIntentResolver.resolve(draft)
 
-            draft.date.isNullOrBlank() -> {
-                dateButton.requestFocus()
-            }
+        // Usa el foco sugerido portable antes de continuar con la edicion.
+        when (guidance.suggestedFocusTarget) {
+            ReminderDraftField.TEXT -> detailInput.requestFocus()
+            ReminderDraftField.DATE -> dateButton.requestFocus()
+            ReminderDraftField.TIME -> timeButton.requestFocus()
+            null -> when {
+                action == CameraReminderDraftContract.ACTION_EDIT -> {
+                    detailInput.requestFocus()
+                }
 
-            draft.time.isNullOrBlank() -> {
-                timeButton.requestFocus()
-            }
-
-            action == CameraReminderDraftContract.ACTION_EDIT -> {
-                detailInput.requestFocus()
-            }
-
-            else -> {
-                saveButton.requestFocus()
+                else -> {
+                    saveButton.requestFocus()
+                }
             }
         }
     }

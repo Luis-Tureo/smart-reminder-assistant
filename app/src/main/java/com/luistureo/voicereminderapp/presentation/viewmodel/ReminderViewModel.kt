@@ -8,9 +8,16 @@ import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
-import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftField
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftResponseFamily
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftResponseFamilyResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
+import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
+import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
@@ -84,9 +91,8 @@ class ReminderViewModel(
 
     private val entityExtractor = ReminderEntityExtractor(context.applicationContext)
     private val textCleaner = ReminderTextCleaner()
-    private val occurrenceCalculator = ReminderOccurrenceCalculator()
-    private val scheduleStateResolver = ReminderScheduleStateResolver(occurrenceCalculator)
-    private val reminderScheduler = ReminderScheduler(context.applicationContext, occurrenceCalculator)
+    private val scheduleStateResolver = ReminderScheduleStateResolver()
+    private val reminderScheduler = ReminderScheduler(context.applicationContext)
     private val zoneId = ZoneId.systemDefault()
     private val singleReminderOnlyReply =
         "Las repeticiones debes configurarlas manualmente. Por voz solo puedo crear recordatorios de una sola vez."
@@ -222,10 +228,11 @@ class ReminderViewModel(
             )
 
             pendingDraft = mergedDraft.takeIf { hasAnyDraftData(it) }
+            val pendingDraftFormState = pendingDraft?.let(ReminderDraftFormStateResolver::resolve)
 
             if (
                 !hasSavedInCurrentSession &&
-                pendingDraft?.isReadyToSave() == true &&
+                pendingDraftFormState?.isReadyToSave == true &&
                 pendingAssistantAmbiguousTime == null
             ) {
                 saveAssistantDraft(pendingDraft!!)
@@ -423,8 +430,8 @@ class ReminderViewModel(
             reminderId = reminder.id,
             title = reminder.title,
             detail = reminder.detail,
-            date = reminder.date,
-            time = reminder.time,
+            date = ReminderDisplayFormatter.formatScheduledDate(reminder),
+            time = ReminderDisplayFormatter.formatScheduledTime(reminder),
             isUrgent = reminder.isUrgent,
             source = reminder.source,
             recurrence = reminder.recurrence
@@ -570,8 +577,8 @@ class ReminderViewModel(
             reminderId = id,
             title = title,
             detail = detail,
-            date = date,
-            time = time,
+            date = ReminderDisplayFormatter.formatScheduledDate(this),
+            time = ReminderDisplayFormatter.formatScheduledTime(this),
             isUrgent = isUrgent,
             source = source,
             recurrence = recurrence
@@ -588,8 +595,13 @@ class ReminderViewModel(
         ).flatMap { (date, label) ->
             val dayReminders = reminders.mapNotNull { reminder ->
                 val occurrenceAtEpochMillis =
-                    occurrenceCalculator.resolveOccurrenceAtEpochMillis(reminder, date)
-                        ?: return@mapNotNull null
+                    ReminderOccurrenceCalculatorCore.resolveOccurrenceAtEpochMillis(
+                        reminder = reminder,
+                        year = date.year,
+                        monthNumber = date.monthValue,
+                        dayOfMonth = date.dayOfMonth,
+                        timeZoneId = zoneId.id
+                    ) ?: return@mapNotNull null
 
                 HomeReminderListItem.ReminderRow(
                     reminder = reminder,
@@ -606,7 +618,7 @@ class ReminderViewModel(
                 listOf(
                     HomeReminderListItem.DayHeader(
                         title = label,
-                        subtitle = DateTimeFormatter.formatDateFromEpoch(
+                        subtitle = DateTimeFormatterCore.formatDateFromEpoch(
                             date.atStartOfDay(zoneId).toInstant().toEpochMilli()
                         )
                     )
@@ -712,8 +724,8 @@ class ReminderViewModel(
 
         val draft = ReminderDraft(
             text = reminderDetail,
-            date = DateTimeFormatter.formatDate(reminderDay, reminderMonth, reminderYear),
-            time = DateTimeFormatter.formatTime(reminderHour, reminderMinute),
+            date = DateTimeFormatterCore.formatDate(reminderDay, reminderMonth, reminderYear),
+            time = DateTimeFormatterCore.formatTime(reminderHour, reminderMinute),
             isUrgent = state.isUrgent,
             source = ReminderSource.VOICE
         )
@@ -749,12 +761,12 @@ class ReminderViewModel(
     }
 
     private fun buildVoiceConfirmationMessage(state: VoiceReminderState): String {
-        val date = DateTimeFormatter.formatDate(
+        val date = DateTimeFormatterCore.formatDate(
             state.reminderDay ?: return "Confirma tu recordatorio.",
             state.reminderMonth ?: return "Confirma tu recordatorio.",
             state.reminderYear ?: return "Confirma tu recordatorio."
         )
-        val time = DateTimeFormatter.formatTime(
+        val time = DateTimeFormatterCore.formatTime(
             state.reminderHour ?: return "Confirma tu recordatorio.",
             state.reminderMinute ?: return "Confirma tu recordatorio."
         )
@@ -942,15 +954,30 @@ class ReminderViewModel(
 
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
         if (draft == null) return "Que deseas recordar?"
-        if (draft.text.isNullOrBlank()) return "Que deseas recordar?"
-        if (draft.date.isNullOrBlank()) return "Para que dia deseas este recordatorio?"
-        if (draft.time.isNullOrBlank()) return "A que hora deseas este recordatorio?"
 
-        pendingAssistantAmbiguousTime?.let { ambiguousTime ->
-            return buildAmbiguousTimeQuestion(ambiguousTime)
+        val guidance = ReminderDraftResponseFamilyResolver.resolve(draft)
+
+        return when (guidance.responseFamily) {
+            ReminderDraftResponseFamily.REQUEST_MISSING_VALUE,
+            ReminderDraftResponseFamily.CORRECT_INCOMPLETE_VALUE,
+            ReminderDraftResponseFamily.CORRECT_INVALID_VALUE -> {
+                when (guidance.targetField) {
+                    ReminderDraftField.TEXT -> "Que deseas recordar?"
+                    ReminderDraftField.DATE -> "Para que dia deseas este recordatorio?"
+                    ReminderDraftField.TIME -> "A que hora deseas este recordatorio?"
+                    null -> "Perfecto."
+                }
+            }
+
+            ReminderDraftResponseFamily.CONFIRMATION_SCENARIO,
+            ReminderDraftResponseFamily.READY_TO_CONTINUE_SCENARIO -> {
+                pendingAssistantAmbiguousTime?.let { ambiguousTime ->
+                    return buildAmbiguousTimeQuestion(ambiguousTime)
+                }
+
+                "Perfecto."
+            }
         }
-
-        return "Perfecto."
     }
 
     private fun mergeDraftFromRawMessage(
@@ -998,10 +1025,10 @@ class ReminderViewModel(
         val mergedDraft = ReminderDraft(
             text = parsedText?.takeIf { it.isNotBlank() } ?: currentDraft?.text,
             date = parsedDate?.let {
-                DateTimeFormatter.formatDate(it.day, it.month, it.year)
+                DateTimeFormatterCore.formatDate(it.day, it.month, it.year)
             } ?: currentDraft?.date,
             time = parsedTime?.let {
-                DateTimeFormatter.formatTime(it.hour, it.minute)
+                DateTimeFormatterCore.formatTime(it.hour, it.minute)
             } ?: currentDraft?.time,
             isUrgent = isUrgent || (currentDraft?.isUrgent == true),
             source = ReminderSource.VOICE
@@ -1163,7 +1190,7 @@ class ReminderViewModel(
 
         pendingAssistantAmbiguousTime = null
 
-        return DateTimeFormatter.formatTime(resolvedHour, pendingTime.minute)
+        return DateTimeFormatterCore.formatTime(resolvedHour, pendingTime.minute)
     }
 
     private fun extractDayPeriod(text: String): DayPeriod? {
@@ -1314,7 +1341,7 @@ class ReminderViewModel(
     ): String? {
         val normalizedMessage = normalizeText(message)
         val localParsedDate = parseNaturalDate(normalizedMessage)?.let {
-            DateTimeFormatter.formatDate(it.day, it.month, it.year)
+            DateTimeFormatterCore.formatDate(it.day, it.month, it.year)
         }
 
         return localParsedDate ?: currentDraft?.date
@@ -1359,25 +1386,22 @@ class ReminderViewModel(
         draft: ReminderDraft,
         allowRecurrence: Boolean
     ): String? {
-        if (draft.text.isNullOrBlank()) {
-            return "No hay texto para guardar."
+        return when (
+            ReminderDraftValidator.validate(
+                draft = draft,
+                allowRecurrence = allowRecurrence
+            )
+        ) {
+            null -> null
+            ReminderDraftValidationIssue.MISSING_TEXT -> "No hay texto para guardar."
+            ReminderDraftValidationIssue.MISSING_DATE,
+            ReminderDraftValidationIssue.MISSING_TIME -> buildQuestionForMissingData(draft)
+            ReminderDraftValidationIssue.RECURRENCE_NOT_ALLOWED ->
+                "Las repeticiones debes configurarlas manualmente."
+            ReminderDraftValidationIssue.INVALID_DATE_TIME ->
+                "La fecha u hora indicadas no son validas."
+            ReminderDraftValidationIssue.PAST_DATE_TIME ->
+                "La fecha y hora indicadas ya pasaron. Indica una fecha u hora futura."
         }
-
-        if (draft.date.isNullOrBlank() || draft.time.isNullOrBlank()) {
-            return buildQuestionForMissingData(draft)
-        }
-
-        if (!allowRecurrence && draft.recurrence != null) {
-            return "Las repeticiones debes configurarlas manualmente."
-        }
-
-        val triggerTimeMillis = draft.buildScheduledAtEpochMillis()
-            ?: return "La fecha u hora indicadas no son validas."
-
-        if (triggerTimeMillis <= System.currentTimeMillis()) {
-            return "La fecha y hora indicadas ya pasaron. Indica una fecha u hora futura."
-        }
-
-        return null
     }
 }

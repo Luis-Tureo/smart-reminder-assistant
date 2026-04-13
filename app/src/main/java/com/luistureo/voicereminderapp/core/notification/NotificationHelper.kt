@@ -12,6 +12,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.luistureo.voicereminderapp.core.alarm.NextDaySummaryReceiver
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
+import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -35,13 +37,13 @@ class NotificationHelper(
         if (!hasNotificationPermission()) return
 
         val nextDate = occurrenceAtEpochMillis?.let {
-            com.luistureo.voicereminderapp.core.utils.DateTimeFormatter.formatDateFromEpoch(it)
-        } ?: reminder.nextTriggerDate
-            ?: reminder.date
+            DateTimeFormatterCore.formatDateFromEpoch(it)
+        } ?: ReminderDisplayFormatter.formatNextTriggerDate(reminder)
+            ?: ReminderDisplayFormatter.formatScheduledDate(reminder)
         val nextTime = occurrenceAtEpochMillis?.let {
-            com.luistureo.voicereminderapp.core.utils.DateTimeFormatter.formatTimeFromEpoch(it)
-        } ?: reminder.nextTriggerTime
-            ?: reminder.time
+            DateTimeFormatterCore.formatTimeFromEpoch(it)
+        } ?: ReminderDisplayFormatter.formatNextTriggerTime(reminder)
+            ?: ReminderDisplayFormatter.formatScheduledTime(reminder)
         val notificationMessage = buildReminderNotificationMessage(
             detail = reminder.detail,
             date = nextDate,

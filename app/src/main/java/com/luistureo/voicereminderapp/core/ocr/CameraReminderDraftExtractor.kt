@@ -2,7 +2,7 @@ package com.luistureo.voicereminderapp.core.ocr
 
 import android.graphics.Bitmap
 import android.net.Uri
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import java.text.Normalizer
@@ -107,8 +107,8 @@ class CameraReminderDraftExtractor(
                 referenceDate = today
             )
 
-            if (DateTimeFormatter.hasValidDate(year, month, day)) {
-                return DateTimeFormatter.formatDate(day, month, year)
+            if (DateTimeFormatterCore.hasValidDate(year, month, day)) {
+                return DateTimeFormatterCore.formatDate(day, month, year)
             }
         }
 
@@ -122,8 +122,8 @@ class CameraReminderDraftExtractor(
                 referenceDate = today
             )
 
-            if (DateTimeFormatter.hasValidDate(year, month, day)) {
-                return DateTimeFormatter.formatDate(day, month, year)
+            if (DateTimeFormatterCore.hasValidDate(year, month, day)) {
+                return DateTimeFormatterCore.formatDate(day, month, year)
             }
         }
 
@@ -148,21 +148,21 @@ class CameraReminderDraftExtractor(
 
                     if (secondValue.all { it.isDigit() }) {
                         val minute = secondValue.toIntOrNull() ?: return@forEach
-                        if (DateTimeFormatter.hasValidTime(firstValue, minute)) {
-                            return DateTimeFormatter.formatTime(firstValue, minute)
+                        if (DateTimeFormatterCore.hasValidTime(firstValue, minute)) {
+                            return DateTimeFormatterCore.formatTime(firstValue, minute)
                         }
                     } else {
                         val resolvedHour = resolveAmPmHour(firstValue, secondValue) ?: return@forEach
-                        if (DateTimeFormatter.hasValidTime(resolvedHour, 0)) {
-                            return DateTimeFormatter.formatTime(resolvedHour, 0)
+                        if (DateTimeFormatterCore.hasValidTime(resolvedHour, 0)) {
+                            return DateTimeFormatterCore.formatTime(resolvedHour, 0)
                         }
                     }
                 }
 
                 2 -> {
                     val hour = match.groupValues[1].toIntOrNull() ?: return@forEach
-                    if (DateTimeFormatter.hasValidTime(hour, 0)) {
-                        return DateTimeFormatter.formatTime(hour, 0)
+                    if (DateTimeFormatterCore.hasValidTime(hour, 0)) {
+                        return DateTimeFormatterCore.formatTime(hour, 0)
                     }
                 }
             }

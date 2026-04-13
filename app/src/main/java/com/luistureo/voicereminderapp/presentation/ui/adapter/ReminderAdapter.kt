@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 
@@ -50,8 +51,10 @@ class ReminderAdapter(
 
         holder.title.text = reminder.title
         holder.detail.text = reminder.detail
-        holder.date.text = reminder.nextTriggerDate ?: reminder.date
-        holder.time.text = reminder.nextTriggerTime ?: reminder.time
+        holder.date.text = ReminderDisplayFormatter.formatNextTriggerDate(reminder)
+            ?: ReminderDisplayFormatter.formatScheduledDate(reminder)
+        holder.time.text = ReminderDisplayFormatter.formatNextTriggerTime(reminder)
+            ?: ReminderDisplayFormatter.formatScheduledTime(reminder)
         bindCategoryIcon(holder, reminder)
         bindScheduleMeta(holder, reminder)
 
@@ -110,9 +113,8 @@ class ReminderAdapter(
 
     private fun bindScheduleMeta(holder: ReminderViewHolder, reminder: Reminder) {
         val parts = buildList {
-            reminder.recurrenceLabel?.let { add(it) }
+            ReminderDisplayFormatter.formatRecurrenceLabel(reminder)?.let { add(it) }
             if (reminder.isUrgent) add("Urgente")
-            if (reminder.isRecurring && !reminder.isRecurringActive) add("Inactiva")
         }
 
         holder.scheduleMeta.isVisible = parts.isNotEmpty()

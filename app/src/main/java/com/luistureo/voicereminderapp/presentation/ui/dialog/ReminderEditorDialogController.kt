@@ -13,7 +13,9 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.luistureo.voicereminderapp.R
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormStateResolver
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
@@ -116,19 +118,20 @@ class ReminderEditorDialogController(
         }
 
         dateButton.setOnClickListener {
-            val parsedDate = DateTimeFormatter.parseDate(selectedDate)
+            val dateFieldState = DateTimeFormStateResolver.resolveDateField(selectedDate)
+            val parsedDate = dateFieldState.parts.takeIf { dateFieldState.canUsePrefill }
             val calendar = java.util.Calendar.getInstance().apply {
                 if (parsedDate != null) {
                     set(java.util.Calendar.YEAR, parsedDate.year)
-                    set(java.util.Calendar.MONTH, parsedDate.monthValue - 1)
-                    set(java.util.Calendar.DAY_OF_MONTH, parsedDate.dayOfMonth)
+                    set(java.util.Calendar.MONTH, parsedDate.month - 1)
+                    set(java.util.Calendar.DAY_OF_MONTH, parsedDate.day)
                 }
             }
 
             DatePickerDialog(
                 context,
                 { _, year, month, dayOfMonth ->
-                    selectedDate = DateTimeFormatter.formatDate(dayOfMonth, month + 1, year)
+                    selectedDate = DateTimeFormatterCore.formatDate(dayOfMonth, month + 1, year)
                     dateButton.text = selectedDate
                 },
                 calendar.get(java.util.Calendar.YEAR),
@@ -138,7 +141,8 @@ class ReminderEditorDialogController(
         }
 
         timeButton.setOnClickListener {
-            val parsedTime = DateTimeFormatter.parseTime(selectedTime)
+            val timeFieldState = DateTimeFormStateResolver.resolveTimeField(selectedTime)
+            val parsedTime = timeFieldState.parts.takeIf { timeFieldState.canUsePrefill }
             val calendar = java.util.Calendar.getInstance().apply {
                 if (parsedTime != null) {
                     set(java.util.Calendar.HOUR_OF_DAY, parsedTime.hour)
@@ -149,7 +153,7 @@ class ReminderEditorDialogController(
             TimePickerDialog(
                 context,
                 { _, hourOfDay, minute ->
-                    selectedTime = DateTimeFormatter.formatTime(hourOfDay, minute)
+                    selectedTime = DateTimeFormatterCore.formatTime(hourOfDay, minute)
                     timeButton.text = selectedTime
                 },
                 calendar.get(java.util.Calendar.HOUR_OF_DAY),
@@ -174,17 +178,30 @@ class ReminderEditorDialogController(
         dialog.setOnShowListener {
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val detail = detailInput.text?.toString()?.trim().orEmpty()
-                if (detail.isBlank()) {
+                val draft = ReminderDraft(
+                    reminderId = initialDraft.reminderId,
+                    title = titleInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+                    text = detail,
+                    date = selectedDate,
+                    time = selectedTime,
+                    isUrgent = urgentSwitch.isChecked,
+                    source = initialDraft.source.takeIf { it != ReminderSource.VOICE }
+                        ?: ReminderSource.MANUAL,
+                    recurrence = null
+                )
+                val formState = ReminderDraftFormStateResolver.resolve(draft)
+
+                if (formState.hasMissingText) {
                     Toast.makeText(context, R.string.reminder_error_detail_required, Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
-                if (selectedDate.isBlank()) {
+                if (formState.hasMissingDate) {
                     Toast.makeText(context, R.string.reminder_error_date_required, Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
-                if (selectedTime.isBlank()) {
+                if (formState.hasMissingTime) {
                     Toast.makeText(context, R.string.reminder_error_time_required, Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
@@ -213,19 +230,7 @@ class ReminderEditorDialogController(
                     weekdays = selectedWeekdays
                 )
 
-                onSave(
-                    ReminderDraft(
-                        reminderId = initialDraft.reminderId,
-                        title = titleInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
-                        text = detail,
-                        date = selectedDate,
-                        time = selectedTime,
-                        isUrgent = urgentSwitch.isChecked,
-                        source = initialDraft.source.takeIf { it != ReminderSource.VOICE }
-                            ?: ReminderSource.MANUAL,
-                        recurrence = recurrence
-                    )
-                )
+                onSave(draft.copy(recurrence = recurrence))
                 dialog.dismiss()
             }
         }

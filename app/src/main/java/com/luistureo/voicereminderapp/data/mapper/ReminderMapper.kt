@@ -68,7 +68,7 @@ fun Reminder.toEntity(): ReminderEntity {
         recurrenceUnit = recurrence?.unit?.name,
         recurrenceInterval = recurrence?.normalizedInterval ?: 1,
         recurrenceWeekdays = recurrence?.weekdays
-            ?.sortedBy { it.dayOfWeek.value }
+            ?.sortedBy { it.isoDayNumber }
             ?.joinToString(separator = ",") { it.name }
             .orEmpty(),
         isRecurringActive = recurrence?.isActive ?: false,

@@ -5,19 +5,19 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
-import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
 import com.luistureo.voicereminderapp.domain.model.Reminder
+import java.time.ZoneId
 
 class ReminderScheduler(
     private val context: Context,
-    private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator(),
     private val summaryPreferenceStore: NextDaySummaryPreferenceStore =
         NextDaySummaryPreferenceStore(context.applicationContext)
 ) {
-
     private val alarmManager: AlarmManager
         get() = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+    private val timeZoneId: String = ZoneId.systemDefault().id
     private var syncedReminderIds: Set<Int> = emptySet()
 
     // Sincroniza alarmas principales, repeticiones urgentes y el resumen global.
@@ -96,9 +96,11 @@ class ReminderScheduler(
 
     fun scheduleNextDaySummary() {
         val summaryTime = summaryPreferenceStore.getSummaryTime()
-        val triggerAtMillis = occurrenceCalculator.resolveNextGlobalSummaryTrigger(
+        val triggerAtMillis = ReminderOccurrenceCalculatorCore.resolveNextGlobalSummaryTrigger(
             summaryHour = summaryTime.hour,
-            summaryMinute = summaryTime.minute
+            summaryMinute = summaryTime.minute,
+            nowEpochMillis = System.currentTimeMillis(),
+            timeZoneId = timeZoneId
         )
         val intent = Intent(context, NextDaySummaryReceiver::class.java)
 

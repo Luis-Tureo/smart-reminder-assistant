@@ -4,13 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.luistureo.voicereminderapp.core.notification.NotificationHelper
-import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
 
 class NextDaySummaryReceiver : BroadcastReceiver() {
 
@@ -21,10 +22,16 @@ class NextDaySummaryReceiver : BroadcastReceiver() {
             val repository = ReminderRepositoryImpl(
                 ReminderDatabase.getDatabase(context).reminderDao()
             )
-            val occurrenceCalculator = ReminderOccurrenceCalculator()
             val tomorrow = LocalDate.now().plusDays(1)
+            val timeZoneId = ZoneId.systemDefault().id
             val reminders = repository.getAllReminders().filter { reminder ->
-                !reminder.isCompleted && occurrenceCalculator.occursOnDate(reminder, tomorrow)
+                !reminder.isCompleted && ReminderOccurrenceCalculatorCore.occursOnDate(
+                    reminder = reminder,
+                    year = tomorrow.year,
+                    monthNumber = tomorrow.monthValue,
+                    dayOfMonth = tomorrow.dayOfMonth,
+                    timeZoneId = timeZoneId
+                )
             }
 
             if (reminders.isNotEmpty()) {
@@ -34,7 +41,7 @@ class NextDaySummaryReceiver : BroadcastReceiver() {
                 )
             }
 
-            ReminderScheduler(context, occurrenceCalculator).scheduleNextDaySummary()
+            ReminderScheduler(context).scheduleNextDaySummary()
             pendingResult.finish()
         }
     }
