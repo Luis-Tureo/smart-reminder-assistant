@@ -10,7 +10,7 @@ import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
-import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
@@ -87,7 +87,6 @@ class ReminderViewModel(
 
     private val entityExtractor = ReminderEntityExtractor(context.applicationContext)
     private val textCleaner = ReminderTextCleaner()
-    private val occurrenceCalculator = ReminderOccurrenceCalculator()
     private val scheduleStateResolver = ReminderScheduleStateResolver()
     private val reminderScheduler = ReminderScheduler(context.applicationContext)
     private val zoneId = ZoneId.systemDefault()
@@ -591,8 +590,13 @@ class ReminderViewModel(
         ).flatMap { (date, label) ->
             val dayReminders = reminders.mapNotNull { reminder ->
                 val occurrenceAtEpochMillis =
-                    occurrenceCalculator.resolveOccurrenceAtEpochMillis(reminder, date)
-                        ?: return@mapNotNull null
+                    ReminderOccurrenceCalculatorCore.resolveOccurrenceAtEpochMillis(
+                        reminder = reminder,
+                        year = date.year,
+                        monthNumber = date.monthValue,
+                        dayOfMonth = date.dayOfMonth,
+                        timeZoneId = zoneId.id
+                    ) ?: return@mapNotNull null
 
                 HomeReminderListItem.ReminderRow(
                     reminder = reminder,

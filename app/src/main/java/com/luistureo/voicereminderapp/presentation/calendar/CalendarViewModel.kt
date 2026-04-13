@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luistureo.voicereminderapp.core.calendar.ChileanHoliday
 import com.luistureo.voicereminderapp.core.calendar.ChileanHolidayProvider
-import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
 import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter as ReminderDateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
@@ -20,6 +20,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.Month
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter as JavaDateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -42,10 +43,10 @@ class CalendarViewModel(
     private val storedTimeFormatter = JavaDateTimeFormatter.ofPattern("HH:mm")
     private val monthTitleFormatter = JavaDateTimeFormatter.ofPattern("LLLL yyyy", locale)
     private val selectedDateFormatter = JavaDateTimeFormatter.ofPattern("EEEE d 'de' MMMM", locale)
+    private val timeZoneId = ZoneId.systemDefault().id
     private val monthOptions = Month.entries.map { month ->
         month.getDisplayName(TextStyle.FULL_STANDALONE, locale).toUiTitleCase()
     }
-    private val occurrenceCalculator = ReminderOccurrenceCalculator()
 
     private var visibleMonth: YearMonth = YearMonth.now()
     private var selectedDate: LocalDate = today
@@ -194,7 +195,15 @@ class CalendarViewModel(
         var currentDate = startDate
 
         while (!currentDate.isAfter(endDate)) {
-            if (occurrenceCalculator.occursOnDate(reminder, currentDate)) {
+            if (
+                ReminderOccurrenceCalculatorCore.occursOnDate(
+                    reminder = reminder,
+                    year = currentDate.year,
+                    monthNumber = currentDate.monthValue,
+                    dayOfMonth = currentDate.dayOfMonth,
+                    timeZoneId = timeZoneId
+                )
+            ) {
                 entries += ReminderEntry(
                     reminder = reminder,
                     date = currentDate,
