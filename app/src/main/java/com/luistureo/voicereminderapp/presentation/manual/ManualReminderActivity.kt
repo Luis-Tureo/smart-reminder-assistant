@@ -31,7 +31,6 @@ import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
@@ -437,12 +436,12 @@ class ManualReminderActivity : ComponentActivity() {
     }
 
     private fun showDatePicker() {
-        val parsedDate = DateTimeFormatter.parseDate(selectedDate)
+        val parsedDate = DateTimeFormatterCore.parseDateParts(selectedDate)
         val calendar = Calendar.getInstance().apply {
             if (parsedDate != null) {
                 set(Calendar.YEAR, parsedDate.year)
-                set(Calendar.MONTH, parsedDate.monthValue - 1)
-                set(Calendar.DAY_OF_MONTH, parsedDate.dayOfMonth)
+                set(Calendar.MONTH, parsedDate.month - 1)
+                set(Calendar.DAY_OF_MONTH, parsedDate.day)
             }
         }
 
@@ -459,7 +458,7 @@ class ManualReminderActivity : ComponentActivity() {
     }
 
     private fun showTimePicker() {
-        val parsedTime = DateTimeFormatter.parseTime(selectedTime)
+        val parsedTime = DateTimeFormatterCore.parseTimeParts(selectedTime)
         val calendar = Calendar.getInstance().apply {
             if (parsedTime != null) {
                 set(Calendar.HOUR_OF_DAY, parsedTime.hour)

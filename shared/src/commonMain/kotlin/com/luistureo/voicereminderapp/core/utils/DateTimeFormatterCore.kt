@@ -54,13 +54,13 @@ object DateTimeFormatterCore {
         time: String
     ): Long? {
         return runCatching {
-            val parsedDate = parseDateOrNull(date) ?: return null
-            val parsedTime = parseTimeOrNull(time) ?: return null
+            val parsedDate = parseDateParts(date) ?: return null
+            val parsedTime = parseTimeParts(time) ?: return null
 
             LocalDateTime(
                 year = parsedDate.year,
-                monthNumber = parsedDate.monthNumber,
-                dayOfMonth = parsedDate.dayOfMonth,
+                monthNumber = parsedDate.month,
+                dayOfMonth = parsedDate.day,
                 hour = parsedTime.hour,
                 minute = parsedTime.minute
             ).toInstant(timeZone).toEpochMilliseconds()
@@ -107,7 +107,7 @@ object DateTimeFormatterCore {
         }.isSuccess
     }
 
-    private fun parseDateOrNull(value: String): LocalDate? {
+    fun parseDateParts(value: String): DateInputParts? {
         val parts = value.split('/')
         if (parts.size != 3) return null
 
@@ -115,28 +115,32 @@ object DateTimeFormatterCore {
         val month = parts[1].takeIf { it.length == 2 }?.toIntOrNull() ?: return null
         val year = parts[2].takeIf { it.length == 4 }?.toIntOrNull() ?: return null
 
-        return runCatching {
-            LocalDate(
-                year = year,
-                monthNumber = month,
-                dayOfMonth = day
-            )
-        }.getOrNull()
+        if (!hasValidDate(year = year, month = month, day = day)) {
+            return null
+        }
+
+        return DateInputParts(
+            day = day,
+            month = month,
+            year = year
+        )
     }
 
-    private fun parseTimeOrNull(value: String): LocalTime? {
+    fun parseTimeParts(value: String): TimeInputParts? {
         val parts = value.split(':')
         if (parts.size != 2) return null
 
         val hour = parts[0].takeIf { it.length == 2 }?.toIntOrNull() ?: return null
         val minute = parts[1].takeIf { it.length == 2 }?.toIntOrNull() ?: return null
 
-        return runCatching {
-            LocalTime(
-                hour = hour,
-                minute = minute
-            )
-        }.getOrNull()
+        if (!hasValidTime(hour = hour, minute = minute)) {
+            return null
+        }
+
+        return TimeInputParts(
+            hour = hour,
+            minute = minute
+        )
     }
 }
 

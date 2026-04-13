@@ -4,13 +4,10 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter as JavaDateTimeFormatter
 
 object DateTimeFormatter {
 
     private val zoneId: ZoneId = ZoneId.systemDefault()
-    private val storedDateFormatter = JavaDateTimeFormatter.ofPattern("dd/MM/yyyy")
-    private val storedTimeFormatter = JavaDateTimeFormatter.ofPattern("HH:mm")
 
     // Mantiene adaptadores JVM mientras existan consumidores Android de java.time.
     fun toLocalTime(epochMillis: Long): LocalTime {
@@ -20,14 +17,16 @@ object DateTimeFormatter {
     }
 
     fun parseDate(value: String): LocalDate? {
+        val parsedDate = DateTimeFormatterCore.parseDateParts(value) ?: return null
         return runCatching {
-            LocalDate.parse(value, storedDateFormatter)
+            LocalDate.of(parsedDate.year, parsedDate.month, parsedDate.day)
         }.getOrNull()
     }
 
     fun parseTime(value: String): LocalTime? {
+        val parsedTime = DateTimeFormatterCore.parseTimeParts(value) ?: return null
         return runCatching {
-            LocalTime.parse(value, storedTimeFormatter)
+            LocalTime.of(parsedTime.hour, parsedTime.minute)
         }.getOrNull()
     }
 }
