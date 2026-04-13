@@ -25,7 +25,7 @@ import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.speech.SpeechRecognizerManager
 import com.luistureo.voicereminderapp.core.speech.VoiceAssistantSpeaker
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
@@ -709,7 +709,7 @@ class MainActivity : ComponentActivity() {
                 reminderScheduler.scheduleNextDaySummary()
                 refreshNextDaySummaryTimeButtonLabel()
 
-                val formattedTime = DateTimeFormatter.formatTime(hourOfDay, minute)
+                val formattedTime = DateTimeFormatterCore.formatTime(hourOfDay, minute)
                 Toast.makeText(
                     this,
                     getString(R.string.home_next_day_summary_time_saved, formattedTime),
@@ -724,7 +724,7 @@ class MainActivity : ComponentActivity() {
 
     private fun refreshNextDaySummaryTimeButtonLabel() {
         val summaryTime = summaryPreferenceStore.getSummaryTime()
-        val formattedTime = DateTimeFormatter.formatTime(summaryTime.hour, summaryTime.minute)
+        val formattedTime = DateTimeFormatterCore.formatTime(summaryTime.hour, summaryTime.minute)
         nextDaySummaryTimeButton.text = getString(
             R.string.home_next_day_summary_time_button,
             formattedTime

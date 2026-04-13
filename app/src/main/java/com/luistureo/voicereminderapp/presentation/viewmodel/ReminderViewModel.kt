@@ -12,7 +12,7 @@ import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
@@ -613,7 +613,7 @@ class ReminderViewModel(
                 listOf(
                     HomeReminderListItem.DayHeader(
                         title = label,
-                        subtitle = DateTimeFormatter.formatDateFromEpoch(
+                        subtitle = DateTimeFormatterCore.formatDateFromEpoch(
                             date.atStartOfDay(zoneId).toInstant().toEpochMilli()
                         )
                     )
@@ -719,8 +719,8 @@ class ReminderViewModel(
 
         val draft = ReminderDraft(
             text = reminderDetail,
-            date = DateTimeFormatter.formatDate(reminderDay, reminderMonth, reminderYear),
-            time = DateTimeFormatter.formatTime(reminderHour, reminderMinute),
+            date = DateTimeFormatterCore.formatDate(reminderDay, reminderMonth, reminderYear),
+            time = DateTimeFormatterCore.formatTime(reminderHour, reminderMinute),
             isUrgent = state.isUrgent,
             source = ReminderSource.VOICE
         )
@@ -756,12 +756,12 @@ class ReminderViewModel(
     }
 
     private fun buildVoiceConfirmationMessage(state: VoiceReminderState): String {
-        val date = DateTimeFormatter.formatDate(
+        val date = DateTimeFormatterCore.formatDate(
             state.reminderDay ?: return "Confirma tu recordatorio.",
             state.reminderMonth ?: return "Confirma tu recordatorio.",
             state.reminderYear ?: return "Confirma tu recordatorio."
         )
-        val time = DateTimeFormatter.formatTime(
+        val time = DateTimeFormatterCore.formatTime(
             state.reminderHour ?: return "Confirma tu recordatorio.",
             state.reminderMinute ?: return "Confirma tu recordatorio."
         )
@@ -1005,10 +1005,10 @@ class ReminderViewModel(
         val mergedDraft = ReminderDraft(
             text = parsedText?.takeIf { it.isNotBlank() } ?: currentDraft?.text,
             date = parsedDate?.let {
-                DateTimeFormatter.formatDate(it.day, it.month, it.year)
+                DateTimeFormatterCore.formatDate(it.day, it.month, it.year)
             } ?: currentDraft?.date,
             time = parsedTime?.let {
-                DateTimeFormatter.formatTime(it.hour, it.minute)
+                DateTimeFormatterCore.formatTime(it.hour, it.minute)
             } ?: currentDraft?.time,
             isUrgent = isUrgent || (currentDraft?.isUrgent == true),
             source = ReminderSource.VOICE
@@ -1170,7 +1170,7 @@ class ReminderViewModel(
 
         pendingAssistantAmbiguousTime = null
 
-        return DateTimeFormatter.formatTime(resolvedHour, pendingTime.minute)
+        return DateTimeFormatterCore.formatTime(resolvedHour, pendingTime.minute)
     }
 
     private fun extractDayPeriod(text: String): DayPeriod? {
@@ -1321,7 +1321,7 @@ class ReminderViewModel(
     ): String? {
         val normalizedMessage = normalizeText(message)
         val localParsedDate = parseNaturalDate(normalizedMessage)?.let {
-            DateTimeFormatter.formatDate(it.day, it.month, it.year)
+            DateTimeFormatterCore.formatDate(it.day, it.month, it.year)
         }
 
         return localParsedDate ?: currentDraft?.date

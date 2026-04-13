@@ -6,7 +6,7 @@ import android.content.Intent
 import com.luistureo.voicereminderapp.core.notification.NotificationHelper
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.speech.ReminderVoiceAssistant
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import com.luistureo.voicereminderapp.domain.model.Reminder
@@ -142,8 +142,8 @@ class ReminderReceiver : BroadcastReceiver() {
 
         voiceAssistant.speakReminder(
             reminderText = reminder.detail,
-            reminderDate = DateTimeFormatter.formatDateFromEpoch(occurrenceAtEpochMillis),
-            reminderTime = DateTimeFormatter.formatTimeFromEpoch(occurrenceAtEpochMillis),
+            reminderDate = DateTimeFormatterCore.formatDateFromEpoch(occurrenceAtEpochMillis),
+            reminderTime = DateTimeFormatterCore.formatTimeFromEpoch(occurrenceAtEpochMillis),
             onFinished = {
                 voiceAssistant.shutdown()
             }
