@@ -31,6 +31,7 @@ import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormStateResolver
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
@@ -486,26 +487,31 @@ class ManualReminderActivity : ComponentActivity() {
         val title = titleInput.text?.toString()?.trim().takeIf { !it.isNullOrBlank() }
         val selectedDateValue = selectedDate.trim()
         val selectedTimeValue = selectedTime.trim()
+        val draft = ReminderDraft(
+            reminderId = currentReminderId,
+            title = title,
+            text = detail,
+            date = selectedDateValue,
+            time = selectedTimeValue,
+            isUrgent = urgentSwitch.isChecked,
+            source = currentSource,
+            recurrence = null
+        )
+        val formState = ReminderDraftFormStateResolver.resolve(draft)
 
-        if (detail.isBlank()) {
+        if (formState.hasMissingText) {
             Toast.makeText(this, R.string.reminder_error_detail_required, Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (selectedDateValue.isBlank()) {
+        if (formState.hasMissingDate) {
             Toast.makeText(this, R.string.reminder_error_date_required, Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (selectedTimeValue.isBlank()) {
+        if (formState.hasMissingTime) {
             Toast.makeText(this, R.string.reminder_error_time_required, Toast.LENGTH_SHORT).show()
             return
-        }
-
-        val recurrence = if (recurringEnabledSwitch.isChecked) {
-            buildRecurrence()
-        } else {
-            null
         }
 
         if (recurringEnabledSwitch.isChecked &&
@@ -516,18 +522,13 @@ class ManualReminderActivity : ComponentActivity() {
             return
         }
 
-        val draft = ReminderDraft(
-            reminderId = currentReminderId,
-            title = title,
-            text = detail,
-            date = selectedDateValue,
-            time = selectedTimeValue,
-            isUrgent = urgentSwitch.isChecked,
-            source = currentSource,
-            recurrence = recurrence
-        )
+        val recurrence = if (recurringEnabledSwitch.isChecked) {
+            buildRecurrence()
+        } else {
+            null
+        }
 
-        reminderViewModel.saveReminderDraft(draft)
+        reminderViewModel.saveReminderDraft(draft.copy(recurrence = recurrence))
     }
 
     private fun openCameraForReminder() {
@@ -632,14 +633,16 @@ class ManualReminderActivity : ComponentActivity() {
         action: String?,
         draft: ReminderDraft
     ): String {
+        val formState = ReminderDraftFormStateResolver.resolve(draft)
+
         return when {
-            draft.date.isNullOrBlank() && draft.time.isNullOrBlank() ->
+            formState.hasMissingDate && formState.hasMissingTime ->
                 getString(R.string.camera_post_edit_missing_date_time)
 
-            draft.date.isNullOrBlank() ->
+            formState.hasMissingDate ->
                 getString(R.string.camera_post_edit_missing_date)
 
-            draft.time.isNullOrBlank() ->
+            formState.hasMissingTime ->
                 getString(R.string.camera_post_edit_missing_time)
 
             action == CameraReminderDraftContract.ACTION_EDIT ->
@@ -654,17 +657,19 @@ class ManualReminderActivity : ComponentActivity() {
         draft: ReminderDraft,
         action: String?
     ) {
+        val formState = ReminderDraftFormStateResolver.resolve(draft)
+
         // Prioriza el primer dato faltante para reducir errores antes de guardar.
         when {
-            draft.text.isNullOrBlank() -> {
+            formState.hasMissingText -> {
                 detailInput.requestFocus()
             }
 
-            draft.date.isNullOrBlank() -> {
+            formState.hasMissingDate -> {
                 dateButton.requestFocus()
             }
 
-            draft.time.isNullOrBlank() -> {
+            formState.hasMissingTime -> {
                 timeButton.requestFocus()
             }
 

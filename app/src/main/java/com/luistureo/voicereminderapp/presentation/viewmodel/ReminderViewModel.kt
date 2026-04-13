@@ -951,9 +951,12 @@ class ReminderViewModel(
 
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
         if (draft == null) return "Que deseas recordar?"
-        if (draft.text.isNullOrBlank()) return "Que deseas recordar?"
-        if (draft.date.isNullOrBlank()) return "Para que dia deseas este recordatorio?"
-        if (draft.time.isNullOrBlank()) return "A que hora deseas este recordatorio?"
+
+        val formState = ReminderDraftFormStateResolver.resolve(draft)
+
+        if (formState.hasMissingText) return "Que deseas recordar?"
+        if (formState.hasMissingDate) return "Para que dia deseas este recordatorio?"
+        if (formState.hasMissingTime) return "A que hora deseas este recordatorio?"
 
         pendingAssistantAmbiguousTime?.let { ambiguousTime ->
             return buildAmbiguousTimeQuestion(ambiguousTime)

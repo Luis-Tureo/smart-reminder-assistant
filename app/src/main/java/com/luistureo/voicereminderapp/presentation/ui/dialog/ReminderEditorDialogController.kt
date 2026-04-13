@@ -13,6 +13,7 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormStateResolver
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
@@ -177,17 +178,30 @@ class ReminderEditorDialogController(
         dialog.setOnShowListener {
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val detail = detailInput.text?.toString()?.trim().orEmpty()
-                if (detail.isBlank()) {
+                val draft = ReminderDraft(
+                    reminderId = initialDraft.reminderId,
+                    title = titleInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+                    text = detail,
+                    date = selectedDate,
+                    time = selectedTime,
+                    isUrgent = urgentSwitch.isChecked,
+                    source = initialDraft.source.takeIf { it != ReminderSource.VOICE }
+                        ?: ReminderSource.MANUAL,
+                    recurrence = null
+                )
+                val formState = ReminderDraftFormStateResolver.resolve(draft)
+
+                if (formState.hasMissingText) {
                     Toast.makeText(context, R.string.reminder_error_detail_required, Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
-                if (selectedDate.isBlank()) {
+                if (formState.hasMissingDate) {
                     Toast.makeText(context, R.string.reminder_error_date_required, Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
-                if (selectedTime.isBlank()) {
+                if (formState.hasMissingTime) {
                     Toast.makeText(context, R.string.reminder_error_time_required, Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
@@ -216,19 +230,7 @@ class ReminderEditorDialogController(
                     weekdays = selectedWeekdays
                 )
 
-                onSave(
-                    ReminderDraft(
-                        reminderId = initialDraft.reminderId,
-                        title = titleInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
-                        text = detail,
-                        date = selectedDate,
-                        time = selectedTime,
-                        isUrgent = urgentSwitch.isChecked,
-                        source = initialDraft.source.takeIf { it != ReminderSource.VOICE }
-                            ?: ReminderSource.MANUAL,
-                        recurrence = recurrence
-                    )
-                )
+                onSave(draft.copy(recurrence = recurrence))
                 dialog.dismiss()
             }
         }
