@@ -20,21 +20,16 @@ object ReminderDraftValidator {
         allowRecurrence: Boolean,
         nowEpochMillis: Long = Clock.System.now().toEpochMilliseconds()
     ): ReminderDraftValidationIssue? {
-        val formState = ReminderDraftFormStateResolver.resolve(draft)
+        val guidance = ReminderDraftMissingDataGuidanceResolver.resolve(draft)
 
-        if (formState.hasMissingText) {
-            return ReminderDraftValidationIssue.MISSING_TEXT
+        when (guidance.nextMissingField) {
+            ReminderDraftField.TEXT -> return ReminderDraftValidationIssue.MISSING_TEXT
+            ReminderDraftField.DATE -> return ReminderDraftValidationIssue.MISSING_DATE
+            ReminderDraftField.TIME -> return ReminderDraftValidationIssue.MISSING_TIME
+            null -> Unit
         }
 
-        if (formState.hasMissingDate) {
-            return ReminderDraftValidationIssue.MISSING_DATE
-        }
-
-        if (formState.hasMissingTime) {
-            return ReminderDraftValidationIssue.MISSING_TIME
-        }
-
-        if (formState.hasIncompleteField || formState.hasInvalidField) {
+        if (guidance.blockingField != null) {
             return ReminderDraftValidationIssue.INVALID_DATE_TIME
         }
 

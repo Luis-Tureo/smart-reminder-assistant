@@ -8,7 +8,9 @@ import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftField
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftMissingDataGuidanceResolver
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
@@ -952,11 +954,12 @@ class ReminderViewModel(
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
         if (draft == null) return "Que deseas recordar?"
 
-        val formState = ReminderDraftFormStateResolver.resolve(draft)
-
-        if (formState.hasMissingText) return "Que deseas recordar?"
-        if (formState.hasMissingDate) return "Para que dia deseas este recordatorio?"
-        if (formState.hasMissingTime) return "A que hora deseas este recordatorio?"
+        when (ReminderDraftMissingDataGuidanceResolver.resolve(draft).nextMissingField) {
+            ReminderDraftField.TEXT -> return "Que deseas recordar?"
+            ReminderDraftField.DATE -> return "Para que dia deseas este recordatorio?"
+            ReminderDraftField.TIME -> return "A que hora deseas este recordatorio?"
+            null -> Unit
+        }
 
         pendingAssistantAmbiguousTime?.let { ambiguousTime ->
             return buildAmbiguousTimeQuestion(ambiguousTime)

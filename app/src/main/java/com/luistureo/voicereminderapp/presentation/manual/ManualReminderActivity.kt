@@ -31,7 +31,9 @@ import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftField
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftMissingDataGuidanceResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormStateResolver
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
@@ -657,28 +659,21 @@ class ManualReminderActivity : ComponentActivity() {
         draft: ReminderDraft,
         action: String?
     ) {
-        val formState = ReminderDraftFormStateResolver.resolve(draft)
+        val guidance = ReminderDraftMissingDataGuidanceResolver.resolve(draft)
 
         // Prioriza el primer dato faltante para reducir errores antes de guardar.
-        when {
-            formState.hasMissingText -> {
-                detailInput.requestFocus()
-            }
+        when (guidance.nextMissingField) {
+            ReminderDraftField.TEXT -> detailInput.requestFocus()
+            ReminderDraftField.DATE -> dateButton.requestFocus()
+            ReminderDraftField.TIME -> timeButton.requestFocus()
+            null -> when {
+                action == CameraReminderDraftContract.ACTION_EDIT -> {
+                    detailInput.requestFocus()
+                }
 
-            formState.hasMissingDate -> {
-                dateButton.requestFocus()
-            }
-
-            formState.hasMissingTime -> {
-                timeButton.requestFocus()
-            }
-
-            action == CameraReminderDraftContract.ACTION_EDIT -> {
-                detailInput.requestFocus()
-            }
-
-            else -> {
-                saveButton.requestFocus()
+                else -> {
+                    saveButton.requestFocus()
+                }
             }
         }
     }
