@@ -8,9 +8,12 @@ import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
@@ -85,8 +88,8 @@ class ReminderViewModel(
     private val entityExtractor = ReminderEntityExtractor(context.applicationContext)
     private val textCleaner = ReminderTextCleaner()
     private val occurrenceCalculator = ReminderOccurrenceCalculator()
-    private val scheduleStateResolver = ReminderScheduleStateResolver(occurrenceCalculator)
-    private val reminderScheduler = ReminderScheduler(context.applicationContext, occurrenceCalculator)
+    private val scheduleStateResolver = ReminderScheduleStateResolver()
+    private val reminderScheduler = ReminderScheduler(context.applicationContext)
     private val zoneId = ZoneId.systemDefault()
     private val singleReminderOnlyReply =
         "Las repeticiones debes configurarlas manualmente. Por voz solo puedo crear recordatorios de una sola vez."
@@ -423,8 +426,8 @@ class ReminderViewModel(
             reminderId = reminder.id,
             title = reminder.title,
             detail = reminder.detail,
-            date = reminder.date,
-            time = reminder.time,
+            date = ReminderDisplayFormatter.formatScheduledDate(reminder),
+            time = ReminderDisplayFormatter.formatScheduledTime(reminder),
             isUrgent = reminder.isUrgent,
             source = reminder.source,
             recurrence = reminder.recurrence
@@ -570,8 +573,8 @@ class ReminderViewModel(
             reminderId = id,
             title = title,
             detail = detail,
-            date = date,
-            time = time,
+            date = ReminderDisplayFormatter.formatScheduledDate(this),
+            time = ReminderDisplayFormatter.formatScheduledTime(this),
             isUrgent = isUrgent,
             source = source,
             recurrence = recurrence
@@ -1359,25 +1362,22 @@ class ReminderViewModel(
         draft: ReminderDraft,
         allowRecurrence: Boolean
     ): String? {
-        if (draft.text.isNullOrBlank()) {
-            return "No hay texto para guardar."
+        return when (
+            ReminderDraftValidator.validate(
+                draft = draft,
+                allowRecurrence = allowRecurrence
+            )
+        ) {
+            null -> null
+            ReminderDraftValidationIssue.MISSING_TEXT -> "No hay texto para guardar."
+            ReminderDraftValidationIssue.MISSING_DATE,
+            ReminderDraftValidationIssue.MISSING_TIME -> buildQuestionForMissingData(draft)
+            ReminderDraftValidationIssue.RECURRENCE_NOT_ALLOWED ->
+                "Las repeticiones debes configurarlas manualmente."
+            ReminderDraftValidationIssue.INVALID_DATE_TIME ->
+                "La fecha u hora indicadas no son validas."
+            ReminderDraftValidationIssue.PAST_DATE_TIME ->
+                "La fecha y hora indicadas ya pasaron. Indica una fecha u hora futura."
         }
-
-        if (draft.date.isNullOrBlank() || draft.time.isNullOrBlank()) {
-            return buildQuestionForMissingData(draft)
-        }
-
-        if (!allowRecurrence && draft.recurrence != null) {
-            return "Las repeticiones debes configurarlas manualmente."
-        }
-
-        val triggerTimeMillis = draft.buildScheduledAtEpochMillis()
-            ?: return "La fecha u hora indicadas no son validas."
-
-        if (triggerTimeMillis <= System.currentTimeMillis()) {
-            return "La fecha y hora indicadas ya pasaron. Indica una fecha u hora futura."
-        }
-
-        return null
     }
 }

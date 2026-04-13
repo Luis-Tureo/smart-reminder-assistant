@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
-import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import java.time.ZoneId
@@ -15,17 +14,6 @@ class ReminderScheduler(
     private val summaryPreferenceStore: NextDaySummaryPreferenceStore =
         NextDaySummaryPreferenceStore(context.applicationContext)
 ) {
-    // Mantiene compatibilidad mientras existan llamadas que inyectan el facade legado.
-    constructor(
-        context: Context,
-        @Suppress("UNUSED_PARAMETER") occurrenceCalculator: ReminderOccurrenceCalculator,
-        summaryPreferenceStore: NextDaySummaryPreferenceStore =
-            NextDaySummaryPreferenceStore(context.applicationContext)
-    ) : this(
-        context = context,
-        summaryPreferenceStore = summaryPreferenceStore
-    )
-
     private val alarmManager: AlarmManager
         get() = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 

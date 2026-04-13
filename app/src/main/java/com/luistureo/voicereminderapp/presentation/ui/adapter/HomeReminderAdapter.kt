@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.presentation.state.HomeReminderListItem
@@ -169,9 +170,8 @@ class HomeReminderAdapter(
 
     private fun bindScheduleMeta(holder: ReminderViewHolder, reminder: Reminder) {
         val parts = buildList {
-            reminder.recurrenceLabel?.let { add(it) }
+            ReminderDisplayFormatter.formatRecurrenceLabel(reminder)?.let { add(it) }
             if (reminder.isUrgent) add("Urgente")
-            if (reminder.isRecurring && !reminder.isRecurringActive) add("Inactiva")
         }
 
         holder.scheduleMeta.isVisible = parts.isNotEmpty()

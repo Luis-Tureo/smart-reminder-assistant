@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.luistureo.voicereminderapp.core.calendar.ChileanHoliday
 import com.luistureo.voicereminderapp.core.calendar.ChileanHolidayProvider
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.utils.ReminderDisplayFormatter
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter as ReminderDateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
@@ -148,7 +149,8 @@ class CalendarViewModel(
                         id = entry.reminder.id,
                         title = entry.reminder.title,
                         detail = entry.reminder.detail,
-                        time = entry.time?.format(storedTimeFormatter) ?: entry.reminder.time,
+                        time = entry.time?.format(storedTimeFormatter)
+                            ?: ReminderDisplayFormatter.formatScheduledTime(entry.reminder),
                         type = entry.reminder.type,
                         isCompleted = entry.reminder.isCompleted
                     )

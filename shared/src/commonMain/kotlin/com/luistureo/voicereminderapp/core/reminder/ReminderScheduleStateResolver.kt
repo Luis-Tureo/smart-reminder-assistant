@@ -5,16 +5,34 @@ import com.luistureo.voicereminderapp.domain.model.ReminderScheduleState
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 
-class ReminderScheduleStateResolver() {
-    // Mantiene compatibilidad mientras existan llamadas con el calculador legado.
-    constructor(@Suppress("UNUSED_PARAMETER") occurrenceCalculator: Any?) : this()
-
+class ReminderScheduleStateResolver(
     private val timeZoneId: String = TimeZone.currentSystemDefault().id
+) {
 
     fun resolveOnSave(reminder: Reminder): ReminderScheduleState {
-        return ReminderScheduleStateResolverCore.resolveOnSave(
+        return resolveOnSave(
             reminder = reminder,
-            timeZoneId = timeZoneId
+            nowEpochMillis = Clock.System.now().toEpochMilliseconds()
+        )
+    }
+
+    fun resolveOnSave(
+        reminder: Reminder,
+        nowEpochMillis: Long
+    ): ReminderScheduleState {
+        val nextTriggerAtEpochMillis = if (reminder.isCompleted) {
+            null
+        } else {
+            ReminderOccurrenceCalculatorCore.resolveNextTriggerAtEpochMillis(
+                reminder = reminder,
+                fromEpochMillis = nowEpochMillis,
+                timeZoneId = timeZoneId
+            )
+        }
+
+        return ReminderScheduleState(
+            nextTriggerAtEpochMillis = nextTriggerAtEpochMillis,
+            lastTriggeredAtEpochMillis = reminder.scheduleState.lastTriggeredAtEpochMillis
         )
     }
 
@@ -23,11 +41,26 @@ class ReminderScheduleStateResolver() {
         occurrenceAtEpochMillis: Long,
         nowEpochMillis: Long = Clock.System.now().toEpochMilliseconds()
     ): ReminderScheduleState {
-        return ReminderScheduleStateResolverCore.resolveAfterPrimaryTrigger(
-            reminder = reminder,
-            occurrenceAtEpochMillis = occurrenceAtEpochMillis,
-            timeZoneId = timeZoneId,
-            nowEpochMillis = nowEpochMillis
+        val nextTriggerAtEpochMillis = if (reminder.isCompleted) {
+            null
+        } else {
+            ReminderOccurrenceCalculatorCore.resolveNextTriggerAtEpochMillis(
+                reminder = reminder,
+                fromEpochMillis = occurrenceAtEpochMillis,
+                timeZoneId = timeZoneId
+            )
+        }
+        val activeAlertRepeatCount = if (reminder.isUrgent && !reminder.isCompleted) 1 else 0
+        val nextUrgentRepeatAtEpochMillis = activeAlertRepeatCount
+            .takeIf { it in 1 until MAX_URGENT_ALERT_COUNT }
+            ?.let { nowEpochMillis + URGENT_REPEAT_DELAY_MILLIS }
+
+        return ReminderScheduleState(
+            nextTriggerAtEpochMillis = nextTriggerAtEpochMillis,
+            lastTriggeredAtEpochMillis = nowEpochMillis,
+            activeAlertAtEpochMillis = occurrenceAtEpochMillis.takeIf { activeAlertRepeatCount > 0 },
+            activeAlertRepeatCount = activeAlertRepeatCount,
+            nextUrgentRepeatAtEpochMillis = nextUrgentRepeatAtEpochMillis
         )
     }
 
@@ -35,15 +68,30 @@ class ReminderScheduleStateResolver() {
         reminder: Reminder,
         nowEpochMillis: Long = Clock.System.now().toEpochMilliseconds()
     ): ReminderScheduleState {
-        return ReminderScheduleStateResolverCore.resolveAfterUrgentRepeat(
-            reminder = reminder,
-            nowEpochMillis = nowEpochMillis
+        if (!reminder.isUrgent || reminder.isCompleted) {
+            return clearUrgentAlert(reminder.scheduleState)
+        }
+
+        val nextRepeatCount = reminder.scheduleState.activeAlertRepeatCount + 1
+        val shouldContinue = nextRepeatCount < MAX_URGENT_ALERT_COUNT
+
+        return reminder.scheduleState.copy(
+            activeAlertAtEpochMillis = reminder.scheduleState.activeAlertAtEpochMillis
+                .takeIf { shouldContinue },
+            activeAlertRepeatCount = nextRepeatCount,
+            nextUrgentRepeatAtEpochMillis = if (shouldContinue) {
+                nowEpochMillis + URGENT_REPEAT_DELAY_MILLIS
+            } else {
+                null
+            }
         )
     }
 
     fun clearUrgentAlert(scheduleState: ReminderScheduleState): ReminderScheduleState {
-        return ReminderScheduleStateResolverCore.clearUrgentAlert(
-            scheduleState = scheduleState
+        return scheduleState.copy(
+            activeAlertAtEpochMillis = null,
+            activeAlertRepeatCount = 0,
+            nextUrgentRepeatAtEpochMillis = null
         )
     }
 
@@ -51,20 +99,16 @@ class ReminderScheduleStateResolver() {
         reminder: Reminder,
         occurrenceAtEpochMillis: Long
     ): Boolean {
-        return ReminderScheduleStateResolverCore.isCurrentPrimaryTrigger(
-            reminder = reminder,
-            occurrenceAtEpochMillis = occurrenceAtEpochMillis
-        )
+        return reminder.scheduleState.nextTriggerAtEpochMillis == occurrenceAtEpochMillis
     }
 
     fun isCurrentUrgentRepeat(
         reminder: Reminder,
         occurrenceAtEpochMillis: Long
     ): Boolean {
-        return ReminderScheduleStateResolverCore.isCurrentUrgentRepeat(
-            reminder = reminder,
-            occurrenceAtEpochMillis = occurrenceAtEpochMillis
-        )
+        return reminder.scheduleState.activeAlertAtEpochMillis == occurrenceAtEpochMillis &&
+            reminder.scheduleState.nextUrgentRepeatAtEpochMillis != null &&
+            reminder.scheduleState.activeAlertRepeatCount in 1 until MAX_URGENT_ALERT_COUNT
     }
 
     fun buildNotificationId(
@@ -72,15 +116,11 @@ class ReminderScheduleStateResolver() {
         occurrenceAtEpochMillis: Long,
         alertCount: Int
     ): Int {
-        return ReminderScheduleStateResolverCore.buildNotificationId(
-            reminderId = reminderId,
-            occurrenceAtEpochMillis = occurrenceAtEpochMillis,
-            alertCount = alertCount
-        )
+        return "$reminderId-$occurrenceAtEpochMillis-$alertCount".hashCode()
     }
 
     companion object {
-        const val MAX_URGENT_ALERT_COUNT = ReminderScheduleStateResolverCore.MAX_URGENT_ALERT_COUNT
-        const val URGENT_REPEAT_DELAY_MILLIS = ReminderScheduleStateResolverCore.URGENT_REPEAT_DELAY_MILLIS
+        const val MAX_URGENT_ALERT_COUNT = 3
+        const val URGENT_REPEAT_DELAY_MILLIS = 15_000L
     }
 }
