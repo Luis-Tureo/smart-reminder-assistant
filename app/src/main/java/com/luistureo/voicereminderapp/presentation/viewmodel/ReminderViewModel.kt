@@ -9,8 +9,8 @@ import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftFormStateResolver
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftPromptIntent
-import com.luistureo.voicereminderapp.core.reminder.ReminderDraftPromptIntentResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftPromptToken
+import com.luistureo.voicereminderapp.core.reminder.ReminderDraftPromptTokenResolver
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidationIssue
 import com.luistureo.voicereminderapp.core.reminder.ReminderDraftValidator
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculatorCore
@@ -954,21 +954,15 @@ class ReminderViewModel(
     private fun buildQuestionForMissingData(draft: ReminderDraft?): String {
         if (draft == null) return "Que deseas recordar?"
 
-        return when (ReminderDraftPromptIntentResolver.resolve(draft).promptIntent) {
-            ReminderDraftPromptIntent.ASK_REMINDER_TEXT,
-            ReminderDraftPromptIntent.CORRECT_INCOMPLETE_TEXT,
-            ReminderDraftPromptIntent.CORRECT_INVALID_TEXT -> "Que deseas recordar?"
+        return when (ReminderDraftPromptTokenResolver.resolve(draft).promptToken) {
+            ReminderDraftPromptToken.REMINDER_TEXT_PROMPT -> "Que deseas recordar?"
 
-            ReminderDraftPromptIntent.ASK_REMINDER_DATE,
-            ReminderDraftPromptIntent.CORRECT_INCOMPLETE_DATE,
-            ReminderDraftPromptIntent.CORRECT_INVALID_DATE -> "Para que dia deseas este recordatorio?"
+            ReminderDraftPromptToken.REMINDER_DATE_PROMPT -> "Para que dia deseas este recordatorio?"
 
-            ReminderDraftPromptIntent.ASK_REMINDER_TIME,
-            ReminderDraftPromptIntent.CORRECT_INCOMPLETE_TIME,
-            ReminderDraftPromptIntent.CORRECT_INVALID_TIME -> "A que hora deseas este recordatorio?"
+            ReminderDraftPromptToken.REMINDER_TIME_PROMPT -> "A que hora deseas este recordatorio?"
 
-            ReminderDraftPromptIntent.SHOW_CONFIRMATION,
-            ReminderDraftPromptIntent.ALLOW_SAVE_OR_CONTINUE -> {
+            ReminderDraftPromptToken.REMINDER_CONFIRMATION_PROMPT,
+            ReminderDraftPromptToken.REMINDER_READY_TO_CONTINUE_PROMPT -> {
                 pendingAssistantAmbiguousTime?.let { ambiguousTime ->
                     return buildAmbiguousTimeQuestion(ambiguousTime)
                 }
