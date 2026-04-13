@@ -12,24 +12,6 @@ object DateTimeFormatter {
     private val storedDateFormatter = JavaDateTimeFormatter.ofPattern("dd/MM/yyyy")
     private val storedTimeFormatter = JavaDateTimeFormatter.ofPattern("HH:mm")
 
-    // Formatea la fecha en formato dd/MM/yyyy.
-    fun formatDate(day: Int, month: Int, year: Int): String {
-        return DateTimeFormatterCore.formatDate(day, month, year)
-    }
-
-    // Formatea la hora en formato HH:mm.
-    fun formatTime(hour: Int, minute: Int): String {
-        return DateTimeFormatterCore.formatTime(hour, minute)
-    }
-
-    fun formatDateFromEpoch(epochMillis: Long): String {
-        return DateTimeFormatterCore.formatDateFromEpoch(epochMillis)
-    }
-
-    fun formatTimeFromEpoch(epochMillis: Long): String {
-        return DateTimeFormatterCore.formatTimeFromEpoch(epochMillis)
-    }
-
     // Mantiene adaptadores JVM mientras existan consumidores Android de java.time.
     fun toLocalTime(epochMillis: Long): LocalTime {
         return Instant.ofEpochMilli(epochMillis)
@@ -47,15 +29,5 @@ object DateTimeFormatter {
         return runCatching {
             LocalTime.parse(value, storedTimeFormatter)
         }.getOrNull()
-    }
-
-    // Verifica si la fecha es valida.
-    fun hasValidDate(year: Int, month: Int, day: Int): Boolean {
-        return DateTimeFormatterCore.hasValidDate(year, month, day)
-    }
-
-    // Verifica si la hora es valida.
-    fun hasValidTime(hour: Int, minute: Int): Boolean {
-        return DateTimeFormatterCore.hasValidTime(hour, minute)
     }
 }

@@ -32,6 +32,7 @@ import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
@@ -448,7 +449,7 @@ class ManualReminderActivity : ComponentActivity() {
         DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
-                selectedDate = DateTimeFormatter.formatDate(dayOfMonth, month + 1, year)
+                selectedDate = DateTimeFormatterCore.formatDate(dayOfMonth, month + 1, year)
                 updateDateTimeButtons()
             },
             calendar.get(Calendar.YEAR),
@@ -469,7 +470,7 @@ class ManualReminderActivity : ComponentActivity() {
         TimePickerDialog(
             this,
             { _, hourOfDay, minute ->
-                selectedTime = DateTimeFormatter.formatTime(hourOfDay, minute)
+                selectedTime = DateTimeFormatterCore.formatTime(hourOfDay, minute)
                 updateDateTimeButtons()
             },
             calendar.get(Calendar.HOUR_OF_DAY),

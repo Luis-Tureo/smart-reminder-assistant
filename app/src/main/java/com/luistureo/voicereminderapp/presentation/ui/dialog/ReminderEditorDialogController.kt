@@ -14,6 +14,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
+import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
@@ -128,7 +129,7 @@ class ReminderEditorDialogController(
             DatePickerDialog(
                 context,
                 { _, year, month, dayOfMonth ->
-                    selectedDate = DateTimeFormatter.formatDate(dayOfMonth, month + 1, year)
+                    selectedDate = DateTimeFormatterCore.formatDate(dayOfMonth, month + 1, year)
                     dateButton.text = selectedDate
                 },
                 calendar.get(java.util.Calendar.YEAR),
@@ -149,7 +150,7 @@ class ReminderEditorDialogController(
             TimePickerDialog(
                 context,
                 { _, hourOfDay, minute ->
-                    selectedTime = DateTimeFormatter.formatTime(hourOfDay, minute)
+                    selectedTime = DateTimeFormatterCore.formatTime(hourOfDay, minute)
                     timeButton.text = selectedTime
                 },
                 calendar.get(java.util.Calendar.HOUR_OF_DAY),
