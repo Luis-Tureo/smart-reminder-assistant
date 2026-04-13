@@ -1,19 +1,17 @@
 package com.luistureo.voicereminderapp.domain.usecase
 
-import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
-import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolverCore
 import com.luistureo.voicereminderapp.core.utils.ReminderTypeResolver
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderScheduleState
 import com.luistureo.voicereminderapp.domain.repository.ReminderRepository
+import kotlinx.datetime.TimeZone
 
 class SaveReminderDraftUseCase(
     private val reminderRepository: ReminderRepository,
-    private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator()
+    private val timeZoneId: String = TimeZone.currentSystemDefault().id
 ) {
-    private val scheduleStateResolver = ReminderScheduleStateResolver(occurrenceCalculator)
-
     suspend operator fun invoke(draft: ReminderDraft): Reminder {
         val reminderDetail = draft.text?.trim().orEmpty()
         val reminderTitle = draft.title?.trim()
@@ -37,11 +35,14 @@ class SaveReminderDraftUseCase(
             source = draft.source,
             recurrence = draft.recurrence,
             scheduleState = existingReminder?.scheduleState
-                ?: scheduleStateResolver.clearUrgentAlert(ReminderScheduleState())
+                ?: ReminderScheduleStateResolverCore.clearUrgentAlert(ReminderScheduleState())
         )
 
         val resolvedReminder = baseReminder.copy(
-            scheduleState = scheduleStateResolver.resolveOnSave(baseReminder)
+            scheduleState = ReminderScheduleStateResolverCore.resolveOnSave(
+                reminder = baseReminder,
+                timeZoneId = timeZoneId
+            )
         )
 
         return if (draft.reminderId == 0) {
