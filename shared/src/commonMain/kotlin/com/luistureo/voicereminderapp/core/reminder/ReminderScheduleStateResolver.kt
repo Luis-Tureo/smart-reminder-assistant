@@ -2,12 +2,14 @@ package com.luistureo.voicereminderapp.core.reminder
 
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderScheduleState
-import java.time.ZoneId
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
 
-class ReminderScheduleStateResolver(
-    private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator()
-) {
-    private val timeZoneId: String = ZoneId.systemDefault().id
+class ReminderScheduleStateResolver() {
+    // Mantiene compatibilidad mientras existan llamadas con el calculador legado.
+    constructor(@Suppress("UNUSED_PARAMETER") occurrenceCalculator: Any?) : this()
+
+    private val timeZoneId: String = TimeZone.currentSystemDefault().id
 
     fun resolveOnSave(reminder: Reminder): ReminderScheduleState {
         return ReminderScheduleStateResolverCore.resolveOnSave(
@@ -19,7 +21,7 @@ class ReminderScheduleStateResolver(
     fun resolveAfterPrimaryTrigger(
         reminder: Reminder,
         occurrenceAtEpochMillis: Long,
-        nowEpochMillis: Long = System.currentTimeMillis()
+        nowEpochMillis: Long = Clock.System.now().toEpochMilliseconds()
     ): ReminderScheduleState {
         return ReminderScheduleStateResolverCore.resolveAfterPrimaryTrigger(
             reminder = reminder,
@@ -31,7 +33,7 @@ class ReminderScheduleStateResolver(
 
     fun resolveAfterUrgentRepeat(
         reminder: Reminder,
-        nowEpochMillis: Long = System.currentTimeMillis()
+        nowEpochMillis: Long = Clock.System.now().toEpochMilliseconds()
     ): ReminderScheduleState {
         return ReminderScheduleStateResolverCore.resolveAfterUrgentRepeat(
             reminder = reminder,
