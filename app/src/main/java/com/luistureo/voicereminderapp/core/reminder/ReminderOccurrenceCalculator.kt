@@ -20,36 +20,11 @@ class ReminderOccurrenceCalculator(
         reminder: Reminder,
         fromEpochMillis: Long = System.currentTimeMillis()
     ): Long? {
-        val thresholdDateTime = LocalDateTime.ofInstant(
-            java.time.Instant.ofEpochMilli(fromEpochMillis),
-            zoneId
+        return ReminderOccurrenceCalculatorCore.resolveNextTriggerAtEpochMillis(
+            reminder = reminder,
+            fromEpochMillis = fromEpochMillis,
+            timeZoneId = zoneId.id
         )
-        val reminderDateTime = DateTimeFormatter.toLocalDateTime(reminder.scheduledAtEpochMillis)
-
-        val recurrence = reminder.recurrence
-
-        if (recurrence == null) {
-            return reminder.scheduledAtEpochMillis.takeIf { it > fromEpochMillis }
-        }
-
-        if (!recurrence.isActive) {
-            return null
-        }
-
-        var candidateDate = maxOf(reminderDateTime.toLocalDate(), thresholdDateTime.toLocalDate())
-
-        repeat(3660) {
-            if (occursOnDate(reminder, candidateDate)) {
-                val candidateDateTime = LocalDateTime.of(candidateDate, reminderDateTime.toLocalTime())
-                val candidateEpochMillis = candidateDateTime.atZone(zoneId).toInstant().toEpochMilli()
-                if (candidateEpochMillis > fromEpochMillis) {
-                    return candidateEpochMillis
-                }
-            }
-            candidateDate = candidateDate.plusDays(1)
-        }
-
-        return null
     }
 
     fun occursOnDate(
@@ -122,19 +97,12 @@ class ReminderOccurrenceCalculator(
         summaryMinute: Int = DEFAULT_NEXT_DAY_SUMMARY_MINUTE,
         nowEpochMillis: Long = System.currentTimeMillis()
     ): Long {
-        val now = LocalDateTime.ofInstant(
-            java.time.Instant.ofEpochMilli(nowEpochMillis),
-            zoneId
+        return ReminderOccurrenceCalculatorCore.resolveNextGlobalSummaryTrigger(
+            summaryHour = summaryHour,
+            summaryMinute = summaryMinute,
+            nowEpochMillis = nowEpochMillis,
+            timeZoneId = zoneId.id
         )
-
-        var nextSummary = now.toLocalDate()
-            .atTime(summaryHour, summaryMinute)
-
-        if (!nextSummary.isAfter(now)) {
-            nextSummary = nextSummary.plusDays(1)
-        }
-
-        return nextSummary.atZone(zoneId).toInstant().toEpochMilli()
     }
 
     private fun matchesWeeklyRecurrence(
@@ -158,7 +126,7 @@ class ReminderOccurrenceCalculator(
     }
 
     companion object {
-        const val DEFAULT_NEXT_DAY_SUMMARY_HOUR = 20
-        const val DEFAULT_NEXT_DAY_SUMMARY_MINUTE = 0
+        const val DEFAULT_NEXT_DAY_SUMMARY_HOUR = ReminderOccurrenceCalculatorCore.DEFAULT_NEXT_DAY_SUMMARY_HOUR
+        const val DEFAULT_NEXT_DAY_SUMMARY_MINUTE = ReminderOccurrenceCalculatorCore.DEFAULT_NEXT_DAY_SUMMARY_MINUTE
     }
 }
