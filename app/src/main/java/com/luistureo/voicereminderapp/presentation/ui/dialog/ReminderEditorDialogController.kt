@@ -13,7 +13,10 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.utils.DateInputValidationResult
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
+import com.luistureo.voicereminderapp.core.utils.DateTimeInputValidator
+import com.luistureo.voicereminderapp.core.utils.TimeInputValidationResult
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
@@ -116,7 +119,8 @@ class ReminderEditorDialogController(
         }
 
         dateButton.setOnClickListener {
-            val parsedDate = DateTimeFormatterCore.parseDateParts(selectedDate)
+            val parsedDate = (DateTimeInputValidator.validateDateInput(selectedDate) as? DateInputValidationResult.Valid)
+                ?.parts
             val calendar = java.util.Calendar.getInstance().apply {
                 if (parsedDate != null) {
                     set(java.util.Calendar.YEAR, parsedDate.year)
@@ -138,7 +142,8 @@ class ReminderEditorDialogController(
         }
 
         timeButton.setOnClickListener {
-            val parsedTime = DateTimeFormatterCore.parseTimeParts(selectedTime)
+            val parsedTime = (DateTimeInputValidator.validateTimeInput(selectedTime) as? TimeInputValidationResult.Valid)
+                ?.parts
             val calendar = java.util.Calendar.getInstance().apply {
                 if (parsedTime != null) {
                     set(java.util.Calendar.HOUR_OF_DAY, parsedTime.hour)

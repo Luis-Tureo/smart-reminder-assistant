@@ -1,5 +1,8 @@
 package com.luistureo.voicereminderapp.core.reminder
 
+import com.luistureo.voicereminderapp.core.utils.DateInputValidationResult
+import com.luistureo.voicereminderapp.core.utils.DateTimeInputValidator
+import com.luistureo.voicereminderapp.core.utils.TimeInputValidationResult
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import kotlinx.datetime.Clock
 
@@ -24,12 +27,18 @@ object ReminderDraftValidator {
             return ReminderDraftValidationIssue.MISSING_TEXT
         }
 
-        if (draft.date.isNullOrBlank()) {
-            return ReminderDraftValidationIssue.MISSING_DATE
+        when (DateTimeInputValidator.validateDateInput(draft.date)) {
+            DateInputValidationResult.Missing -> return ReminderDraftValidationIssue.MISSING_DATE
+            DateInputValidationResult.Incomplete,
+            DateInputValidationResult.Invalid -> return ReminderDraftValidationIssue.INVALID_DATE_TIME
+            is DateInputValidationResult.Valid -> Unit
         }
 
-        if (draft.time.isNullOrBlank()) {
-            return ReminderDraftValidationIssue.MISSING_TIME
+        when (DateTimeInputValidator.validateTimeInput(draft.time)) {
+            TimeInputValidationResult.Missing -> return ReminderDraftValidationIssue.MISSING_TIME
+            TimeInputValidationResult.Incomplete,
+            TimeInputValidationResult.Invalid -> return ReminderDraftValidationIssue.INVALID_DATE_TIME
+            is TimeInputValidationResult.Valid -> Unit
         }
 
         if (!allowRecurrence && draft.recurrence != null) {

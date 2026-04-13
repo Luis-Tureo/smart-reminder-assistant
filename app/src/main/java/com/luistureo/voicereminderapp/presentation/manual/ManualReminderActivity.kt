@@ -28,10 +28,13 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.utils.DateInputValidationResult
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatterCore
+import com.luistureo.voicereminderapp.core.utils.DateTimeInputValidator
+import com.luistureo.voicereminderapp.core.utils.TimeInputValidationResult
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
@@ -436,7 +439,8 @@ class ManualReminderActivity : ComponentActivity() {
     }
 
     private fun showDatePicker() {
-        val parsedDate = DateTimeFormatterCore.parseDateParts(selectedDate)
+        val parsedDate = (DateTimeInputValidator.validateDateInput(selectedDate) as? DateInputValidationResult.Valid)
+            ?.parts
         val calendar = Calendar.getInstance().apply {
             if (parsedDate != null) {
                 set(Calendar.YEAR, parsedDate.year)
@@ -458,7 +462,8 @@ class ManualReminderActivity : ComponentActivity() {
     }
 
     private fun showTimePicker() {
-        val parsedTime = DateTimeFormatterCore.parseTimeParts(selectedTime)
+        val parsedTime = (DateTimeInputValidator.validateTimeInput(selectedTime) as? TimeInputValidationResult.Valid)
+            ?.parts
         val calendar = Calendar.getInstance().apply {
             if (parsedTime != null) {
                 set(Calendar.HOUR_OF_DAY, parsedTime.hour)
