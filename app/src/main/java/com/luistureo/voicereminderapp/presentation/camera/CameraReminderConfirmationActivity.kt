@@ -11,6 +11,8 @@ import androidx.core.view.isVisible
 import com.google.android.material.button.MaterialButton
 import com.luistureo.voicereminderapp.R
 
+// TODO cleanup: esta pantalla no esta conectada al flujo OCR actual.
+// Mantenerla fuera del flujo hasta decidir si se integra o se elimina junto con su layout y manifest.
 class CameraReminderConfirmationActivity : ComponentActivity() {
 
     private lateinit var backButton: ImageButton

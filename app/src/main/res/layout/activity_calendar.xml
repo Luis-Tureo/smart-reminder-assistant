@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:background="@color/calendar_toolbar_background"
         android:elevation="0dp"
-        android:minHeight="?attr/actionBarSize"
+        android:minHeight="72dp"
         android:paddingHorizontal="8dp"
         app:navigationIcon="@drawable/ic_calendar_back"
         app:navigationIconTint="@color/calendar_toolbar_icon"
@@ -22,12 +22,13 @@
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingHorizontal="14dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="14dp">
+        android:paddingTop="32dp"
+        android:paddingBottom="18dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -53,142 +54,347 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="14dp">
+                        android:padding="18dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/calendar_planner_overline"
-                            android:textAllCaps="true"
-                            android:textColor="@color/calendar_caption_text"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvCalendarMonthTitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textColor="@color/calendar_title_text"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
-
-                        <androidx.constraintlayout.widget.ConstraintLayout
+                        <LinearLayout
                             android:id="@+id/containerCalendarControls"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:paddingStart="@dimen/calendar_controls_row_side_spacing"
-                            android:paddingEnd="@dimen/calendar_controls_row_side_spacing">
+                            android:baselineAligned="false"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
                             <ImageButton
                                 android:id="@+id/btnPreviousMonth"
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:background="@drawable/bg_calendar_navigation_button"
                                 android:contentDescription="@string/calendar_previous_month"
-                                android:padding="8dp"
+                                android:padding="9dp"
                                 android:src="@drawable/ic_calendar_chevron_left"
-                                android:tint="@color/calendar_navigation_icon"
-                                app:layout_constraintBottom_toBottomOf="@id/inputMonthSelector"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toTopOf="@id/inputMonthSelector" />
+                                android:tint="@color/calendar_navigation_icon" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnMonthSelector"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="@dimen/calendar_selector_height"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:minWidth="0dp"
+                                android:paddingHorizontal="10dp"
+                                android:singleLine="true"
+                                android:textAllCaps="false"
+                                android:textColor="@color/calendar_title_text"
+                                android:textSize="14sp"
+                                app:cornerRadius="14dp"
+                                app:strokeColor="@color/calendar_selector_stroke" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnYearSelector"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="@dimen/calendar_year_selector_width"
+                                android:layout_height="@dimen/calendar_selector_height"
+                                android:layout_marginEnd="8dp"
+                                android:gravity="center"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:minWidth="0dp"
+                                android:paddingHorizontal="4dp"
+                                android:singleLine="true"
+                                android:textAllCaps="false"
+                                android:textColor="@color/calendar_title_text"
+                                android:textSize="14sp"
+                                app:cornerRadius="14dp"
+                                app:strokeColor="@color/calendar_selector_stroke" />
 
                             <ImageButton
                                 android:id="@+id/btnNextMonth"
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
                                 android:background="@drawable/bg_calendar_navigation_button"
                                 android:contentDescription="@string/calendar_next_month"
-                                android:padding="8dp"
+                                android:padding="9dp"
                                 android:src="@drawable/ic_calendar_chevron_right"
-                                android:tint="@color/calendar_navigation_icon"
-                                app:layout_constraintBottom_toBottomOf="@id/inputMonthSelector"
-                                app:layout_constraintEnd_toEndOf="parent"
-                                app:layout_constraintTop_toTopOf="@id/inputMonthSelector" />
-
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/layoutMonthSelector"
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="@dimen/calendar_controls_button_to_selector_spacing"
-                                android:layout_marginEnd="@dimen/calendar_controls_selector_spacing"
-                                app:boxBackgroundColor="@color/calendar_selector_background"
-                                app:boxCornerRadiusBottomEnd="14dp"
-                                app:boxCornerRadiusBottomStart="14dp"
-                                app:boxCornerRadiusTopEnd="14dp"
-                                app:boxCornerRadiusTopStart="14dp"
-                                app:boxStrokeColor="@color/calendar_selector_stroke"
-                                app:endIconTint="@color/calendar_selector_icon"
-                                app:hintEnabled="false"
-                                app:layout_constraintBottom_toBottomOf="parent"
-                                app:layout_constraintEnd_toStartOf="@id/layoutYearSelector"
-                                app:layout_constraintHorizontal_weight="1.2"
-                                app:layout_constraintStart_toEndOf="@id/btnPreviousMonth"
-                                app:layout_constraintTop_toTopOf="parent">
-
-                                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                                    android:id="@+id/inputMonthSelector"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="@dimen/calendar_selector_height"
-                                    android:ellipsize="end"
-                                    android:gravity="center_vertical"
-                                    android:inputType="none"
-                                    android:maxLines="1"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:singleLine="true"
-                                    android:textColor="@color/calendar_title_text"
-                                    android:textSize="14sp" />
-                            </com.google.android.material.textfield.TextInputLayout>
-
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/layoutYearSelector"
-                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="@dimen/calendar_controls_selector_spacing"
-                                android:layout_marginEnd="@dimen/calendar_controls_button_to_selector_spacing"
-                                android:minWidth="@dimen/calendar_year_selector_min_width"
-                                app:boxBackgroundColor="@color/calendar_selector_background"
-                                app:boxCornerRadiusBottomEnd="14dp"
-                                app:boxCornerRadiusBottomStart="14dp"
-                                app:boxCornerRadiusTopEnd="14dp"
-                                app:boxCornerRadiusTopStart="14dp"
-                                app:boxStrokeColor="@color/calendar_selector_stroke"
-                                app:endIconTint="@color/calendar_selector_icon"
-                                app:hintEnabled="false"
-                                app:layout_constraintBottom_toBottomOf="@id/layoutMonthSelector"
-                                app:layout_constraintEnd_toStartOf="@id/btnNextMonth"
-                                app:layout_constraintStart_toEndOf="@id/layoutMonthSelector"
-                                app:layout_constraintTop_toTopOf="@id/layoutMonthSelector">
-
-                                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                                    android:id="@+id/inputYearSelector"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="@dimen/calendar_selector_height"
-                                    android:ellipsize="end"
-                                    android:gravity="center_vertical"
-                                    android:inputType="none"
-                                    android:maxLines="1"
-                                    android:minEms="5"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:singleLine="true"
-                                    android:textColor="@color/calendar_title_text"
-                                    android:textSize="14sp" />
-                            </com.google.android.material.textfield.TextInputLayout>
-                        </androidx.constraintlayout.widget.ConstraintLayout>
+                                android:tint="@color/calendar_navigation_icon" />
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/calendar_controls_to_grid_section_spacing"
+                    android:layout_marginTop="16dp"
+                    app:cardBackgroundColor="@color/info_box_background"
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/calendar_card_stroke"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/tvCalendarGoogleStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/calendar_google_connect_hint"
+                            android:textColor="@color/calendar_body_text"
+                            android:textSize="14sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCalendarGoogleSync"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:maxLines="2"
+                            android:minHeight="42dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="14dp"
+                            android:text="@string/calendar_google_connect_button"
+                            android:textAllCaps="false"
+                            android:textColor="@color/calendar_title_text"
+                            android:textSize="13sp"
+                            app:cornerRadius="20dp"
+                            app:strokeColor="@color/calendar_title_text" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    app:cardBackgroundColor="@color/calendar_legend_background"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/calendar_card_stroke"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="24dp"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="18dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/calendar_legend_title"
+                            android:textColor="@color/calendar_title_text"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:baselineAligned="false"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardCalendarFilterReminder"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:clickable="true"
+                                android:focusable="true"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="0dp"
+                                app:rippleColor="@color/ripple_soft"
+                                app:strokeWidth="1dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="56dp"
+                                    android:orientation="horizontal"
+                                    android:paddingHorizontal="14dp">
+
+                                    <View
+                                        android:id="@+id/dotCalendarFilterReminder"
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:background="@drawable/bg_calendar_dot" />
+
+                                    <TextView
+                                        android:id="@+id/tvCalendarFilterReminder"
+                                        style="@style/TextAppearance.Material3.LabelLarge"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="8dp"
+                                        android:layout_weight="1"
+                                        android:maxLines="2"
+                                        android:text="@string/calendar_legend_reminder" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <Space
+                                android:layout_width="12dp"
+                                android:layout_height="1dp" />
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardCalendarFilterBirthday"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:clickable="true"
+                                android:focusable="true"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="0dp"
+                                app:rippleColor="@color/ripple_soft"
+                                app:strokeWidth="1dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="56dp"
+                                    android:orientation="horizontal"
+                                    android:paddingHorizontal="14dp">
+
+                                    <View
+                                        android:id="@+id/dotCalendarFilterBirthday"
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:background="@drawable/bg_calendar_dot" />
+
+                                    <TextView
+                                        android:id="@+id/tvCalendarFilterBirthday"
+                                        style="@style/TextAppearance.Material3.LabelLarge"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="8dp"
+                                        android:layout_weight="1"
+                                        android:maxLines="2"
+                                        android:text="@string/calendar_legend_birthday" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:baselineAligned="false"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardCalendarFilterHoliday"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:clickable="true"
+                                android:focusable="true"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="0dp"
+                                app:rippleColor="@color/ripple_soft"
+                                app:strokeWidth="1dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="56dp"
+                                    android:orientation="horizontal"
+                                    android:paddingHorizontal="14dp">
+
+                                    <View
+                                        android:id="@+id/dotCalendarFilterHoliday"
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:background="@drawable/bg_calendar_dot" />
+
+                                    <TextView
+                                        android:id="@+id/tvCalendarFilterHoliday"
+                                        style="@style/TextAppearance.Material3.LabelLarge"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="8dp"
+                                        android:layout_weight="1"
+                                        android:maxLines="2"
+                                        android:text="@string/calendar_legend_holiday" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <Space
+                                android:layout_width="12dp"
+                                android:layout_height="1dp" />
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardCalendarFilterCompleted"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:clickable="true"
+                                android:focusable="true"
+                                app:cardCornerRadius="20dp"
+                                app:cardElevation="0dp"
+                                app:rippleColor="@color/ripple_soft"
+                                app:strokeWidth="1dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="56dp"
+                                    android:orientation="horizontal"
+                                    android:paddingHorizontal="14dp">
+
+                                    <View
+                                        android:id="@+id/dotCalendarFilterCompleted"
+                                        android:layout_width="12dp"
+                                        android:layout_height="12dp"
+                                        android:background="@drawable/bg_calendar_dot" />
+
+                                    <TextView
+                                        android:id="@+id/tvCalendarFilterCompleted"
+                                        style="@style/TextAppearance.Material3.LabelLarge"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="8dp"
+                                        android:layout_weight="1"
+                                        android:maxLines="2"
+                                        android:text="@string/calendar_legend_completed" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCalendarLegendShowAll"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginTop="14dp"
+                            android:minHeight="46dp"
+                            android:paddingHorizontal="34dp"
+                            android:text="@string/calendar_legend_show_all"
+                            android:textAllCaps="false"
+                            android:textColor="@color/calendar_title_text"
+                            android:textSize="15sp"
+                            app:cornerRadius="22dp"
+                            app:strokeColor="@color/calendar_title_text" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardCalendarGrid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="34dp"
                     app:cardBackgroundColor="@color/calendar_card_background"
                     app:cardCornerRadius="28dp"
                     app:cardElevation="0dp"
@@ -200,8 +406,8 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:paddingHorizontal="14dp"
-                        android:paddingTop="14dp"
-                        android:paddingBottom="14dp">
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
 
                         <LinearLayout
                             android:id="@+id/containerCalendarWeekdays"
@@ -295,97 +501,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:cardBackgroundColor="@color/calendar_legend_background"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/calendar_card_stroke"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/calendar_legend_title"
-                        android:textColor="@color/calendar_title_text"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/TextAppearance.Material3.LabelLarge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_calendar_indicator_reminder"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="4dp"
-                            android:text="@string/calendar_legend_reminder"
-                            android:textColor="@color/calendar_indicator_reminder_text" />
-
-                        <Space
-                            android:layout_width="8dp"
-                            android:layout_height="1dp" />
-
-                        <TextView
-                            style="@style/TextAppearance.Material3.LabelLarge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_calendar_indicator_birthday"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="4dp"
-                            android:text="@string/calendar_legend_birthday"
-                            android:textColor="@color/calendar_indicator_birthday_text" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/TextAppearance.Material3.LabelLarge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_calendar_indicator_holiday"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="4dp"
-                            android:text="@string/calendar_legend_holiday"
-                            android:textColor="@color/calendar_indicator_holiday_text" />
-
-                        <Space
-                            android:layout_width="8dp"
-                            android:layout_height="1dp" />
-
-                        <TextView
-                            style="@style/TextAppearance.Material3.LabelLarge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_calendar_indicator_completed"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="4dp"
-                            android:text="@string/calendar_legend_completed"
-                            android:textColor="@color/calendar_indicator_completed_text" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="22dp"
                 android:layout_marginBottom="6dp"
                 app:cardBackgroundColor="@color/calendar_detail_background"
                 app:cardCornerRadius="28dp"
@@ -397,23 +513,45 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="18dp">
 
                     <TextView
                         android:id="@+id/tvSelectedDateTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="@color/calendar_title_text"
-                        android:textSize="20sp"
+                        android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvSelectedDateSummary"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="8dp"
                         android:textColor="@color/calendar_body_text"
-                        android:textSize="14sp" />
+                        android:textSize="16sp" />
+
+                    <LinearLayout
+                        android:id="@+id/containerSelectedDateActions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCalendarCreateReminder"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:minHeight="48dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="18dp"
+                            android:text="@string/calendar_create_reminder"
+                            android:textAllCaps="false"
+                            android:textSize="15sp"
+                            app:cornerRadius="24dp" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvHolidaySummary"
@@ -431,9 +569,9 @@
                         android:id="@+id/tvCalendarEmptyState"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="18dp"
                         android:textColor="@color/calendar_body_text"
-                        android:textSize="14sp"
+                        android:textSize="16sp"
                         android:visibility="gone" />
 
                     <LinearLayout

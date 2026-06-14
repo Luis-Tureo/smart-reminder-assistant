@@ -24,5 +24,8 @@ data class ReminderEntity(
     val lastTriggeredAtEpochMillis: Long? = null,
     val activeAlertAtEpochMillis: Long? = null,
     val activeAlertRepeatCount: Int = 0,
-    val nextUrgentRepeatAtEpochMillis: Long? = null
+    val nextUrgentRepeatAtEpochMillis: Long? = null,
+    val googleCalendarEventId: String? = null,
+    val googleCalendarSyncState: String = "PENDING",
+    val googleCalendarLastSyncAtEpochMillis: Long? = null
 )

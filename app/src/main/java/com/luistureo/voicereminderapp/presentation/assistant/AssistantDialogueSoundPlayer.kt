@@ -2,83 +2,118 @@ package com.luistureo.voicereminderapp.presentation.assistant
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.SoundPool
+import android.media.AudioFormat
+import android.media.AudioTrack
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
-import com.luistureo.voicereminderapp.R
+import kotlin.math.sin
 
 internal class AssistantDialogueSoundPlayer(
     context: Context
 ) {
 
-    private val soundPool: SoundPool
-    private val sampleId: Int
-    private val activeStreamIds = LinkedHashSet<Int>()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val audioAttributes: AudioAttributes
+    private val audioFormat: AudioFormat
+    private val activeTracks = LinkedHashSet<AudioTrack>()
 
-    private var isLoaded: Boolean = false
     private var lastPlayTimestamp: Long = 0L
 
     init {
-        val audioAttributes = AudioAttributes.Builder()
+        audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
 
-        soundPool = SoundPool.Builder()
-            .setAudioAttributes(audioAttributes)
-            .setMaxStreams(2)
+        audioFormat = AudioFormat.Builder()
+            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+            .setSampleRate(SAMPLE_RATE)
+            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
             .build()
-
-        sampleId = soundPool.load(context, R.raw.assistant_dialogue_blip, 1)
-
-        soundPool.setOnLoadCompleteListener { _, loadedSampleId, status ->
-            isLoaded = loadedSampleId == sampleId && status == 0
-        }
     }
 
     fun playBlip(step: Int) {
-        if (!isLoaded) return
-
         val now = SystemClock.uptimeMillis()
         if (now - lastPlayTimestamp < 36L) return
 
         lastPlayTimestamp = now
 
-        val playbackRate = when (step % 4) {
-            0 -> 1.05f
-            2 -> 0.97f
-            else -> 1.0f
-        }
+        val buffer = buildRetroBlipBuffer(step)
+        val track = AudioTrack.Builder()
+            .setAudioAttributes(audioAttributes)
+            .setAudioFormat(audioFormat)
+            .setBufferSizeInBytes(buffer.size * BYTES_PER_SAMPLE)
+            .setTransferMode(AudioTrack.MODE_STATIC)
+            .build()
 
-        val streamId = soundPool.play(
-            sampleId,
-            0.11f,
-            0.11f,
-            1,
-            0,
-            playbackRate
-        )
+        track.write(buffer, 0, buffer.size)
+        track.setVolume(0.12f)
+        track.play()
 
-        if (streamId == 0) return
+        activeTracks.add(track)
+        trimActiveTracks()
 
-        activeStreamIds.add(streamId)
-        trimActiveStreams()
+        mainHandler.postDelayed({
+            activeTracks.remove(track)
+            runCatching {
+                track.stop()
+                track.release()
+            }
+        }, BLIP_DURATION_MS + 24L)
     }
 
     fun stop() {
-        activeStreamIds.forEach(soundPool::stop)
-        activeStreamIds.clear()
+        activeTracks.forEach { track ->
+            runCatching {
+                track.stop()
+                track.release()
+            }
+        }
+        activeTracks.clear()
     }
 
     fun release() {
         stop()
-        soundPool.release()
+        mainHandler.removeCallbacksAndMessages(null)
     }
 
-    private fun trimActiveStreams() {
-        while (activeStreamIds.size > 2) {
-            val streamId = activeStreamIds.firstOrNull() ?: break
-            soundPool.stop(streamId)
-            activeStreamIds.remove(streamId)
+    private fun trimActiveTracks() {
+        while (activeTracks.size > MAX_STREAMS) {
+            val track = activeTracks.firstOrNull() ?: break
+            activeTracks.remove(track)
+            runCatching {
+                track.stop()
+                track.release()
+            }
         }
+    }
+
+    private fun buildRetroBlipBuffer(step: Int): ShortArray {
+        val sampleCount = (SAMPLE_RATE * BLIP_DURATION_MS / 1000).toInt()
+        val frequency = 560.0 + (step % 5) * 28.0
+
+        return ShortArray(sampleCount) { index ->
+            val progress = index.toFloat() / sampleCount.toFloat()
+            val envelope = when {
+                progress < 0.18f -> progress / 0.18f
+                progress > 0.72f -> (1f - progress) / 0.28f
+                else -> 1f
+            }.coerceIn(0f, 1f)
+            val wave = if (sin(2.0 * Math.PI * frequency * index / SAMPLE_RATE) >= 0.0) {
+                1.0
+            } else {
+                -1.0
+            }
+
+            (wave * envelope * Short.MAX_VALUE * 0.2f).toInt().toShort()
+        }
+    }
+
+    private companion object {
+        const val SAMPLE_RATE = 22_050
+        const val BLIP_DURATION_MS = 34L
+        const val BYTES_PER_SAMPLE = 2
+        const val MAX_STREAMS = 2
     }
 }

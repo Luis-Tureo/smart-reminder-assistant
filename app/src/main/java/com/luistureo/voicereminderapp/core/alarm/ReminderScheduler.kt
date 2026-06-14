@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.domain.model.Reminder
@@ -58,11 +59,7 @@ class ReminderScheduler(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAtMillis,
-            pendingIntent
-        )
+        scheduleAlarmSafely(triggerAtMillis, pendingIntent)
     }
 
     fun scheduleUrgentRepeat(reminder: Reminder) {
@@ -82,11 +79,7 @@ class ReminderScheduler(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAtMillis,
-            pendingIntent
-        )
+        scheduleAlarmSafely(triggerAtMillis, pendingIntent)
     }
 
     fun cancelReminder(reminderId: Int) {
@@ -109,11 +102,11 @@ class ReminderScheduler(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            triggerAtMillis,
-            pendingIntent
-        )
+        scheduleAlarmSafely(triggerAtMillis, pendingIntent)
+    }
+
+    fun canScheduleExactAlarms(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
     }
 
     private fun cancelPrimaryReminder(reminderId: Int) {
@@ -138,6 +131,39 @@ class ReminderScheduler(
 
         alarmManager.cancel(pendingIntent)
         pendingIntent.cancel()
+    }
+
+    private fun scheduleAlarmSafely(
+        triggerAtMillis: Long,
+        pendingIntent: PendingIntent
+    ) {
+        val manager = alarmManager
+
+        try {
+            if (
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                !manager.canScheduleExactAlarms()
+            ) {
+                manager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+                return
+            }
+
+            manager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        } catch (_: SecurityException) {
+            manager.set(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        }
     }
 
     private fun shouldSchedulePrimaryReminder(reminder: Reminder): Boolean {

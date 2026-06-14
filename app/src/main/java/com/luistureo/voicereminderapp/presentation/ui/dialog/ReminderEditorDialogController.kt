@@ -20,6 +20,8 @@ import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import com.luistureo.voicereminderapp.domain.model.ReminderWeekday
 
+// TODO cleanup: controlador sin referencias desde el flujo actual de recordatorios.
+// No conectarlo sin revisar UX; si queda obsoleto, eliminar junto con dialog_reminder_editor.xml.
 class ReminderEditorDialogController(
     private val context: Context
 ) {

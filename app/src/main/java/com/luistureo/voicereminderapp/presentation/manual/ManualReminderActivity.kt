@@ -2,18 +2,17 @@ package com.luistureo.voicereminderapp.presentation.manual
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
-import android.widget.ArrayAdapter
-import android.widget.CheckBox
-import android.widget.ImageView
+import android.view.View
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
@@ -24,10 +23,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
@@ -38,14 +36,12 @@ import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
-import com.luistureo.voicereminderapp.domain.model.ReminderWeekday
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.SaveReminderDraftUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
-import com.luistureo.voicereminderapp.presentation.camera.CameraReminderConfirmationActivity
-import com.luistureo.voicereminderapp.presentation.camera.CameraReminderDraftContract
+import com.luistureo.voicereminderapp.presentation.state.ReminderFormState
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModelFactory
@@ -56,21 +52,18 @@ import java.util.Calendar
 class ManualReminderActivity : ComponentActivity() {
 
     private enum class RecurrenceOption(val labelResId: Int) {
+        NONE(R.string.reminder_recurrence_none),
         DAILY(R.string.reminder_recurrence_daily),
         WEEKLY(R.string.reminder_recurrence_weekly),
         MONTHLY(R.string.reminder_recurrence_monthly),
-        YEARLY(R.string.reminder_recurrence_yearly),
-        SPECIFIC_WEEKDAYS(R.string.reminder_recurrence_specific_weekdays),
-        EVERY_X_DAYS(R.string.reminder_recurrence_every_x_days),
-        EVERY_X_WEEKS(R.string.reminder_recurrence_every_x_weeks),
-        EVERY_X_MONTHS(R.string.reminder_recurrence_every_x_months)
+        YEARLY(R.string.reminder_recurrence_yearly)
     }
 
     private lateinit var backButton: ImageButton
     private lateinit var saveButton: MaterialButton
     private lateinit var screenTitle: TextView
     private lateinit var screenSubtitle: TextView
-    private lateinit var cameraInputCard: android.view.View
+    private lateinit var cameraInputCard: View
     private lateinit var cameraPreviewImage: ImageView
     private lateinit var cameraScanStatusText: TextView
     private lateinit var cameraScanProgress: LinearProgressIndicator
@@ -81,13 +74,7 @@ class ManualReminderActivity : ComponentActivity() {
     private lateinit var dateButton: MaterialButton
     private lateinit var timeButton: MaterialButton
     private lateinit var urgentSwitch: SwitchMaterial
-    private lateinit var recurringEnabledSwitch: SwitchMaterial
-    private lateinit var recurrenceInput: MaterialAutoCompleteTextView
-    private lateinit var recurrenceIntervalLayout: TextInputLayout
-    private lateinit var recurrenceIntervalInput: TextInputEditText
-    private lateinit var recurrenceActiveSwitch: SwitchMaterial
-    private lateinit var recurringContent: android.view.View
-    private lateinit var weekdayChecks: Map<ReminderWeekday, CheckBox>
+    private lateinit var recurrenceButtons: Map<RecurrenceOption, MaterialButton>
 
     private lateinit var reminderViewModel: ReminderViewModel
     private lateinit var cameraDraftExtractor: CameraReminderDraftExtractor
@@ -96,11 +83,11 @@ class ManualReminderActivity : ComponentActivity() {
     private var currentSource: ReminderSource = ReminderSource.MANUAL
     private var selectedDate: String = ""
     private var selectedTime: String = ""
-    private var selectedRecurrenceOption: RecurrenceOption = RecurrenceOption.DAILY
-    private var lastSelectedRecurrenceOption: RecurrenceOption = RecurrenceOption.DAILY
+    private var selectedRecurrenceOption: RecurrenceOption = RecurrenceOption.NONE
     private var isBindingForm: Boolean = false
     private var currentCameraImageUri: Uri? = null
     private var isProcessingCameraImage: Boolean = false
+    private var isDateLocked: Boolean = false
 
     private val cameraPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -135,24 +122,11 @@ class ManualReminderActivity : ComponentActivity() {
             uri?.let(::processSelectedImage)
         }
 
-    private val cameraConfirmationLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode != RESULT_OK) return@registerForActivityResult
-
-            val action = result.data?.getStringExtra(CameraReminderDraftContract.EXTRA_ACTION)
-            val payload = result.data?.let(CameraReminderDraftContract::readPayload) ?: return@registerForActivityResult
-            val draft = payload.toDraft()
-
-            reminderViewModel.applyDraftToForm(draft, ReminderSource.CAMERA)
-            currentSource = ReminderSource.CAMERA
-            cameraInputCard.isVisible = true
-            cameraScanStatusText.text = resolvePostConfirmationStatus(action, draft)
-            guidePostConfirmationEditing(draft, action)
-        }
-
     companion object {
         const val EXTRA_REMINDER_ID = "extra_reminder_id"
         const val EXTRA_DEFAULT_SOURCE = "extra_default_source"
+        const val EXTRA_PREFILLED_DATE = "extra_prefilled_date"
+        const val EXTRA_LOCK_DATE = "extra_lock_date"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,9 +143,18 @@ class ManualReminderActivity : ComponentActivity() {
         loadInitialForm()
     }
 
+    override fun onDestroy() {
+        cameraDraftExtractor.close()
+        super.onDestroy()
+    }
+
     private fun initViewModel() {
         val database = ReminderDatabase.getDatabase(this)
         val repository = ReminderRepositoryImpl(database.reminderDao())
+        val googleCalendarSynchronizer = GoogleCalendarReminderSynchronizer(
+            context = applicationContext,
+            reminderRepository = repository
+        )
 
         val factory = ReminderViewModelFactory(
             context = applicationContext,
@@ -179,16 +162,11 @@ class ManualReminderActivity : ComponentActivity() {
             getRemindersUseCase = GetRemindersUseCase(repository),
             getReminderByIdUseCase = GetReminderByIdUseCase(repository),
             deleteReminderUseCase = DeleteReminderUseCase(repository),
-            updateReminderUseCase = UpdateReminderUseCase(repository)
+            updateReminderUseCase = UpdateReminderUseCase(repository),
+            googleCalendarSynchronizer = googleCalendarSynchronizer
         )
 
         reminderViewModel = ViewModelProvider(this, factory)[ReminderViewModel::class.java]
-    }
-
-    private fun initCameraTools() {
-        cameraDraftExtractor = CameraReminderDraftExtractor(
-            LocalImageTextRecognizer(applicationContext)
-        )
     }
 
     private fun initViews() {
@@ -207,94 +185,43 @@ class ManualReminderActivity : ComponentActivity() {
         dateButton = findViewById(R.id.btnSelectDate)
         timeButton = findViewById(R.id.btnSelectTime)
         urgentSwitch = findViewById(R.id.switchUrgent)
-        recurringEnabledSwitch = findViewById(R.id.switchRecurringEnabled)
-        recurrenceInput = findViewById(R.id.inputRecurrenceType)
-        recurrenceIntervalLayout = findViewById(R.id.layoutRecurrenceInterval)
-        recurrenceIntervalInput = findViewById(R.id.inputRecurrenceInterval)
-        recurrenceActiveSwitch = findViewById(R.id.switchRecurrenceActive)
-        recurringContent = findViewById(R.id.layoutRecurringContent)
-        weekdayChecks = mapOf(
-            ReminderWeekday.MONDAY to findViewById(R.id.checkMonday),
-            ReminderWeekday.TUESDAY to findViewById(R.id.checkTuesday),
-            ReminderWeekday.WEDNESDAY to findViewById(R.id.checkWednesday),
-            ReminderWeekday.THURSDAY to findViewById(R.id.checkThursday),
-            ReminderWeekday.FRIDAY to findViewById(R.id.checkFriday),
-            ReminderWeekday.SATURDAY to findViewById(R.id.checkSaturday),
-            ReminderWeekday.SUNDAY to findViewById(R.id.checkSunday)
+        recurrenceButtons = mapOf(
+            RecurrenceOption.NONE to findViewById(R.id.btnRecurrenceNone),
+            RecurrenceOption.DAILY to findViewById(R.id.btnRecurrenceDaily),
+            RecurrenceOption.WEEKLY to findViewById(R.id.btnRecurrenceWeekly),
+            RecurrenceOption.MONTHLY to findViewById(R.id.btnRecurrenceMonthly),
+            RecurrenceOption.YEARLY to findViewById(R.id.btnRecurrenceYearly)
+        )
+    }
+
+    private fun initCameraTools() {
+        cameraDraftExtractor = CameraReminderDraftExtractor(
+            LocalImageTextRecognizer(applicationContext)
         )
     }
 
     private fun setupRecurrenceOptions() {
-        val recurrenceLabels = RecurrenceOption.entries.map { getString(it.labelResId) }
-        recurrenceInput.setAdapter(
-            ArrayAdapter(
-                this,
-                android.R.layout.simple_list_item_1,
-                recurrenceLabels
-            )
-        )
-        recurrenceInput.setText(getString(RecurrenceOption.DAILY.labelResId), false)
+        updateRecurrenceButtons()
     }
 
     private fun setupListeners() {
-        backButton.setOnClickListener {
-            finish()
-        }
-
-        saveButton.setOnClickListener {
-            saveReminder()
-        }
-
+        backButton.setOnClickListener { finish() }
+        saveButton.setOnClickListener { saveReminder() }
         dateButton.setOnClickListener {
-            showDatePicker()
-        }
-
-        timeButton.setOnClickListener {
-            showTimePicker()
-        }
-
-        takePhotoButton.setOnClickListener {
-            openCameraForReminder()
-        }
-
-        selectImageButton.setOnClickListener {
-            selectImageLauncher.launch("image/*")
-        }
-
-        recurringEnabledSwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (isBindingForm) return@setOnCheckedChangeListener
-
-            recurringContent.visibility = if (isChecked) android.view.View.VISIBLE else android.view.View.GONE
-            recurrenceActiveSwitch.visibility = if (isChecked) android.view.View.VISIBLE else android.view.View.GONE
-            recurrenceIntervalLayout.visibility = if (isChecked &&
-                (selectedRecurrenceOption == RecurrenceOption.EVERY_X_DAYS ||
-                        selectedRecurrenceOption == RecurrenceOption.EVERY_X_WEEKS ||
-                        selectedRecurrenceOption == RecurrenceOption.EVERY_X_MONTHS)
-            ) android.view.View.VISIBLE else android.view.View.GONE
-
-            if (isChecked) {
-                selectedRecurrenceOption = lastSelectedRecurrenceOption
-                recurrenceInput.setText(
-                    getString(selectedRecurrenceOption.labelResId),
-                    false
-                )
-                if (recurrenceIntervalLayout.visibility == android.view.View.VISIBLE &&
-                    recurrenceIntervalInput.text.isNullOrBlank()
-                ) {
-                    recurrenceIntervalInput.setText("1")
-                }
+            if (!isDateLocked) {
+                showDatePicker()
             }
         }
+        timeButton.setOnClickListener { showTimePicker() }
+        takePhotoButton.setOnClickListener { openCameraForReminder() }
+        selectImageButton.setOnClickListener { selectImageLauncher.launch("image/*") }
 
-        recurrenceInput.setOnItemClickListener { _, _, position, _ ->
-            val option = RecurrenceOption.entries[position]
-            selectedRecurrenceOption = option
-            lastSelectedRecurrenceOption = option
-            updateRecurrenceControls()
-        }
-
-        recurrenceActiveSwitch.setOnCheckedChangeListener { _, _ ->
-            if (isBindingForm) return@setOnCheckedChangeListener
+        recurrenceButtons.forEach { (option, button) ->
+            button.setOnClickListener {
+                if (isBindingForm) return@setOnClickListener
+                selectedRecurrenceOption = option
+                updateRecurrenceButtons()
+            }
         }
     }
 
@@ -313,7 +240,11 @@ class ManualReminderActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 reminderViewModel.events.collect { event ->
                     if (event is ReminderUiEvent.ShowMessage) {
-                        Toast.makeText(this@ManualReminderActivity, event.message, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@ManualReminderActivity,
+                            event.message,
+                            Toast.LENGTH_SHORT
+                        ).show()
 
                         if (
                             event.message.contains("guardado", ignoreCase = true) ||
@@ -332,18 +263,20 @@ class ManualReminderActivity : ComponentActivity() {
         val defaultSource = intent.getStringExtra(EXTRA_DEFAULT_SOURCE)
             ?.let { runCatching { ReminderSource.valueOf(it) }.getOrNull() }
             ?: ReminderSource.MANUAL
+        val prefilledDate = intent.getStringExtra(EXTRA_PREFILLED_DATE).orEmpty()
 
         currentSource = defaultSource
         currentReminderId = reminderId
+        isDateLocked = intent.getBooleanExtra(EXTRA_LOCK_DATE, false) && prefilledDate.isNotBlank()
 
         if (reminderId > 0) {
             reminderViewModel.loadReminderForEditing(reminderId, defaultSource)
         } else {
-            reminderViewModel.startManualReminderForm(defaultSource)
+            reminderViewModel.startManualReminderForm(defaultSource, prefilledDate)
         }
     }
 
-    private fun bindFormState(formState: com.luistureo.voicereminderapp.presentation.state.ReminderFormState) {
+    private fun bindFormState(formState: ReminderFormState) {
         isBindingForm = true
 
         currentReminderId = formState.reminderId
@@ -358,7 +291,6 @@ class ManualReminderActivity : ComponentActivity() {
         }
 
         screenSubtitle.text = when {
-            currentReminderId != 0 -> getString(R.string.manual_reminder_screen_subtitle)
             currentSource == ReminderSource.CAMERA -> getString(R.string.home_camera_reminder_subtitle)
             else -> getString(R.string.manual_reminder_screen_subtitle)
         }
@@ -376,62 +308,39 @@ class ManualReminderActivity : ComponentActivity() {
         updateDateTimeButtons()
 
         urgentSwitch.isChecked = formState.isUrgent
+        selectedRecurrenceOption = formState.recurrence?.toOption() ?: RecurrenceOption.NONE
+        updateRecurrenceButtons()
 
-        val recurrence = formState.recurrence
-        val hasRecurrence = recurrence != null
-        recurringEnabledSwitch.isChecked = hasRecurrence
-        recurringContent.visibility = if (hasRecurrence) android.view.View.VISIBLE else android.view.View.GONE
-        recurrenceActiveSwitch.visibility = if (hasRecurrence) android.view.View.VISIBLE else android.view.View.GONE
-
-        if (hasRecurrence) {
-            selectedRecurrenceOption = recurrence.toOption()
-            lastSelectedRecurrenceOption = selectedRecurrenceOption
-            recurrenceInput.setText(getString(selectedRecurrenceOption.labelResId), false)
-            recurrenceIntervalInput.setText(
-                recurrence.interval.takeIf { it > 1 }?.toString().orEmpty()
-            )
-            recurrenceActiveSwitch.isChecked = recurrence.isActive
-            bindWeekdays(recurrence.weekdays)
-        } else {
-            selectedRecurrenceOption = lastSelectedRecurrenceOption
-            recurrenceInput.setText(getString(lastSelectedRecurrenceOption.labelResId), false)
-            recurrenceIntervalInput.setText("")
-            recurrenceActiveSwitch.isChecked = true
-            bindWeekdays(emptySet())
-        }
-
-        updateRecurrenceControls()
         isBindingForm = false
     }
 
     private fun updateDateTimeButtons() {
-        dateButton.text = if (selectedDate.isBlank()) {
-            getString(R.string.reminder_select_date)
-        } else {
-            selectedDate
-        }
-
-        timeButton.text = if (selectedTime.isBlank()) {
-            getString(R.string.reminder_select_time)
-        } else {
-            selectedTime
-        }
+        dateButton.text = selectedDate.takeIf { it.isNotBlank() }
+            ?: getString(R.string.reminder_select_date)
+        dateButton.isEnabled = !isDateLocked
+        timeButton.text = selectedTime.takeIf { it.isNotBlank() }
+            ?: getString(R.string.reminder_select_time)
     }
 
-    private fun updateRecurrenceControls() {
-        val isRecurring = recurringEnabledSwitch.isChecked
-        recurringContent.visibility = if (isRecurring) android.view.View.VISIBLE else android.view.View.GONE
-        recurrenceActiveSwitch.visibility = if (isRecurring) android.view.View.VISIBLE else android.view.View.GONE
-        recurrenceIntervalLayout.visibility = if (isRecurring &&
-            (selectedRecurrenceOption == RecurrenceOption.EVERY_X_DAYS ||
-                    selectedRecurrenceOption == RecurrenceOption.EVERY_X_WEEKS ||
-                    selectedRecurrenceOption == RecurrenceOption.EVERY_X_MONTHS)
-        ) android.view.View.VISIBLE else android.view.View.GONE
-    }
+    private fun updateRecurrenceButtons() {
+        val selectedBackground = ContextCompat.getColor(
+            this,
+            R.color.recurrence_chip_selected_background
+        )
+        val defaultBackground = ContextCompat.getColor(
+            this,
+            R.color.recurrence_chip_background
+        )
+        val stroke = ContextCompat.getColor(this, R.color.recurrence_chip_stroke)
+        val text = ContextCompat.getColor(this, R.color.reminder_text_primary)
 
-    private fun bindWeekdays(weekdays: Set<ReminderWeekday>) {
-        weekdayChecks.forEach { (weekday, checkBox) ->
-            checkBox.isChecked = weekday in weekdays
+        recurrenceButtons.forEach { (option, button) ->
+            val isSelected = option == selectedRecurrenceOption
+            button.backgroundTintList = ColorStateList.valueOf(
+                if (isSelected) selectedBackground else defaultBackground
+            )
+            button.strokeColor = ColorStateList.valueOf(stroke)
+            button.setTextColor(text)
         }
     }
 
@@ -499,20 +408,6 @@ class ManualReminderActivity : ComponentActivity() {
             return
         }
 
-        val recurrence = if (recurringEnabledSwitch.isChecked) {
-            buildRecurrence()
-        } else {
-            null
-        }
-
-        if (recurringEnabledSwitch.isChecked &&
-            selectedRecurrenceOption == RecurrenceOption.SPECIFIC_WEEKDAYS &&
-            weekdayChecks.filterValues { it.isChecked }.isEmpty()
-        ) {
-            Toast.makeText(this, R.string.reminder_error_weekdays_required, Toast.LENGTH_SHORT).show()
-            return
-        }
-
         val draft = ReminderDraft(
             reminderId = currentReminderId,
             title = title,
@@ -521,7 +416,7 @@ class ManualReminderActivity : ComponentActivity() {
             time = selectedTimeValue,
             isUrgent = urgentSwitch.isChecked,
             source = currentSource,
-            recurrence = recurrence
+            recurrence = buildRecurrence()
         )
 
         reminderViewModel.saveReminderDraft(draft)
@@ -541,11 +436,23 @@ class ManualReminderActivity : ComponentActivity() {
     }
 
     private fun launchTakePicture() {
-        val tempFile = createCameraImageFile()
-        val authority = "${applicationContext.packageName}.fileprovider"
-        val imageUri = FileProvider.getUriForFile(this, authority, tempFile)
-        currentCameraImageUri = imageUri
-        takePictureLauncher.launch(imageUri)
+        runCatching {
+            val tempFile = createCameraImageFile()
+            val authority = "${applicationContext.packageName}.fileprovider"
+            val imageUri = FileProvider.getUriForFile(this, authority, tempFile)
+            currentCameraImageUri = imageUri
+            takePictureLauncher.launch(imageUri)
+        }.onFailure {
+            currentCameraImageUri = null
+            isProcessingCameraImage = false
+            cameraScanStatusText.text = getString(R.string.camera_reminder_capture_failed)
+            updateCameraScanUiState()
+            Toast.makeText(
+                this,
+                R.string.camera_reminder_capture_failed,
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun createCameraImageFile(): File {
@@ -572,7 +479,7 @@ class ManualReminderActivity : ComponentActivity() {
             runCatching {
                 cameraDraftExtractor.extractFromUri(imageUri)
             }.onSuccess { scanResult ->
-                launchCameraConfirmation(scanResult, imageUri)
+                applyCameraScanResult(scanResult)
             }.onFailure {
                 isProcessingCameraImage = false
                 cameraScanStatusText.text = getString(R.string.camera_reminder_scan_error)
@@ -581,30 +488,31 @@ class ManualReminderActivity : ComponentActivity() {
         }
     }
 
-    private fun launchCameraConfirmation(
-        scanResult: CameraReminderScanResult,
-        imageUri: Uri
-    ) {
+    private fun applyCameraScanResult(scanResult: CameraReminderScanResult) {
         isProcessingCameraImage = false
 
-        val confirmationIntent = Intent(this, CameraReminderConfirmationActivity::class.java).apply {
-            putExtras(
-                CameraReminderDraftContract.createIntent(
-                    title = scanResult.draft.title,
-                    text = scanResult.draft.text,
-                    date = scanResult.draft.date,
-                    time = scanResult.draft.time,
-                    recognizedText = scanResult.recognizedText,
-                    imageUri = imageUri,
-                    hasDetectedDate = scanResult.hasDetectedDate,
-                    hasDetectedTime = scanResult.hasDetectedTime
-                ).extras ?: Bundle.EMPTY
-            )
+        val detectedText = scanResult.draft.text
+            ?: scanResult.recognizedText.trim().takeIf { it.isNotBlank() }
+
+        val draft = scanResult.draft.copy(
+            text = detectedText,
+            date = if (isDateLocked) selectedDate else scanResult.draft.date,
+            source = ReminderSource.CAMERA
+        )
+
+        if (!detectedText.isNullOrBlank()) {
+            reminderViewModel.applyDraftToForm(draft, ReminderSource.CAMERA)
         }
 
-        cameraConfirmationLauncher.launch(confirmationIntent)
         cameraScanStatusText.text = buildCameraScanStatusMessage(scanResult)
         updateCameraScanUiState()
+
+        when {
+            detectedText.isNullOrBlank() -> detailInput.requestFocus()
+            draft.date.isNullOrBlank() -> dateButton.requestFocus()
+            draft.time.isNullOrBlank() -> timeButton.requestFocus()
+            else -> saveButton.requestFocus()
+        }
     }
 
     private fun buildCameraScanStatusMessage(scanResult: CameraReminderScanResult): String {
@@ -615,7 +523,7 @@ class ManualReminderActivity : ComponentActivity() {
             scanResult.hasDetectedReminderText && (scanResult.hasDetectedDate || scanResult.hasDetectedTime) ->
                 getString(R.string.camera_reminder_scan_success_partial_schedule)
 
-            scanResult.hasDetectedReminderText ->
+            scanResult.hasDetectedReminderText || scanResult.recognizedText.isNotBlank() ->
                 getString(R.string.camera_reminder_scan_success_text_only)
 
             scanResult.hasDetectedDate || scanResult.hasDetectedTime ->
@@ -625,57 +533,8 @@ class ManualReminderActivity : ComponentActivity() {
         }
     }
 
-    private fun resolvePostConfirmationStatus(
-        action: String?,
-        draft: ReminderDraft
-    ): String {
-        return when {
-            draft.date.isNullOrBlank() && draft.time.isNullOrBlank() ->
-                getString(R.string.camera_post_edit_missing_date_time)
-
-            draft.date.isNullOrBlank() ->
-                getString(R.string.camera_post_edit_missing_date)
-
-            draft.time.isNullOrBlank() ->
-                getString(R.string.camera_post_edit_missing_time)
-
-            action == CameraReminderDraftContract.ACTION_EDIT ->
-                getString(R.string.camera_confirmation_result_editing)
-
-            else ->
-                getString(R.string.camera_post_edit_ready_to_save)
-        }
-    }
-
-    private fun guidePostConfirmationEditing(
-        draft: ReminderDraft,
-        action: String?
-    ) {
-        // Prioriza el primer dato faltante para reducir errores antes de guardar.
-        when {
-            draft.text.isNullOrBlank() -> {
-                detailInput.requestFocus()
-            }
-
-            draft.date.isNullOrBlank() -> {
-                dateButton.requestFocus()
-            }
-
-            draft.time.isNullOrBlank() -> {
-                timeButton.requestFocus()
-            }
-
-            action == CameraReminderDraftContract.ACTION_EDIT -> {
-                detailInput.requestFocus()
-            }
-
-            else -> {
-                saveButton.requestFocus()
-            }
-        }
-    }
-
     private fun updateCameraScanUiState() {
+        cameraPreviewImage.isVisible = currentCameraImageUri != null
         cameraScanProgress.isVisible = isProcessingCameraImage
         takePhotoButton.isEnabled = !isProcessingCameraImage
         selectImageButton.isEnabled = !isProcessingCameraImage
@@ -687,55 +546,23 @@ class ManualReminderActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        cameraDraftExtractor.close()
-        super.onDestroy()
-    }
-
     private fun buildRecurrence(): ReminderRecurrence? {
-        val interval = recurrenceIntervalInput.text?.toString()?.toIntOrNull()?.coerceAtLeast(1) ?: 1
-        val weekdays = weekdayChecks.filterValues { it.isChecked }.keys.toSet()
-
         return when (selectedRecurrenceOption) {
-            RecurrenceOption.DAILY -> ReminderRecurrence(ReminderRecurrenceUnit.DAY, 1, isActive = recurrenceActiveSwitch.isChecked)
-            RecurrenceOption.WEEKLY -> ReminderRecurrence(ReminderRecurrenceUnit.WEEK, 1, isActive = recurrenceActiveSwitch.isChecked)
-            RecurrenceOption.MONTHLY -> ReminderRecurrence(ReminderRecurrenceUnit.MONTH, 1, isActive = recurrenceActiveSwitch.isChecked)
-            RecurrenceOption.YEARLY -> ReminderRecurrence(ReminderRecurrenceUnit.YEAR, 1, isActive = recurrenceActiveSwitch.isChecked)
-            RecurrenceOption.SPECIFIC_WEEKDAYS -> ReminderRecurrence(
-                unit = ReminderRecurrenceUnit.WEEK,
-                interval = 1,
-                weekdays = weekdays,
-                isActive = recurrenceActiveSwitch.isChecked
-            )
-            RecurrenceOption.EVERY_X_DAYS -> ReminderRecurrence(
-                ReminderRecurrenceUnit.DAY,
-                interval,
-                isActive = recurrenceActiveSwitch.isChecked
-            )
-            RecurrenceOption.EVERY_X_WEEKS -> ReminderRecurrence(
-                ReminderRecurrenceUnit.WEEK,
-                interval,
-                isActive = recurrenceActiveSwitch.isChecked
-            )
-            RecurrenceOption.EVERY_X_MONTHS -> ReminderRecurrence(
-                ReminderRecurrenceUnit.MONTH,
-                interval,
-                isActive = recurrenceActiveSwitch.isChecked
-            )
+            RecurrenceOption.NONE -> null
+            RecurrenceOption.DAILY -> ReminderRecurrence(ReminderRecurrenceUnit.DAY)
+            RecurrenceOption.WEEKLY -> ReminderRecurrence(ReminderRecurrenceUnit.WEEK)
+            RecurrenceOption.MONTHLY -> ReminderRecurrence(ReminderRecurrenceUnit.MONTH)
+            RecurrenceOption.YEARLY -> ReminderRecurrence(ReminderRecurrenceUnit.YEAR)
         }
     }
 
     private fun ReminderRecurrence.toOption(): RecurrenceOption {
         return when {
-            unit == ReminderRecurrenceUnit.DAY && interval == 1 -> RecurrenceOption.DAILY
-            unit == ReminderRecurrenceUnit.WEEK && interval == 1 && weekdays.isEmpty() -> RecurrenceOption.WEEKLY
-            unit == ReminderRecurrenceUnit.MONTH && interval == 1 -> RecurrenceOption.MONTHLY
-            unit == ReminderRecurrenceUnit.YEAR && interval == 1 -> RecurrenceOption.YEARLY
-            unit == ReminderRecurrenceUnit.WEEK && weekdays.isNotEmpty() -> RecurrenceOption.SPECIFIC_WEEKDAYS
-            unit == ReminderRecurrenceUnit.DAY -> RecurrenceOption.EVERY_X_DAYS
-            unit == ReminderRecurrenceUnit.WEEK -> RecurrenceOption.EVERY_X_WEEKS
-            unit == ReminderRecurrenceUnit.MONTH -> RecurrenceOption.EVERY_X_MONTHS
-            else -> RecurrenceOption.DAILY
+            unit == ReminderRecurrenceUnit.DAY && normalizedInterval == 1 -> RecurrenceOption.DAILY
+            unit == ReminderRecurrenceUnit.WEEK && normalizedInterval == 1 -> RecurrenceOption.WEEKLY
+            unit == ReminderRecurrenceUnit.MONTH && normalizedInterval == 1 -> RecurrenceOption.MONTHLY
+            unit == ReminderRecurrenceUnit.YEAR && normalizedInterval == 1 -> RecurrenceOption.YEARLY
+            else -> RecurrenceOption.NONE
         }
     }
 }

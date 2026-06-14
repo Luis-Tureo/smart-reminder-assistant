@@ -37,7 +37,11 @@ class SaveReminderDraftUseCase(
             source = draft.source,
             recurrence = draft.recurrence,
             scheduleState = existingReminder?.scheduleState
-                ?: scheduleStateResolver.clearUrgentAlert(ReminderScheduleState())
+                ?: scheduleStateResolver.clearUrgentAlert(ReminderScheduleState()),
+            googleCalendarEventId = existingReminder?.googleCalendarEventId,
+            googleCalendarSyncState = existingReminder?.googleCalendarSyncState
+                ?: com.luistureo.voicereminderapp.domain.model.GoogleCalendarSyncState.PENDING,
+            googleCalendarLastSyncAtEpochMillis = existingReminder?.googleCalendarLastSyncAtEpochMillis
         )
 
         val resolvedReminder = baseReminder.copy(

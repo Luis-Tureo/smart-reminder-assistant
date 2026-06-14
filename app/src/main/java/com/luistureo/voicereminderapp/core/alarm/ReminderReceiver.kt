@@ -34,6 +34,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     isUrgentRepeat = isUrgentRepeat,
                     requestedOccurrenceAtEpochMillis = requestedOccurrenceAtEpochMillis
                 )
+            } catch (_: Exception) {
             } finally {
                 pendingResult.finish()
             }

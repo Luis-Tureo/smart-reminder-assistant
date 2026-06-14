@@ -16,6 +16,10 @@ class AssistantAnimator(
     private var currentSequenceVersion: Int = 0
     private var isResumed: Boolean = false
 
+    init {
+        assistantView.preloadFrames(*ALL_FRAME_RES_IDS)
+    }
+
     fun render(
         state: AssistantVisualState,
         faceState: AssistantFaceState = state.defaultFaceState
@@ -115,6 +119,17 @@ class AssistantAnimator(
                 frameDurationMs = 220L
             )
         }
+    }
+
+    private companion object {
+        val ALL_FRAME_RES_IDS = intArrayOf(
+            R.drawable.assistant_state_idle,
+            R.drawable.assistant_state_listening,
+            R.drawable.assistant_state_thinking,
+            R.drawable.assistant_state_asking_time,
+            R.drawable.assistant_state_success,
+            R.drawable.assistant_state_speaking
+        )
     }
 }
 

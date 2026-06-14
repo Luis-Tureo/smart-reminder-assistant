@@ -23,7 +23,7 @@ object ReminderRecurrenceFormatter {
 
         return when (recurrence.unit) {
             ReminderRecurrenceUnit.DAY -> {
-                if (interval == 1) "Diaria" else "Cada $interval dias"
+                if (interval == 1) "Diaria" else "Cada $interval días"
             }
 
             ReminderRecurrenceUnit.WEEK -> {
@@ -35,7 +35,7 @@ object ReminderRecurrenceFormatter {
             }
 
             ReminderRecurrenceUnit.YEAR -> {
-                if (interval == 1) "Anual" else "Cada $interval anos"
+                if (interval == 1) "Anual" else "Cada $interval años"
             }
         }
     }

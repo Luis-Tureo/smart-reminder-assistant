@@ -48,6 +48,8 @@
     <color name="reminder_text_soft">#8C93A5</color>
     <color name="reminder_accent">#6A83BD</color>
     <color name="reminder_delete_tint">#A4ABBA</color>
+    <color name="reminder_delete_red">#B42318</color>
+    <color name="reminder_delete_background">#FFE4E1</color>
     <color name="reminder_divider">#E8E1D7</color>
     <color name="reminder_icon_blue_bg">#D9E4FF</color>
     <color name="reminder_icon_blue_fg">#4261AF</color>
@@ -56,6 +58,9 @@
     <color name="reminder_icon_birthday_bg">#FFE2F0</color>
     <color name="reminder_icon_birthday_fg">#B33D70</color>
     <color name="reminder_done_unchecked">#D4D9E6</color>
+    <color name="recurrence_chip_background">#F8FAFF</color>
+    <color name="recurrence_chip_selected_background">#EFE3FF</color>
+    <color name="recurrence_chip_stroke">#8F95A3</color>
 
     <!-- Calendario -->
     <color name="calendar_screen_background">#ECF1F6</color>
@@ -97,6 +102,10 @@
     <color name="calendar_indicator_holiday_text">#A85036</color>
     <color name="calendar_indicator_completed_background">#E6EEF2</color>
     <color name="calendar_indicator_completed_text">#4B6677</color>
+    <color name="calendar_filter_unselected_background">#F9FBFD</color>
+    <color name="calendar_filter_unselected_text">#6F7C89</color>
+    <color name="calendar_filter_unselected_stroke">#DDE6EE</color>
+    <color name="calendar_filter_selected_stroke">#9CB0C2</color>
 
     <!-- Compatibilidad -->
     <color name="white">#FFFFFF</color>

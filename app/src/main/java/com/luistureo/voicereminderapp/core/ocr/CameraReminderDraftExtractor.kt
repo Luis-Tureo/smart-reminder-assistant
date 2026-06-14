@@ -2,6 +2,7 @@ package com.luistureo.voicereminderapp.core.ocr
 
 import android.graphics.Bitmap
 import android.net.Uri
+import com.luistureo.voicereminderapp.core.nlp.ReminderContentCleaner
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
@@ -42,12 +43,7 @@ class CameraReminderDraftExtractor(
         val resolvedDate = extractDate(recognizedText)
         val resolvedTime = extractTime(recognizedText)
         val resolvedDetail = extractReminderDetail(lines)
-        val resolvedTitle = resolvedDetail
-            ?.substringBefore(".")
-            ?.substringBefore(",")
-            ?.take(48)
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
+        val resolvedTitle = ReminderContentCleaner.buildTitle(resolvedDetail)
 
         return CameraReminderScanResult(
             draft = ReminderDraft(
@@ -172,7 +168,7 @@ class CameraReminderDraftExtractor(
     }
 
     private fun cleanPurposeLine(line: String): String {
-        return line
+        return ReminderContentCleaner.cleanDetail(line
             .replace(Regex("""(?<!\d)(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?(?!\d)"""), " ")
             .replace(
                 Regex("""(?<!\d)(\d{1,2})\s+de\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ]+)(?:\s+de\s+(\d{2,4}))?"""),
@@ -181,7 +177,7 @@ class CameraReminderDraftExtractor(
             .replace(Regex("""(?<!\d)(\d{1,2}):(\d{2})(?!\d)"""), " ")
             .replace(Regex("""(?<!\d)(\d{1,2})\s*(am|pm|hrs|hr|h)(?![a-z])""", RegexOption.IGNORE_CASE), " ")
             .replace(Regex("""\s+"""), " ")
-            .trim(' ', '-', ':', '.', ',')
+            .trim(' ', '-', ':', '.', ',')).orEmpty()
     }
 
     private fun scorePurposeLine(line: String): Int {

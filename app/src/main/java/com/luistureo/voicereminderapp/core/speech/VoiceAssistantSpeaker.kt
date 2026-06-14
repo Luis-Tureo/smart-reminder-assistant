@@ -1,22 +1,25 @@
 package com.luistureo.voicereminderapp.core.speech
 
 import android.content.Context
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import java.io.File
 import java.util.Locale
 
 class VoiceAssistantSpeaker(
-    context: Context
+    context: Context,
+    private val remoteTtsService: AssistantTtsService = RemoteAssistantTtsClient(),
+    private val audioPlayer: AssistantAudioPlayer = AndroidAssistantAudioPlayer(context),
+    private val isRemoteTtsEnabled: Boolean = AssistantTtsConfig.isRemoteTtsEnabled(),
+    private val remoteBackendUrl: String = AssistantTtsConfig.REMOTE_TTS_BACKEND_URL
 ) : TextToSpeech.OnInitListener {
 
     interface PlaybackListener {
@@ -24,24 +27,25 @@ class VoiceAssistantSpeaker(
         fun onPlaybackFinished()
     }
 
+    interface FallbackListener {
+        fun onLocalFallback(message: String)
+    }
+
     private val appContext = context.applicationContext
-    private val speakerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val speakerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var textToSpeech: TextToSpeech? = null
-    private var mediaPlayer: MediaPlayer? = null
 
     private var pendingText: String? = null
     private var pendingOnFinished: (() -> Unit)? = null
     private var isLocalTtsReady = false
     private var isPlaybackActive = false
     private var playbackListener: PlaybackListener? = null
-
-    private val tokenProvider = GoogleAuthTokenProvider(appContext)
-    private val googleCloudTtsService = GoogleCloudTtsService(
-        context = appContext,
-        tokenProvider = tokenProvider
-    )
+    private var fallbackListener: FallbackListener? = null
+    private var playbackRequestId = 0L
+    private val localFallbackVoiceOption: AssistantVoiceOption = AssistantVoiceOption.default
+    private var hasNotifiedLocalFallback = false
 
     init {
         textToSpeech = TextToSpeech(appContext, this)
@@ -87,7 +91,7 @@ class VoiceAssistantSpeaker(
         val onFinished = pendingOnFinished
 
         if (!text.isNullOrBlank()) {
-            speakText(text, onFinished)
+            speakWithLocalTtsFallback(text, localFallbackVoiceOption, onFinished)
         }
     }
 
@@ -95,71 +99,177 @@ class VoiceAssistantSpeaker(
         playbackListener = listener
     }
 
+    fun setFallbackListener(listener: FallbackListener?) {
+        fallbackListener = listener
+    }
+
+    fun resetFallbackNoticeForSession() {
+        hasNotifiedLocalFallback = false
+    }
+
     fun speakText(
         message: String,
         onFinished: (() -> Unit)? = null
     ) {
-        pendingText = message
-        pendingOnFinished = onFinished
+        val cleanMessage = message.trim()
+        if (cleanMessage.isBlank()) {
+            onFinished?.invoke()
+            return
+        }
+
+        val requestId = ++playbackRequestId
+        clearPendingData()
+        AssistantTtsDebugLogger.log(
+            "Assistant remote voice fixed: ${AssistantTtsConfig.REMOTE_TTS_VOICE}"
+        )
 
         stopCurrentPlayback()
 
+        if (!AssistantTtsRoutingPolicy.shouldTryRemote(isRemoteTtsEnabled, remoteBackendUrl, cleanMessage)) {
+            useLocalTtsFallback(
+                message = cleanMessage,
+                reason = AssistantTtsFallbackReason.REMOTE_DISABLED_OR_UNCONFIGURED,
+                onFinished = onFinished
+            )
+            return
+        }
+
         speakerScope.launch {
-            try {
-                val naturalMessage = message
-                    .replace(".", ". ")
-                    .replace(",", ", ")
-                    .trim()
-
-                val audioFile = googleCloudTtsService.synthesizeToTempFile(naturalMessage)
-
-                playCloudAudio(
-                    file = audioFile,
-                    onFinished = onFinished
-                )
-            } catch (_: Exception) {
-                speakWithLocalTtsFallback(message)
+            AssistantTtsDebugLogger.log(
+                "Remote TTS started: voice=${AssistantTtsConfig.REMOTE_TTS_VOICE}"
+            )
+            val remoteAudio = runCatching {
+                remoteTtsService.synthesize(cleanMessage, localFallbackVoiceOption)
+            }.getOrElse { error ->
+                AssistantTtsDebugLogger.log("Remote TTS service failed: ${error.javaClass.simpleName}")
+                null
             }
+            if (requestId != playbackRequestId) return@launch
+
+            var fallbackReason = AssistantTtsFallbackReason.REMOTE_UNAVAILABLE
+            if (!AssistantTtsFallbackPolicy.shouldUseLocalFallback(cleanMessage, remoteAudio)) {
+                AssistantTtsDebugLogger.log("Remote TTS audio received")
+                val didStartRemotePlayback = audioPlayer.play(
+                    audio = remoteAudio ?: return@launch,
+                    onStarted = {
+                        AssistantTtsDebugLogger.log("Remote TTS audio playback started")
+                        notifyPlaybackStarted()
+                    },
+                    onFinished = {
+                        if (requestId == playbackRequestId) {
+                            notifyPlaybackFinished()
+                            onFinished?.invoke()
+                            clearPendingData()
+                        }
+                    },
+                    onError = {
+                        if (requestId == playbackRequestId) {
+                            AssistantTtsDebugLogger.log("Remote TTS audio playback failed")
+                            notifyPlaybackFinished()
+                            useLocalTtsFallback(
+                                message = cleanMessage,
+                                reason = AssistantTtsFallbackReason.REMOTE_PLAYBACK_FAILED,
+                                onFinished = onFinished
+                            )
+                        }
+                    }
+                )
+
+                if (didStartRemotePlayback) {
+                    return@launch
+                }
+
+                AssistantTtsDebugLogger.log("Remote TTS audio playback failed to start")
+                fallbackReason = AssistantTtsFallbackReason.REMOTE_PLAYBACK_FAILED
+            }
+
+            useLocalTtsFallback(
+                message = cleanMessage,
+                reason = fallbackReason,
+                onFinished = onFinished
+            )
         }
     }
 
     fun shutdown() {
+        speakerScope.cancel()
         stopCurrentPlayback()
         notifyPlaybackFinished()
 
         textToSpeech?.stop()
         textToSpeech?.shutdown()
         textToSpeech = null
+        audioPlayer.release()
 
         isLocalTtsReady = false
         clearPendingData()
-        speakerScope.cancel()
+    }
+
+    private fun useLocalTtsFallback(
+        message: String,
+        reason: AssistantTtsFallbackReason,
+        onFinished: (() -> Unit)?
+    ) {
+        AssistantTtsDebugLogger.log("Local fallback used: reason=$reason")
+        notifyLocalFallback(reason)
+        speakWithLocalTtsFallback(message, localFallbackVoiceOption, onFinished)
     }
 
     private fun configureLocalTts() {
-        val preferredLocale = Locale("es", "ES")
-        val fallbackLocale = Locale("es", "US")
-
-        val localeResult = textToSpeech?.setLanguage(preferredLocale)
-
-        if (
-            localeResult == TextToSpeech.LANG_MISSING_DATA ||
-            localeResult == TextToSpeech.LANG_NOT_SUPPORTED
-        ) {
-            textToSpeech?.setLanguage(fallbackLocale)
+        val selectedVoice = selectBestLocalSpanishVoice()
+        if (selectedVoice != null && textToSpeech?.setVoice(selectedVoice) == TextToSpeech.SUCCESS) {
+            textToSpeech?.setLanguage(selectedVoice.locale)
+        } else {
+            configureFallbackSpanishLocale()
         }
 
-        textToSpeech?.setPitch(1.0f)
-        textToSpeech?.setSpeechRate(0.85f)
+        applyLocalVoiceTuning(localFallbackVoiceOption)
     }
 
-    private fun speakWithLocalTtsFallback(message: String) {
+    private fun configureFallbackSpanishLocale() {
+        val supportedLocale = LocalTtsVoiceSelector.preferredLocales().firstOrNull { locale ->
+            val result = textToSpeech?.setLanguage(locale)
+            result != TextToSpeech.LANG_MISSING_DATA &&
+                    result != TextToSpeech.LANG_NOT_SUPPORTED
+        }
+
+        if (supportedLocale == null) {
+            textToSpeech?.setLanguage(Locale.getDefault())
+        }
+    }
+
+    private fun selectBestLocalSpanishVoice(): Voice? {
+        val voices = runCatching { textToSpeech?.voices.orEmpty() }.getOrDefault(emptySet())
+        val voicesByCandidate = voices.associateBy { voice ->
+            voice.toLocalTtsVoiceCandidate()
+        }
+        return LocalTtsVoiceSelector.selectBestSpanishVoice(voicesByCandidate.keys)
+            ?.let { voicesByCandidate[it] }
+    }
+
+    private fun Voice.toLocalTtsVoiceCandidate(): LocalTtsVoiceCandidate {
+        return LocalTtsVoiceCandidate(
+            name = name.orEmpty(),
+            locale = locale ?: Locale.getDefault(),
+            quality = quality,
+            latency = latency,
+            requiresNetwork = isNetworkConnectionRequired
+        )
+    }
+
+    private fun speakWithLocalTtsFallback(
+        message: String,
+        voiceOption: AssistantVoiceOption,
+        onFinished: (() -> Unit)?
+    ) {
+        pendingText = message
+        pendingOnFinished = onFinished
+
         if (!isLocalTtsReady) {
-            pendingOnFinished?.invoke()
-            clearPendingData()
             return
         }
 
+        applyLocalVoiceTuning(voiceOption)
         val utteranceId = "voice_assistant_${System.currentTimeMillis()}"
 
         textToSpeech?.speak(
@@ -170,61 +280,15 @@ class VoiceAssistantSpeaker(
         )
     }
 
-    private fun playCloudAudio(
-        file: File,
-        onFinished: (() -> Unit)?
-    ) {
-        stopCurrentPlayback()
-
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(file.absolutePath)
-
-            setOnPreparedListener {
-                start()
-                notifyPlaybackStarted()
-            }
-
-            setOnCompletionListener { player ->
-                player.release()
-                mediaPlayer = null
-                file.delete()
-                notifyPlaybackFinished()
-
-                speakerScope.launch {
-                    onFinished?.invoke()
-                    clearPendingData()
-                }
-            }
-
-            setOnErrorListener { player, _, _ ->
-                player.release()
-                mediaPlayer = null
-                file.delete()
-                notifyPlaybackFinished()
-
-                speakWithLocalTtsFallback(pendingText.orEmpty())
-                true
-            }
-
-            prepareAsync()
-        }
+    private fun applyLocalVoiceTuning(option: AssistantVoiceOption) {
+        textToSpeech?.setPitch(option.localPitch)
+        textToSpeech?.setSpeechRate(option.localSpeechRate)
     }
 
     private fun stopCurrentPlayback() {
         val hadActivePlayback = isPlaybackActive
 
-        mediaPlayer?.apply {
-            try {
-                if (isPlaying) {
-                    stop()
-                }
-            } catch (_: Exception) {
-            }
-
-            release()
-        }
-
-        mediaPlayer = null
+        audioPlayer.stop()
 
         try {
             textToSpeech?.stop()
@@ -239,6 +303,16 @@ class VoiceAssistantSpeaker(
     private fun clearPendingData() {
         pendingText = null
         pendingOnFinished = null
+    }
+
+    private fun notifyLocalFallback(reason: AssistantTtsFallbackReason) {
+        val message = AssistantTtsFallbackNoticePolicy.messageFor(reason) ?: return
+        if (hasNotifiedLocalFallback) return
+
+        hasNotifiedLocalFallback = true
+        mainHandler.post {
+            fallbackListener?.onLocalFallback(message)
+        }
     }
 
     private fun notifyPlaybackStarted() {

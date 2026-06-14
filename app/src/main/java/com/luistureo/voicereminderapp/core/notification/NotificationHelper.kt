@@ -123,8 +123,7 @@ class NotificationHelper(
         try {
             NotificationManagerCompat.from(context)
                 .notify(notificationId, notification)
-        } catch (exception: SecurityException) {
-            exception.printStackTrace()
+        } catch (_: SecurityException) {
         }
     }
 

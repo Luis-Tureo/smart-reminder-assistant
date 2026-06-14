@@ -1,88 +1,175 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#C4CBD6">
+    android:background="#C4CBD6"
+    android:orientation="vertical">
 
     <FrameLayout
         android:id="@+id/headerBar"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="84dp"
-        android:background="@drawable/bg_assistant_header_panel"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="@drawable/bg_assistant_header_panel">
+
+        <ImageButton
+            android:id="@+id/btnBackAssistant"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="start|center_vertical"
+            android:layout_marginStart="12dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/manual_reminder_back"
+            android:padding="8dp"
+            android:src="@drawable/ic_calendar_back"
+            android:tint="#F6F1E8" />
 
         <TextView
+            android:id="@+id/tvAssistantScreenTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:fontFamily="monospace"
+            android:fontFamily="sans"
             android:includeFontPadding="false"
+            android:maxLines="1"
             android:text="@string/assistant_screen_title"
             android:textColor="#F6F1E8"
-            android:letterSpacing="0.05"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textSize="23sp" />
     </FrameLayout>
 
-    <FrameLayout
-        android:id="@+id/assistantSceneContainer"
-        android:layout_width="0dp"
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="18dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="18dp"
-        android:background="@drawable/bg_assistant_scene_frame"
-        android:clipChildren="false"
+        android:layout_weight="1"
         android:clipToPadding="false"
-        android:elevation="10dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintDimensionRatio="432:338"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerBar">
+        android:fillViewport="true"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="24dp">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/assistantSceneContent"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="7dp"
-            android:background="@drawable/bg_assistant_scene_content"
-            android:clipChildren="true"
-            android:clipToOutline="true"
-            android:clipToPadding="true">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-            <com.luistureo.voicereminderapp.presentation.assistant.AssistantView
-                android:id="@+id/assistantView"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:alpha="1"
-                android:contentDescription="@string/assistant_character_content_description"
-                android:visibility="visible"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
-                android:id="@+id/assistantDialogueBubble"
-                android:layout_width="wrap_content"
+            <TextView
+                android:id="@+id/tvAssistantPrepareTitle"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_marginTop="14dp"
-                android:layout_marginEnd="14dp"
-                android:layout_marginBottom="12dp"
-                android:contentDescription="@string/assistant_dialogue_content_description"
-                android:visibility="invisible"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="1" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </FrameLayout>
+                android:text="@string/assistant_screen_prepare_title"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="23sp"
+                android:textStyle="bold" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <TextView
+                android:id="@+id/tvAssistantPrepareSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/assistant_screen_prepare_subtitle"
+                android:textColor="@color/reminder_text_secondary"
+                android:textSize="16sp" />
+
+            <FrameLayout
+                android:id="@+id/assistantSceneContainer"
+                android:layout_width="match_parent"
+                android:layout_height="292dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_assistant_scene_frame"
+                android:elevation="8dp"
+                android:padding="8dp">
+
+                <FrameLayout
+                    android:id="@+id/assistantSceneContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_assistant_scene_content"
+                    android:clipChildren="true"
+                    android:clipToPadding="true">
+
+                    <com.luistureo.voicereminderapp.presentation.assistant.AssistantView
+                        android:id="@+id/assistantView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/assistant_character_content_description" />
+
+                    <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
+                        android:id="@+id/assistantDialogueBubble"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|center_horizontal"
+                        android:layout_marginStart="28dp"
+                        android:layout_marginEnd="28dp"
+                        android:layout_marginBottom="6dp"
+                        android:contentDescription="@string/assistant_dialogue_content_description" />
+                </FrameLayout>
+            </FrameLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSpeakAssistant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:paddingVertical="14dp"
+                android:text="@string/assistant_speak_button"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/calendar_toolbar_background"
+                app:cornerRadius="24dp"
+                app:icon="@android:drawable/ic_btn_speak_now"
+                app:iconGravity="textStart"
+                app:iconPadding="12dp"
+                app:iconTint="@color/white"
+                app:rippleColor="@color/ripple_soft" />
+
+            <TextView
+                android:id="@+id/tvAssistantHeardTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:text="@string/assistant_heard_title"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvAssistantRecognizedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_result_box"
+                android:minHeight="58dp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp"
+                android:text="@string/assistant_heard_placeholder"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/tvAssistantResponseTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:text="@string/assistant_response_title"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvAssistantReply"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_result_box"
+                android:minHeight="86dp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp"
+                android:text="@string/assistant_response_placeholder"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

@@ -16,6 +16,7 @@ data class CalendarUiState(
     val selectedDateSummary: String = "",
     val selectedHolidays: List<String> = emptyList(),
     val selectedDateReminders: List<CalendarReminderDetailUiModel> = emptyList(),
+    val filteredItems: List<CalendarFilteredListItemUiModel> = emptyList(),
     val emptyStateMessage: String = ""
 )
 
@@ -43,10 +44,21 @@ enum class CalendarIndicatorStyle {
 }
 
 data class CalendarReminderDetailUiModel(
-    val id: Int,
+    val id: String,
     val title: String,
     val detail: String,
     val time: String,
     val type: ReminderType,
-    val isCompleted: Boolean
+    val isCompleted: Boolean,
+    val localReminderId: Int? = null,
+    val googleCalendarEventId: String? = null,
+    val canDelete: Boolean = true
+)
+
+data class CalendarFilteredListItemUiModel(
+    val date: LocalDate,
+    val dateTitle: String,
+    val detail: CalendarReminderDetailUiModel? = null,
+    val holidayName: String? = null,
+    val style: CalendarIndicatorStyle
 )

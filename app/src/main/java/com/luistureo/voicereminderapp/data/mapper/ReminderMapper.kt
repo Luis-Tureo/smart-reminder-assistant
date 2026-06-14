@@ -1,6 +1,7 @@
 package com.luistureo.voicereminderapp.data.mapper
 
 import com.luistureo.voicereminderapp.data.local.entity.ReminderEntity
+import com.luistureo.voicereminderapp.domain.model.GoogleCalendarSyncState
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
@@ -14,6 +15,9 @@ fun ReminderEntity.toDomain(): Reminder {
     val resolvedType = ReminderType.entries.firstOrNull { it.name == type } ?: ReminderType.DEFAULT
     val resolvedSource = ReminderSource.entries.firstOrNull { it.name == source }
         ?: ReminderSource.MANUAL
+    val resolvedGoogleSyncState =
+        GoogleCalendarSyncState.entries.firstOrNull { it.name == googleCalendarSyncState }
+            ?: GoogleCalendarSyncState.PENDING
     val resolvedRecurrenceUnit = recurrenceUnit?.let { storedValue ->
         ReminderRecurrenceUnit.entries.firstOrNull { it.name == storedValue }
     }
@@ -50,7 +54,10 @@ fun ReminderEntity.toDomain(): Reminder {
             activeAlertAtEpochMillis = activeAlertAtEpochMillis,
             activeAlertRepeatCount = activeAlertRepeatCount,
             nextUrgentRepeatAtEpochMillis = nextUrgentRepeatAtEpochMillis
-        )
+        ),
+        googleCalendarEventId = googleCalendarEventId,
+        googleCalendarSyncState = resolvedGoogleSyncState,
+        googleCalendarLastSyncAtEpochMillis = googleCalendarLastSyncAtEpochMillis
     )
 }
 
@@ -76,6 +83,9 @@ fun Reminder.toEntity(): ReminderEntity {
         lastTriggeredAtEpochMillis = scheduleState.lastTriggeredAtEpochMillis,
         activeAlertAtEpochMillis = scheduleState.activeAlertAtEpochMillis,
         activeAlertRepeatCount = scheduleState.activeAlertRepeatCount,
-        nextUrgentRepeatAtEpochMillis = scheduleState.nextUrgentRepeatAtEpochMillis
+        nextUrgentRepeatAtEpochMillis = scheduleState.nextUrgentRepeatAtEpochMillis,
+        googleCalendarEventId = googleCalendarEventId,
+        googleCalendarSyncState = googleCalendarSyncState.name,
+        googleCalendarLastSyncAtEpochMillis = googleCalendarLastSyncAtEpochMillis
     )
 }

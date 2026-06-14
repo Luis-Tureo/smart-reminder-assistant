@@ -14,7 +14,10 @@ data class Reminder(
     val isUrgent: Boolean = false,
     val source: ReminderSource = ReminderSource.MANUAL,
     val recurrence: ReminderRecurrence? = null,
-    val scheduleState: ReminderScheduleState = ReminderScheduleState()
+    val scheduleState: ReminderScheduleState = ReminderScheduleState(),
+    val googleCalendarEventId: String? = null,
+    val googleCalendarSyncState: GoogleCalendarSyncState = GoogleCalendarSyncState.PENDING,
+    val googleCalendarLastSyncAtEpochMillis: Long? = null
 ) {
     val date: String
         get() = DateTimeFormatter.formatDateFromEpoch(scheduledAtEpochMillis)

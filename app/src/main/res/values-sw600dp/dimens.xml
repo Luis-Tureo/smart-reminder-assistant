@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="assistant_dialogue_min_width">120dp</dimen>
+    <dimen name="assistant_dialogue_max_width">276dp</dimen>
+    <dimen name="assistant_dialogue_max_height">84dp</dimen>
+    <dimen name="assistant_dialogue_text_size">13sp</dimen>
+    <dimen name="assistant_scene_min_height">300dp</dimen>
+    <dimen name="assistant_scene_max_height">500dp</dimen>
+    <dimen name="calendar_year_selector_width">68dp</dimen>
+</resources>

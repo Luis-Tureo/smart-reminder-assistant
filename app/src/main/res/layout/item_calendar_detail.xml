@@ -41,6 +41,17 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <ImageButton
+                android:id="@+id/btnCalendarDetailDelete"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_delete_circle"
+                android:contentDescription="@string/delete_reminder"
+                android:padding="9dp"
+                android:src="@drawable/ic_reminder_delete"
+                android:tint="@color/reminder_delete_red" />
         </LinearLayout>
 
         <TextView

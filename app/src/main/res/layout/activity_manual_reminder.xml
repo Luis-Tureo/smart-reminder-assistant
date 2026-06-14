@@ -32,18 +32,22 @@
                 android:tint="#F6F1E8" />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
+                android:gravity="center"
                 android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/tvManualReminderScreenTitle"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="monospace"
+                    android:fontFamily="sans"
+                    android:gravity="center"
                     android:includeFontPadding="false"
-                    android:letterSpacing="0.05"
+                    android:maxLines="2"
+                    android:paddingStart="58dp"
+                    android:paddingEnd="58dp"
                     android:text="@string/manual_reminder_screen_title"
                     android:textColor="#F6F1E8"
                     android:textSize="22sp"
@@ -58,7 +62,8 @@
                     android:includeFontPadding="false"
                     android:text="@string/manual_reminder_screen_subtitle"
                     android:textColor="#E7E2DA"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:visibility="gone" />
                 </LinearLayout>
         </FrameLayout>
 
@@ -110,7 +115,8 @@
                     android:contentDescription="@string/camera_reminder_preview_content_description"
                     android:padding="8dp"
                     android:scaleType="centerCrop"
-                    android:src="@android:drawable/ic_menu_report_image" />
+                    android:src="@android:drawable/ic_menu_report_image"
+                    android:visibility="gone" />
 
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/progressCameraScan"
@@ -133,6 +139,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
+                    android:baselineAligned="false"
                     android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
@@ -141,6 +148,10 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:maxLines="2"
+                        android:minHeight="48dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="10dp"
                         android:text="@string/camera_reminder_take_photo"
                         android:textAllCaps="false" />
 
@@ -151,6 +162,10 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
                         android:layout_weight="1"
+                        android:maxLines="2"
+                        android:minHeight="48dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="10dp"
                         android:text="@string/camera_reminder_select_image"
                         android:textAllCaps="false" />
                 </LinearLayout>
@@ -187,7 +202,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="@string/manual_reminder_recurrence_help"
+                    android:text="@string/manual_reminder_details_help"
                     android:textColor="@color/reminder_text_secondary"
                     android:textSize="13sp" />
 
@@ -253,6 +268,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:baselineAligned="false"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -262,6 +278,10 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:maxLines="2"
+                        android:minHeight="54dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="10dp"
                         android:text="@string/reminder_select_date" />
 
                     <com.google.android.material.button.MaterialButton
@@ -271,6 +291,10 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
                         android:layout_weight="1"
+                        android:maxLines="2"
+                        android:minHeight="54dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="10dp"
                         android:text="@string/reminder_select_time" />
                 </LinearLayout>
 
@@ -309,128 +333,122 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/switchRecurringEnabled"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/manual_reminder_recurrence_enabled_label" />
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="14dp"
                     android:text="@string/manual_reminder_recurrence_help"
                     android:textColor="@color/reminder_text_secondary"
                     android:textSize="13sp" />
 
                 <LinearLayout
-                    android:id="@+id/layoutRecurringContent"
+                    android:id="@+id/gridRecurrenceOptions"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/reminder_recurrence_label">
-
-                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                            android:id="@+id/inputRecurrenceType"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/layoutRecurrenceInterval"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="@string/reminder_recurrence_interval_label"
-                        android:visibility="gone">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputRecurrenceInterval"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="number" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/switchRecurrenceActive"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/reminder_recurrence_active_label"
-                        android:visibility="gone" />
+                    android:layout_marginTop="18dp"
+                    android:orientation="vertical">
 
                     <LinearLayout
-                        android:id="@+id/layoutWeekdays"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="vertical"
-                        android:visibility="gone">
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRecurrenceNone"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="@string/reminder_weekdays_label"
-                            android:textColor="@color/reminder_text_secondary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:layout_weight="1.7"
+                            android:maxLines="1"
+                            android:minHeight="44dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="8dp"
+                            android:singleLine="true"
+                            android:text="@string/reminder_recurrence_none"
+                            android:textAllCaps="false"
+                            android:textColor="@color/reminder_text_primary"
+                            android:textSize="14sp" />
 
-                        <GridLayout
-                            android:layout_width="match_parent"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRecurrenceDaily"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:columnCount="2">
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:maxLines="1"
+                            android:minHeight="44dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="8dp"
+                            android:singleLine="true"
+                            android:text="@string/reminder_recurrence_daily"
+                            android:textAllCaps="false"
+                            android:textColor="@color/reminder_text_primary"
+                            android:textSize="14sp" />
 
-                            <CheckBox
-                                android:id="@+id/checkMonday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/weekday_monday" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRecurrenceWeekly"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1.1"
+                            android:maxLines="1"
+                            android:minHeight="44dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="8dp"
+                            android:singleLine="true"
+                            android:text="@string/reminder_recurrence_weekly"
+                            android:textAllCaps="false"
+                            android:textColor="@color/reminder_text_primary"
+                            android:textSize="14sp" />
+                    </LinearLayout>
 
-                            <CheckBox
-                                android:id="@+id/checkTuesday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/weekday_tuesday" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
 
-                            <CheckBox
-                                android:id="@+id/checkWednesday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/weekday_wednesday" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRecurrenceMonthly"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:maxLines="1"
+                            android:minHeight="44dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="8dp"
+                            android:singleLine="true"
+                            android:text="@string/reminder_recurrence_monthly"
+                            android:textAllCaps="false"
+                            android:textColor="@color/reminder_text_primary"
+                            android:textSize="14sp" />
 
-                            <CheckBox
-                                android:id="@+id/checkThursday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/weekday_thursday" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRecurrenceYearly"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:maxLines="1"
+                            android:minHeight="44dp"
+                            android:minWidth="0dp"
+                            android:paddingHorizontal="8dp"
+                            android:singleLine="true"
+                            android:text="@string/reminder_recurrence_yearly"
+                            android:textAllCaps="false"
+                            android:textColor="@color/reminder_text_primary"
+                            android:textSize="14sp" />
 
-                            <CheckBox
-                                android:id="@+id/checkFriday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/weekday_friday" />
-
-                            <CheckBox
-                                android:id="@+id/checkSaturday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/weekday_saturday" />
-
-                            <CheckBox
-                                android:id="@+id/checkSunday"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/weekday_sunday" />
-                        </GridLayout>
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1.2" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -443,6 +461,9 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
+            android:maxLines="1"
+            android:minHeight="52dp"
+            android:minWidth="0dp"
             android:paddingVertical="14dp"
             android:text="@string/manual_reminder_save_button"
             android:textAllCaps="false"

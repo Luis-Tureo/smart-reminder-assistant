@@ -4,147 +4,261 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#C4CBD6"
-    android:fillViewport="true"
-    android:clipToPadding="false">
+    android:clipToPadding="false"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="24dp">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <FrameLayout
             android:id="@+id/headerBar"
             android:layout_width="match_parent"
-            android:layout_height="84dp"
+            android:layout_height="90dp"
             android:background="@drawable/bg_assistant_header_panel"
-            android:paddingHorizontal="16dp">
+            android:paddingHorizontal="18dp">
 
             <TextView
-                android:layout_width="wrap_content"
+                android:id="@+id/tvHomeTitle"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="monospace"
+                android:layout_gravity="center"
+                android:fontFamily="sans"
+                android:gravity="center"
                 android:includeFontPadding="false"
-                android:letterSpacing="0.05"
-                android:text="@string/assistant_screen_title"
+                android:maxLines="2"
+                android:text="@string/home_screen_title"
                 android:textColor="#F6F1E8"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOpenCalendar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:padding="0dp"
-                android:text=""
-                app:backgroundTint="@android:color/transparent"
-                app:cornerRadius="20dp"
-                app:icon="@drawable/ic_reminder_calendar"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="20dp"
-                app:iconTint="#F6F1E8"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:rippleColor="@color/ripple_soft" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                android:textSize="24sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/assistantSceneContainer"
+            android:id="@+id/cardAssistantReminder"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:clickable="true"
             android:focusable="true"
-            android:backgroundTint="@color/card_background"
-            app:cardCornerRadius="30dp"
-            app:cardElevation="8dp"
-            app:strokeColor="@color/card_stroke"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="5dp"
             app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
             app:strokeWidth="1dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/assistantSceneContent"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="8dp"
-                android:background="@drawable/bg_assistant_scene_content"
-                android:clipChildren="true"
-                android:clipToOutline="true"
-                android:clipToPadding="true">
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/assistantIconContainer"
+                    android:layout_width="62dp"
+                    android:layout_height="62dp"
+                    android:background="@drawable/bg_reminder_icon_blue"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        android:tint="@color/reminder_icon_blue_fg" />
+                </FrameLayout>
 
                 <TextView
-                    android:id="@+id/tvAssistantCardTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_assistant_tap_hint"
-                    android:fontFamily="monospace"
-                    android:includeFontPadding="false"
-                    android:letterSpacing="0.05"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="8dp"
-                    android:text="@string/home_virtual_assistant_title"
-                    android:textColor="#1D2433"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <com.luistureo.voicereminderapp.presentation.assistant.AssistantView
-                    android:id="@+id/assistantView"
+                    android:id="@+id/tvAssistantReminderTitle"
                     android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:contentDescription="@string/assistant_character_content_description"
-                    android:visibility="visible"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
-                    android:id="@+id/assistantDialogueBubble"
-                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_marginTop="14dp"
-                    android:layout_marginEnd="14dp"
-                    android:layout_marginBottom="12dp"
-                    android:contentDescription="@string/assistant_dialogue_content_description"
-                    android:visibility="invisible"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:layout_marginStart="18dp"
+                    android:text="@string/home_virtual_assistant_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="19sp"
+                    android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintVertical_bias="0.56" />
+                    app:layout_constraintStart_toEndOf="@id/assistantIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/assistantIconContainer" />
 
                 <TextView
-                    android:id="@+id/tvAssistantTapHint"
+                    android:id="@+id/tvAssistantReminderSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/home_virtual_assistant_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="15sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/assistantIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvAssistantReminderTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCalendar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="5dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/calendarIconContainer"
+                    android:layout_width="62dp"
+                    android:layout_height="62dp"
+                    android:background="@drawable/bg_reminder_icon_blue"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_reminder_calendar"
+                        android:tint="@color/reminder_icon_blue_fg" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvCalendarTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:text="@string/home_calendar_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="19sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/calendarIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/calendarIconContainer" />
+
+                <TextView
+                    android:id="@+id/tvCalendarSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/home_calendar_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="15sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/calendarIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvCalendarTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardGoogleCalendarSync"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/info_box_background"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/calendar_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/googleCalendarIconContainer"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_calendar_indicator_reminder"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_reminder_calendar"
+                        android:tint="@color/calendar_indicator_reminder_text" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvGoogleCalendarTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/home_google_calendar_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/googleCalendarIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/googleCalendarIconContainer" />
+
+                <TextView
+                    android:id="@+id/tvGoogleCalendarSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/home_google_calendar_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="14sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/googleCalendarIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvGoogleCalendarTitle" />
+
+                <TextView
+                    android:id="@+id/tvGoogleCalendarStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/google_calendar_not_connected"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="13sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@id/tvGoogleCalendarSubtitle"
+                    app:layout_constraintTop_toBottomOf="@id/tvGoogleCalendarSubtitle" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGoogleCalendarSync"
+                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="12dp"
-                    android:layout_marginBottom="10dp"
-                    android:background="@drawable/bg_assistant_tap_hint"
-                    android:fontFamily="monospace"
-                    android:includeFontPadding="false"
-                    android:letterSpacing="0.06"
-                    android:paddingStart="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="10dp"
-                    android:text="@string/assistant_tap_hint"
-                    android:textColor="#1D2433"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
+                    android:layout_marginTop="14dp"
+                    android:minHeight="44dp"
+                    android:paddingHorizontal="20dp"
+                    android:text="@string/google_calendar_connect_button"
+                    android:textAllCaps="false"
+                    android:textColor="@color/calendar_title_text"
+                    android:textSize="14sp"
+                    app:cornerRadius="22dp"
+                    app:layout_constraintStart_toStartOf="@id/tvGoogleCalendarStatus"
+                    app:layout_constraintTop_toBottomOf="@id/tvGoogleCalendarStatus"
+                    app:strokeColor="@color/calendar_title_text" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -155,13 +269,14 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
+            android:visibility="gone"
             android:clickable="true"
             android:focusable="true"
             app:cardBackgroundColor="@color/reminder_card_background"
             app:cardCornerRadius="28dp"
-            app:cardElevation="4dp"
-            app:strokeColor="@color/reminder_card_stroke"
+            app:cardElevation="5dp"
             app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
             app:strokeWidth="1dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -171,16 +286,16 @@
 
                 <FrameLayout
                     android:id="@+id/manualIconContainer"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
+                    android:layout_width="62dp"
+                    android:layout_height="62dp"
                     android:background="@drawable/bg_reminder_icon_amber"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
 
                     <ImageView
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_reminder_note"
@@ -191,10 +306,10 @@
                     android:id="@+id/tvManualReminderTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
+                    android:layout_marginStart="18dp"
                     android:text="@string/home_manual_reminder_title"
                     android:textColor="@color/reminder_text_primary"
-                    android:textSize="17sp"
+                    android:textSize="19sp"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/manualIconContainer"
@@ -204,11 +319,11 @@
                     android:id="@+id/tvManualReminderSubtitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="5dp"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="8dp"
                     android:text="@string/home_manual_reminder_subtitle"
                     android:textColor="@color/reminder_text_secondary"
-                    android:textSize="13sp"
+                    android:textSize="15sp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/manualIconContainer"
                     app:layout_constraintTop_toBottomOf="@id/tvManualReminderTitle" />
@@ -222,13 +337,14 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
+            android:visibility="gone"
             android:clickable="true"
             android:focusable="true"
             app:cardBackgroundColor="@color/reminder_card_background"
             app:cardCornerRadius="28dp"
-            app:cardElevation="4dp"
-            app:strokeColor="@color/reminder_card_stroke"
+            app:cardElevation="5dp"
             app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
             app:strokeWidth="1dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -238,16 +354,16 @@
 
                 <FrameLayout
                     android:id="@+id/cameraIconContainer"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
+                    android:layout_width="62dp"
+                    android:layout_height="62dp"
                     android:background="@drawable/bg_reminder_icon_blue"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
 
                     <ImageView
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@android:drawable/ic_menu_camera"
@@ -258,10 +374,10 @@
                     android:id="@+id/tvCameraReminderTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
+                    android:layout_marginStart="18dp"
                     android:text="@string/home_camera_reminder_title"
                     android:textColor="@color/reminder_text_primary"
-                    android:textSize="17sp"
+                    android:textSize="19sp"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/cameraIconContainer"
@@ -271,68 +387,88 @@
                     android:id="@+id/tvCameraReminderSubtitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="5dp"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="8dp"
                     android:text="@string/home_camera_reminder_subtitle"
                     android:textColor="@color/reminder_text_secondary"
-                    android:textSize="13sp"
+                    android:textSize="15sp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/cameraIconContainer"
                     app:layout_constraintTop_toBottomOf="@id/tvCameraReminderTitle" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardNextDayPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:orientation="vertical"
-            android:paddingHorizontal="18dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="16dp"
+            app:cardBackgroundColor="@color/info_box_background"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#DDE7F2"
+            app:strokeWidth="1dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:includeFontPadding="false"
-                android:letterSpacing="0.05"
-                android:text="@string/home_today_tomorrow_title"
-                android:textColor="@color/reminder_text_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/home_today_tomorrow_subtitle"
-                android:textColor="@color/reminder_text_secondary"
-                android:textSize="13sp" />
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnNextDaySummaryTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:minHeight="0dp"
-                android:paddingStart="14dp"
-                android:paddingTop="9dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="9dp"
-                android:text="@string/home_next_day_summary_time_button"
-                android:textAllCaps="false"
-                android:textColor="@color/reminder_text_primary"
-                android:textSize="12sp"
-                app:backgroundTint="@color/reminder_card_background"
-                app:cornerRadius="18dp"
-                app:icon="@android:drawable/ic_menu_recent_history"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp"
-                app:iconSize="14dp"
-                app:iconTint="@color/reminder_text_secondary"
-                app:rippleColor="@color/ripple_soft"
-                app:strokeColor="@color/reminder_card_stroke"
-                app:strokeWidth="1dp" />
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="@null"
+                        android:src="@android:drawable/ic_dialog_info"
+                        android:tint="@color/primary_blue" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:text="@string/home_today_tomorrow_title"
+                        android:textColor="@color/reminder_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/home_today_tomorrow_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNextDaySummaryTime"
+                    style="?attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:minHeight="0dp"
+                    android:paddingHorizontal="0dp"
+                    android:paddingVertical="8dp"
+                    android:text="@string/home_next_day_summary_time_button"
+                    android:textAllCaps="false"
+                    android:textColor="@color/primary_blue"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@android:color/transparent"
+                    app:rippleColor="@color/ripple_soft" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <include
             android:id="@+id/homeEmptyStateCard"
@@ -340,7 +476,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="18dp"
             android:layout_marginEnd="16dp" />
 
         <androidx.recyclerview.widget.RecyclerView
@@ -348,11 +484,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipToPadding="false"
-            android:visibility="gone"
             android:nestedScrollingEnabled="false"
             android:paddingStart="8dp"
-            android:paddingTop="4dp"
+            android:paddingTop="6dp"
             android:paddingEnd="8dp"
-            android:paddingBottom="20dp" />
+            android:paddingBottom="20dp"
+            android:visibility="gone" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

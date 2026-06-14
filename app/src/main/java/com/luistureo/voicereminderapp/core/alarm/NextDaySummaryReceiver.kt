@@ -18,24 +18,31 @@ class NextDaySummaryReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val repository = ReminderRepositoryImpl(
-                ReminderDatabase.getDatabase(context).reminderDao()
-            )
-            val occurrenceCalculator = ReminderOccurrenceCalculator()
-            val tomorrow = LocalDate.now().plusDays(1)
-            val reminders = repository.getAllReminders().filter { reminder ->
-                !reminder.isCompleted && occurrenceCalculator.occursOnDate(reminder, tomorrow)
-            }
-
-            if (reminders.isNotEmpty()) {
-                NotificationHelper(context).showNextDaySummaryNotification(
-                    targetDate = tomorrow,
-                    reminders = reminders
+            try {
+                val repository = ReminderRepositoryImpl(
+                    ReminderDatabase.getDatabase(context).reminderDao()
                 )
-            }
+                val occurrenceCalculator = ReminderOccurrenceCalculator()
+                val tomorrow = LocalDate.now().plusDays(1)
+                val reminders = repository.getAllReminders().filter { reminder ->
+                    !reminder.isCompleted && occurrenceCalculator.occursOnDate(reminder, tomorrow)
+                }
 
-            ReminderScheduler(context, occurrenceCalculator).scheduleNextDaySummary()
-            pendingResult.finish()
+                if (reminders.isNotEmpty()) {
+                    NotificationHelper(context).showNextDaySummaryNotification(
+                        targetDate = tomorrow,
+                        reminders = reminders
+                    )
+                }
+
+                ReminderScheduler(context, occurrenceCalculator).scheduleNextDaySummary()
+            } catch (_: Exception) {
+                runCatching {
+                    ReminderScheduler(context).scheduleNextDaySummary()
+                }
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 

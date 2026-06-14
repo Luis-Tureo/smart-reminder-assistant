@@ -7,11 +7,21 @@
     <dimen name="calendar_controls_button_to_selector_spacing">10dp</dimen>
     <dimen name="calendar_controls_selector_spacing">8dp</dimen>
     <dimen name="calendar_selector_height">46dp</dimen>
-    <dimen name="calendar_year_selector_min_width">92dp</dimen>
+    <dimen name="calendar_year_selector_width">64dp</dimen>
     <dimen name="calendar_controls_to_grid_section_spacing">24dp</dimen>
     <dimen name="calendar_grid_section_top_padding">4dp</dimen>
     <dimen name="calendar_weekdays_to_grid_spacing">12dp</dimen>
     <dimen name="calendar_day_spacing_horizontal">2dp</dimen>
     <dimen name="calendar_day_spacing_vertical">3dp</dimen>
     <dimen name="calendar_day_stroke">1dp</dimen>
+    <dimen name="calendar_filter_stroke_selected">2dp</dimen>
+    <dimen name="calendar_filter_stroke_unselected">1dp</dimen>
+    <dimen name="assistant_dialogue_min_width">104dp</dimen>
+    <dimen name="assistant_dialogue_max_width">236dp</dimen>
+    <dimen name="assistant_dialogue_max_height">74dp</dimen>
+    <dimen name="assistant_dialogue_text_size">12sp</dimen>
+    <dimen name="assistant_dialogue_padding_horizontal">12dp</dimen>
+    <dimen name="assistant_dialogue_padding_vertical">8dp</dimen>
+    <dimen name="assistant_scene_min_height">236dp</dimen>
+    <dimen name="assistant_scene_max_height">420dp</dimen>
 </resources>

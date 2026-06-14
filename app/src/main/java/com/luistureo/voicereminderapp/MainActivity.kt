@@ -1,13 +1,15 @@
 package com.luistureo.voicereminderapp
 
 import android.Manifest
+import android.app.AlertDialog
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
-import android.app.TimePickerDialog
-import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -20,11 +22,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.material.button.MaterialButton
+import com.luistureo.voicereminderapp.core.alarm.ExactAlarmPermissionPolicy
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
-import com.luistureo.voicereminderapp.core.speech.SpeechRecognizerManager
-import com.luistureo.voicereminderapp.core.speech.VoiceAssistantSpeaker
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
@@ -34,49 +38,35 @@ import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.SaveReminderDraftUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
-import com.luistureo.voicereminderapp.presentation.assistant.AssistantAnimator
-import com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
-import com.luistureo.voicereminderapp.presentation.assistant.AssistantFaceState
-import com.luistureo.voicereminderapp.presentation.assistant.AssistantView
-import com.luistureo.voicereminderapp.presentation.assistant.AssistantVisualState
+import com.luistureo.voicereminderapp.presentation.assistant.AssistantActivity
+import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
 import com.luistureo.voicereminderapp.presentation.ui.adapter.HomeReminderAdapter
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModelFactory
-import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var assistantSceneContent: View
-    private lateinit var assistantView: AssistantView
-    private lateinit var assistantDialogueBubble: AssistantDialogueBubbleView
-    private lateinit var assistantTapHint: TextView
+    private lateinit var assistantReminderCard: View
+    private lateinit var calendarCard: View
     private lateinit var manualReminderCard: View
     private lateinit var cameraReminderCard: View
-    private lateinit var openCalendarButton: Button
+    private lateinit var googleCalendarSyncButton: MaterialButton
+    private lateinit var googleCalendarStatusText: TextView
     private lateinit var nextDaySummaryTimeButton: MaterialButton
     private lateinit var remindersRecyclerView: RecyclerView
     private lateinit var homeEmptyStateContainer: View
-    private lateinit var homeEmptyStateButton: Button
+    private lateinit var homeEmptyStateButton: MaterialButton
 
-    private lateinit var assistantAnimator: AssistantAnimator
     private lateinit var reminderAdapter: HomeReminderAdapter
     private lateinit var reminderViewModel: ReminderViewModel
     private lateinit var reminderScheduler: ReminderScheduler
     private lateinit var summaryPreferenceStore: NextDaySummaryPreferenceStore
-    private lateinit var speechManager: SpeechRecognizerManager
-    private lateinit var voiceAssistantSpeaker: VoiceAssistantSpeaker
-
-    private var lastVoiceAssistantMessage: String = ""
-    private var isAssistantConversationMode: Boolean = false
-    private var currentAssistantVisualState: AssistantVisualState = AssistantVisualState.IDLE
-    private var hasPendingSuccessState: Boolean = false
-    private var assistantResetJob: Job? = null
-    private var lastDialogueText: String = AssistantVisualState.IDLE.label
+    private lateinit var googleCalendarAuthManager: GoogleCalendarAuthManager
+    private lateinit var googleCalendarSynchronizer: GoogleCalendarReminderSynchronizer
+    private lateinit var reminderRepository: ReminderRepositoryImpl
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -89,19 +79,29 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    private val voiceAudioPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                if (hasRecoverableVoiceFlow()) {
-                    startSpeechRecognition()
-                } else {
-                    startAssistantConversation()
-                }
-            } else {
-                updateAssistantVisualState(AssistantVisualState.IDLE)
+    private val googleCalendarSignInLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode != RESULT_OK || result.data == null) {
+                refreshGoogleCalendarStatus()
                 Toast.makeText(
                     this,
-                    getString(R.string.mic_permission_denied),
+                    getString(R.string.google_calendar_sign_in_cancelled),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@registerForActivityResult
+            }
+
+            val account = runCatching {
+                GoogleSignIn.getSignedInAccountFromIntent(result.data).result
+            }.getOrNull()
+
+            if (googleCalendarAuthManager.hasCalendarPermission(account)) {
+                syncPendingGoogleCalendarChanges()
+            } else {
+                refreshGoogleCalendarStatus()
+                Toast.makeText(
+                    this,
+                    getString(R.string.google_calendar_permission_missing),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -112,60 +112,55 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
 
         initViews()
-        setupAssistant()
         setupViewModel()
         setupCore()
         setupRecyclerView()
         setupActionButtons()
-        setupAssistantInteraction()
         observeState()
         observeEvents()
         requestNotificationPermissionIfNeeded()
+        showExactAlarmPermissionGuidanceIfNeeded()
     }
 
-    override fun onStart() {
-        super.onStart()
-        assistantAnimator.resume()
-    }
-
-    override fun onStop() {
-        assistantAnimator.stop()
-        assistantDialogueBubble.stopAllEffects()
-        assistantTapHint.animate().cancel()
-        speechManager.cancelRecognition()
-        super.onStop()
+    override fun onResume() {
+        super.onResume()
+        if (::reminderViewModel.isInitialized) {
+            reminderViewModel.loadReminders()
+        }
+        if (::googleCalendarAuthManager.isInitialized) {
+            refreshGoogleCalendarStatus()
+        }
     }
 
     private fun initViews() {
-        assistantSceneContent = findViewById(R.id.assistantSceneContent)
-        assistantView = findViewById(R.id.assistantView)
-        assistantDialogueBubble = findViewById(R.id.assistantDialogueBubble)
-        assistantTapHint = findViewById(R.id.tvAssistantTapHint)
+        assistantReminderCard = findViewById(R.id.cardAssistantReminder)
+        calendarCard = findViewById(R.id.cardCalendar)
         manualReminderCard = findViewById(R.id.cardManualReminder)
         cameraReminderCard = findViewById(R.id.cardCameraReminder)
-        openCalendarButton = findViewById(R.id.btnOpenCalendar)
+        googleCalendarSyncButton = findViewById(R.id.btnGoogleCalendarSync)
+        googleCalendarStatusText = findViewById(R.id.tvGoogleCalendarStatus)
         nextDaySummaryTimeButton = findViewById(R.id.btnNextDaySummaryTime)
         remindersRecyclerView = findViewById(R.id.recyclerReminders)
         homeEmptyStateContainer = findViewById(R.id.homeEmptyStateCard)
         homeEmptyStateButton = findViewById(R.id.btnHomeEmptyStateCreateReminder)
     }
 
-    private fun setupAssistant() {
-        assistantAnimator = AssistantAnimator(assistantView)
-        renderAssistantState(AssistantVisualState.IDLE)
-    }
-
     private fun setupViewModel() {
         val database = ReminderDatabase.getDatabase(this)
-        val repository = ReminderRepositoryImpl(database.reminderDao())
+        reminderRepository = ReminderRepositoryImpl(database.reminderDao())
+        googleCalendarSynchronizer = GoogleCalendarReminderSynchronizer(
+            context = applicationContext,
+            reminderRepository = reminderRepository
+        )
 
         val factory = ReminderViewModelFactory(
             context = applicationContext,
-            saveReminderDraftUseCase = SaveReminderDraftUseCase(repository),
-            getRemindersUseCase = GetRemindersUseCase(repository),
-            getReminderByIdUseCase = GetReminderByIdUseCase(repository),
-            deleteReminderUseCase = DeleteReminderUseCase(repository),
-            updateReminderUseCase = UpdateReminderUseCase(repository)
+            saveReminderDraftUseCase = SaveReminderDraftUseCase(reminderRepository),
+            getRemindersUseCase = GetRemindersUseCase(reminderRepository),
+            getReminderByIdUseCase = GetReminderByIdUseCase(reminderRepository),
+            deleteReminderUseCase = DeleteReminderUseCase(reminderRepository),
+            updateReminderUseCase = UpdateReminderUseCase(reminderRepository),
+            googleCalendarSynchronizer = googleCalendarSynchronizer
         )
 
         reminderViewModel = ViewModelProvider(this, factory)[ReminderViewModel::class.java]
@@ -174,42 +169,7 @@ class MainActivity : ComponentActivity() {
     private fun setupCore() {
         summaryPreferenceStore = NextDaySummaryPreferenceStore(applicationContext)
         reminderScheduler = ReminderScheduler(applicationContext)
-        speechManager = SpeechRecognizerManager(this)
-        speechManager.setListener(object : SpeechRecognizerManager.Listener {
-            override fun onPartialTranscription(text: String) {
-                runOnUiThread {
-                    renderLiveTranscription(text)
-                }
-            }
-
-            override fun onFinalTranscription(text: String) {
-                runOnUiThread {
-                    handleRecognizedText(text)
-                }
-            }
-
-            override fun onNoMatch() {
-                runOnUiThread {
-                    handleRecognitionFailure(showNoMatchMessage = true)
-                }
-            }
-
-            override fun onRecognitionError() {
-                runOnUiThread {
-                    handleRecognitionFailure(showNoMatchMessage = false)
-                }
-            }
-        })
-        voiceAssistantSpeaker = VoiceAssistantSpeaker(this)
-        voiceAssistantSpeaker.setPlaybackListener(object : VoiceAssistantSpeaker.PlaybackListener {
-            override fun onPlaybackStarted() {
-                assistantAnimator.setSpeechPlaybackActive(true)
-            }
-
-            override fun onPlaybackFinished() {
-                assistantAnimator.setSpeechPlaybackActive(false)
-            }
-        })
+        googleCalendarAuthManager = GoogleCalendarAuthManager(applicationContext)
     }
 
     private fun setupRecyclerView() {
@@ -231,6 +191,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun setupActionButtons() {
+        assistantReminderCard.setOnClickListener {
+            startActivity(Intent(this, AssistantActivity::class.java))
+        }
+
+        calendarCard.setOnClickListener {
+            startActivity(Intent(this, CalendarActivity::class.java))
+        }
+
         manualReminderCard.setOnClickListener {
             openManualReminderScreen(null, ReminderSource.MANUAL)
         }
@@ -239,8 +207,14 @@ class MainActivity : ComponentActivity() {
             openManualReminderScreen(null, ReminderSource.CAMERA)
         }
 
-        openCalendarButton.setOnClickListener {
-            startActivity(Intent(this, CalendarActivity::class.java))
+        googleCalendarSyncButton.setOnClickListener {
+            if (googleCalendarAuthManager.hasCalendarPermission()) {
+                syncPendingGoogleCalendarChanges()
+            } else {
+                googleCalendarSignInLauncher.launch(
+                    googleCalendarAuthManager.buildSignInIntent()
+                )
+            }
         }
 
         nextDaySummaryTimeButton.setOnClickListener {
@@ -252,6 +226,7 @@ class MainActivity : ComponentActivity() {
         }
 
         refreshNextDaySummaryTimeButtonLabel()
+        refreshGoogleCalendarStatus()
     }
 
     private fun openManualReminderScreen(
@@ -269,91 +244,20 @@ class MainActivity : ComponentActivity() {
         startActivity(intent)
     }
 
-    private fun setupAssistantInteraction() {
-        assistantSceneContent.setOnClickListener {
-            handleAssistantSceneTap()
-        }
-    }
-
-    private fun startAssistantConversation() {
-        hasPendingSuccessState = false
-        updateTapHintVisibility(false)
-        isAssistantConversationMode = true
-        reminderViewModel.startAssistantSession()
-    }
-
     private fun observeState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    reminderViewModel.uiState.collect { state ->
-                        reminderAdapter.updateData(state.homeTimelineItems)
-                        homeEmptyStateContainer.isVisible = state.homeTimelineItems.isEmpty()
-                        remindersRecyclerView.isVisible = state.homeTimelineItems.isNotEmpty()
+                reminderViewModel.uiState.collect { state ->
+                    reminderAdapter.updateData(state.homeTimelineItems)
+                    homeEmptyStateContainer.isVisible = state.homeTimelineItems.isEmpty()
+                    remindersRecyclerView.isVisible = state.homeTimelineItems.isNotEmpty()
 
-                        state.error?.let { error ->
-                            Toast.makeText(
-                                this@MainActivity,
-                                error.asString(this@MainActivity),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-
-                launch {
-                    reminderViewModel.assistantState.collect { state ->
-                        state.error?.let { error ->
-                            renderAssistantState(AssistantVisualState.IDLE)
-                            Toast.makeText(
-                                this@MainActivity,
-                                error,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-
-                launch {
-                    reminderViewModel.voiceState.collect { state ->
-                        if (isAssistantConversationMode) return@collect
-
-                        val message = state.lastAssistantMessage
-
-                        if (
-                            state.isVoiceFlowActive &&
-                            message.isNotBlank() &&
-                            message != lastVoiceAssistantMessage
-                        ) {
-                            lastVoiceAssistantMessage = message
-                            renderAssistantSpeech(message)
-
-                            voiceAssistantSpeaker.speakText(message) {
-                                runOnUiThread {
-                                    if (hasPendingSuccessState) {
-                                        showSuccessAndReturnToIdle()
-                                        return@runOnUiThread
-                                    }
-
-                                    if (
-                                        reminderViewModel.voiceState.value.isVoiceFlowActive &&
-                                        !isAssistantConversationMode
-                                    ) {
-                                        startSpeechRecognition()
-                                    } else {
-                                        renderAssistantState(AssistantVisualState.IDLE)
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!state.isVoiceFlowActive) {
-                            lastVoiceAssistantMessage = ""
-
-                            if (!hasPendingSuccessState && !isAssistantConversationMode) {
-                                renderAssistantState(AssistantVisualState.IDLE)
-                            }
-                        }
+                    state.error?.let { error ->
+                        Toast.makeText(
+                            this@MainActivity,
+                            error.asString(this@MainActivity),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
@@ -364,325 +268,15 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 reminderViewModel.events.collect { event ->
-                    when (event) {
-                        is ReminderUiEvent.ShowMessage -> {
-                            Toast.makeText(
-                                this@MainActivity,
-                                event.message,
-                                Toast.LENGTH_SHORT
-                            ).show()
-
-                            if (
-                                event.message.contains("guardado", ignoreCase = true) ||
-                                event.message.contains("actualizado", ignoreCase = true)
-                            ) {
-                                hasPendingSuccessState = true
-
-                                if (!isAssistantConversationMode) {
-                                    showSuccessAndReturnToIdle()
-                                }
-                            }
-                        }
-
-                        is ReminderUiEvent.SpeakAssistantReply -> {
-                            if (event.message.isNotBlank()) {
-                                val shouldContinueListening = isAssistantConversationMode
-                                renderAssistantSpeech(event.message)
-
-                                voiceAssistantSpeaker.speakText(event.message) {
-                                    runOnUiThread {
-                                        if (hasPendingSuccessState) {
-                                            showSuccessAndReturnToIdle()
-                                            return@runOnUiThread
-                                        }
-
-                                        if (
-                                            shouldContinueListening &&
-                                            isAssistantConversationMode &&
-                                            reminderViewModel.assistantState.value.isConversationActive
-                                        ) {
-                                            startSpeechRecognition()
-                                        } else {
-                                            renderAssistantState(AssistantVisualState.IDLE)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        ReminderUiEvent.StopAssistantConversation -> {
-                            speechManager.cancelRecognition()
-                            isAssistantConversationMode = false
-
-                            if (!hasPendingSuccessState) {
-                                renderAssistantState(AssistantVisualState.IDLE)
-                            }
-                        }
+                    if (event is ReminderUiEvent.ShowMessage) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            event.message,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
-        }
-    }
-
-    private fun startSpeechRecognition() {
-        try {
-            if (!speechManager.isRecognitionAvailable()) {
-                throw IllegalStateException("Speech recognition is not available")
-            }
-
-            speechManager.cancelRecognition()
-
-            renderAssistantState(AssistantVisualState.LISTENING)
-            speechManager.startRecognition()
-        } catch (exception: Exception) {
-            exception.printStackTrace()
-            renderAssistantState(AssistantVisualState.IDLE)
-
-            Toast.makeText(
-                this,
-                getString(R.string.speech_not_available),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
-    private fun checkAudioPermissionForVoiceFlow() {
-        if (
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            startAssistantConversation()
-        } else {
-            voiceAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-
-    private fun renderAssistantState(
-        state: AssistantVisualState,
-        dialogueText: String? = null,
-        faceState: AssistantFaceState = state.defaultFaceState
-    ) {
-        assistantResetJob?.cancel()
-        currentAssistantVisualState = state
-
-        val resolvedDialogueText = when {
-            !dialogueText.isNullOrBlank() -> dialogueText
-            state.label.isNotBlank() -> state.label
-            lastDialogueText.isNotBlank() -> lastDialogueText
-            else -> AssistantVisualState.IDLE.label
-        }
-
-        lastDialogueText = resolvedDialogueText
-        assistantAnimator.render(state, faceState)
-        renderDialogueBubble(state, resolvedDialogueText)
-    }
-
-    private fun updateAssistantVisualState(state: AssistantVisualState) {
-        renderAssistantState(state)
-    }
-
-    private fun renderAssistantSpeech(message: String) {
-        val visualState = message.toVisualState()
-        renderAssistantState(
-            state = visualState,
-            dialogueText = message,
-            faceState = message.toFaceState(visualState)
-        )
-    }
-
-    private fun renderDialogueBubble(
-        state: AssistantVisualState,
-        resolvedDialogueText: String
-    ) {
-        when (state) {
-            AssistantVisualState.IDLE -> {
-                assistantDialogueBubble.hideBubble()
-                updateTapHintVisibility(true)
-            }
-
-            AssistantVisualState.THINKING -> {
-                assistantDialogueBubble.showMessage(
-                    text = "...",
-                    animateText = false,
-                    playTypingSound = false
-                )
-                updateTapHintVisibility(false)
-            }
-
-            AssistantVisualState.LISTENING -> {
-                assistantDialogueBubble.showMessage(
-                    text = resolvedDialogueText,
-                    animateText = false,
-                    playTypingSound = false
-                )
-                updateTapHintVisibility(false)
-            }
-
-            AssistantVisualState.SUCCESS -> {
-                assistantDialogueBubble.showMessage(
-                    text = resolvedDialogueText,
-                    animateText = false,
-                    playTypingSound = false
-                )
-                updateTapHintVisibility(false)
-            }
-
-            AssistantVisualState.ASKING_TIME,
-            AssistantVisualState.SPEAKING -> {
-                assistantDialogueBubble.showMessage(
-                    text = resolvedDialogueText,
-                    animateText = true,
-                    playTypingSound = true
-                )
-                updateTapHintVisibility(false)
-            }
-        }
-    }
-
-    private fun handleRecognizedText(text: String) {
-        val recognizedText = text.trim()
-
-        if (recognizedText.isBlank()) {
-            handleRecognitionFailure(showNoMatchMessage = true)
-            return
-        }
-
-        updateAssistantVisualState(AssistantVisualState.THINKING)
-
-        if (isAssistantConversationMode) {
-            reminderViewModel.processAssistantMessage(recognizedText)
-        } else {
-            reminderViewModel.processVoiceInput(recognizedText)
-        }
-    }
-
-    private fun handleRecognitionFailure(showNoMatchMessage: Boolean) {
-        speechManager.cancelRecognition()
-        renderAssistantState(AssistantVisualState.IDLE)
-
-        val messageResId = if (showNoMatchMessage) {
-            R.string.speech_not_understood
-        } else {
-            R.string.speech_not_available
-        }
-
-        Toast.makeText(
-            this,
-            getString(messageResId),
-            Toast.LENGTH_SHORT
-        ).show()
-    }
-
-    private fun handleAssistantSceneTap() {
-        when {
-            speechManager.isListeningOrStarting() -> {
-                if (hasRecoverableVoiceFlow()) {
-                    startSpeechRecognition()
-                } else {
-                    speechManager.cancelRecognition()
-                    renderAssistantState(AssistantVisualState.IDLE)
-                }
-            }
-
-            assistantDialogueBubble.isTypewriterRunning() -> {
-                assistantDialogueBubble.completeTypingImmediately()
-            }
-
-            currentAssistantVisualState == AssistantVisualState.IDLE &&
-                !hasPendingSuccessState -> {
-                restartVoiceFlowFromIdle()
-            }
-        }
-    }
-
-    private fun restartVoiceFlowFromIdle() {
-        if (hasRecoverableVoiceFlow()) {
-            checkAudioPermissionAndStartListening()
-        } else {
-            checkAudioPermissionForVoiceFlow()
-        }
-    }
-
-    private fun checkAudioPermissionAndStartListening() {
-        if (
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            startSpeechRecognition()
-        } else {
-            voiceAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-
-    private fun hasRecoverableVoiceFlow(): Boolean {
-        val isAssistantConversationActive =
-            isAssistantConversationMode && reminderViewModel.assistantState.value.isConversationActive
-
-        val isVoiceReminderActive = reminderViewModel.voiceState.value.isVoiceFlowActive
-
-        return isAssistantConversationActive || isVoiceReminderActive
-    }
-
-    private fun renderLiveTranscription(text: String) {
-        val partialText = text.trim()
-
-        if (partialText.isBlank()) return
-
-        if (currentAssistantVisualState != AssistantVisualState.LISTENING) {
-            renderAssistantState(
-                state = AssistantVisualState.LISTENING,
-                dialogueText = partialText,
-                faceState = AssistantFaceState.ATTENTIVE
-            )
-            return
-        }
-
-        lastDialogueText = partialText
-        assistantDialogueBubble.showMessage(
-            text = partialText,
-            animateText = false,
-            playTypingSound = false
-        )
-        updateTapHintVisibility(false)
-    }
-
-    private fun updateTapHintVisibility(isVisible: Boolean) {
-        assistantTapHint.animate().cancel()
-
-        if (isVisible) {
-            if (assistantTapHint.visibility != View.VISIBLE) {
-                assistantTapHint.alpha = 0f
-                assistantTapHint.visibility = View.VISIBLE
-            }
-
-            assistantTapHint.animate()
-                .alpha(1f)
-                .setDuration(140L)
-                .start()
-        } else {
-            if (assistantTapHint.visibility != View.VISIBLE) return
-
-            assistantTapHint.animate()
-                .alpha(0f)
-                .setDuration(110L)
-                .withEndAction {
-                    assistantTapHint.visibility = View.INVISIBLE
-                }
-                .start()
-        }
-    }
-
-    private fun showSuccessAndReturnToIdle() {
-        hasPendingSuccessState = false
-        renderAssistantState(AssistantVisualState.SUCCESS)
-
-        assistantResetJob = lifecycleScope.launch {
-            delay(1200L)
-            renderAssistantState(AssistantVisualState.IDLE)
         }
     }
 
@@ -697,6 +291,40 @@ class MainActivity : ComponentActivity() {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+    }
+
+    private fun showExactAlarmPermissionGuidanceIfNeeded() {
+        if (!::reminderScheduler.isInitialized) return
+        if (
+            !ExactAlarmPermissionPolicy.shouldShowGuidance(
+                sdkInt = Build.VERSION.SDK_INT,
+                android12SdkInt = Build.VERSION_CODES.S,
+                canScheduleExactAlarms = reminderScheduler.canScheduleExactAlarms()
+            )
+        ) {
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.exact_alarm_permission_title))
+            .setMessage(getString(R.string.exact_alarm_permission_message))
+            .setNegativeButton(R.string.exact_alarm_permission_later, null)
+            .setPositiveButton(R.string.exact_alarm_permission_open_settings) { _, _ ->
+                runCatching {
+                    startActivity(
+                        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                    )
+                }.onFailure {
+                    Toast.makeText(
+                        this,
+                        getString(R.string.exact_alarm_permission_settings_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+            .show()
     }
 
     private fun showNextDaySummaryTimePicker() {
@@ -723,73 +351,54 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshNextDaySummaryTimeButtonLabel() {
-        val summaryTime = summaryPreferenceStore.getSummaryTime()
-        val formattedTime = DateTimeFormatter.formatTime(summaryTime.hour, summaryTime.minute)
-        nextDaySummaryTimeButton.text = getString(
-            R.string.home_next_day_summary_time_button,
-            formattedTime
-        )
+        nextDaySummaryTimeButton.text = getString(R.string.home_next_day_summary_time_button)
     }
 
-    override fun onDestroy() {
-        assistantResetJob?.cancel()
-        assistantAnimator.stop()
-        assistantDialogueBubble.stopAllEffects()
-        speechManager.destroy()
-        voiceAssistantSpeaker.setPlaybackListener(null)
-        voiceAssistantSpeaker.shutdown()
-        super.onDestroy()
-    }
+    private fun refreshGoogleCalendarStatus() {
+        val account = googleCalendarAuthManager.getSignedInAccount()
+        val isConnected = googleCalendarAuthManager.hasCalendarPermission(account)
 
-    private fun String.toVisualState(): AssistantVisualState {
-        val normalized = lowercase()
+        googleCalendarStatusText.text = if (isConnected) {
+            getString(
+                R.string.google_calendar_connected,
+                account?.email.orEmpty().ifBlank { getString(R.string.google_calendar_account) }
+            )
+        } else {
+            getString(R.string.google_calendar_not_connected)
+        }
 
-        return when {
-            "hora" in normalized && "?" in this -> AssistantVisualState.ASKING_TIME
-            else -> AssistantVisualState.SPEAKING
+        googleCalendarSyncButton.text = if (isConnected) {
+            getString(R.string.google_calendar_sync_button)
+        } else {
+            getString(R.string.google_calendar_connect_button)
         }
     }
 
-    private fun String.toFaceState(visualState: AssistantVisualState): AssistantFaceState {
-        val normalized = lowercase()
-
-        return when (visualState) {
-            AssistantVisualState.IDLE -> AssistantFaceState.RELAXED
-            AssistantVisualState.LISTENING -> AssistantFaceState.ATTENTIVE
-            AssistantVisualState.THINKING -> AssistantFaceState.NEUTRAL_PAUSE
-            AssistantVisualState.ASKING_TIME -> AssistantFaceState.SURPRISE
-            AssistantVisualState.SUCCESS -> AssistantFaceState.SATISFIED
-            AssistantVisualState.SPEAKING -> when {
-                listOf("listo", "guard", "hecho", "perfect", "claro", "confirm").any {
-                    normalized.contains(it)
-                } -> AssistantFaceState.CONFIRMATION
-
-                contains("?") || listOf("que", "como", "cuando").any {
-                    normalized.contains(it)
-                } -> AssistantFaceState.SURPRISE
-
-                else -> AssistantFaceState.NATURAL_SPEAKING
+    private fun syncPendingGoogleCalendarChanges() {
+        lifecycleScope.launch {
+            runCatching {
+                googleCalendarSynchronizer.syncPendingReminders()
+            }.onSuccess { summary ->
+                reminderViewModel.loadReminders()
+                refreshGoogleCalendarStatus()
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(
+                        R.string.google_calendar_sync_finished,
+                        summary.syncedCount,
+                        summary.failedCount,
+                        summary.pendingDeleteCount
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            }.onFailure { exception ->
+                refreshGoogleCalendarStatus()
+                Toast.makeText(
+                    this@MainActivity,
+                    exception.message ?: getString(R.string.google_calendar_sync_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
-
-    private val AssistantVisualState.defaultFaceState: AssistantFaceState
-        get() = when (this) {
-            AssistantVisualState.IDLE -> AssistantFaceState.RELAXED
-            AssistantVisualState.LISTENING -> AssistantFaceState.ATTENTIVE
-            AssistantVisualState.THINKING -> AssistantFaceState.NEUTRAL_PAUSE
-            AssistantVisualState.ASKING_TIME -> AssistantFaceState.SURPRISE
-            AssistantVisualState.SPEAKING -> AssistantFaceState.NATURAL_SPEAKING
-            AssistantVisualState.SUCCESS -> AssistantFaceState.SATISFIED
-        }
-
-    private val AssistantVisualState.label: String
-        get() = when (this) {
-            AssistantVisualState.IDLE -> "Estoy lista"
-            AssistantVisualState.LISTENING -> "Te escucho"
-            AssistantVisualState.THINKING -> "Un momento..."
-            AssistantVisualState.ASKING_TIME -> "\u00BFA qu\u00E9 hora?"
-            AssistantVisualState.SPEAKING -> "Hablando..."
-            AssistantVisualState.SUCCESS -> "Listo, ya lo guard\u00E9"
-        }
 }

@@ -25,13 +25,13 @@ class ReminderVoiceAssistant(
             return
         }
 
-        val primaryLocaleResult = textToSpeech?.setLanguage(Locale("es", "CL"))
+        val primaryLocaleResult = textToSpeech?.setLanguage(Locale.forLanguageTag("es-CL"))
 
         if (
             primaryLocaleResult == TextToSpeech.LANG_MISSING_DATA ||
             primaryLocaleResult == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
-            textToSpeech?.setLanguage(Locale("es", "ES"))
+            textToSpeech?.setLanguage(Locale.forLanguageTag("es-ES"))
         }
 
         isInitialized = true

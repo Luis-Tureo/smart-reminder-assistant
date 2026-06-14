@@ -9,6 +9,7 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.luistureo.voicereminderapp.R
@@ -48,7 +49,7 @@ class AssistantDialogueBubbleView @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        dialogueTextView.maxWidth = (resources.displayMetrics.widthPixels * 0.72f).toInt()
+        post(::applyResponsiveBounds)
     }
 
     fun showMessage(
@@ -73,6 +74,7 @@ class AssistantDialogueBubbleView @JvmOverloads constructor(
         }
 
         ensureVisible()
+        applyResponsiveBounds()
 
         fullText = normalizedText
         shouldPlayTypingSound = animateText && playTypingSound
@@ -156,6 +158,24 @@ class AssistantDialogueBubbleView @JvmOverloads constructor(
             .scaleY(1f)
             .setDuration(165L)
             .start()
+    }
+
+    private fun applyResponsiveBounds() {
+        val parentView = parent as? View
+        val parentWidth = parentView?.width?.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
+        val parentHeight = parentView?.height?.takeIf { it > 0 } ?: resources.displayMetrics.heightPixels
+        val resourceMaxWidth = resources.getDimensionPixelSize(R.dimen.assistant_dialogue_max_width)
+        val resourceMaxHeight = resources.getDimensionPixelSize(R.dimen.assistant_dialogue_max_height)
+        val minWidth = resources.getDimensionPixelSize(R.dimen.assistant_dialogue_min_width)
+        val maxWidth = (parentWidth * 0.68f).toInt()
+            .coerceAtMost(resourceMaxWidth)
+            .coerceAtLeast(minWidth)
+        val maxHeight = (parentHeight * 0.24f).toInt().coerceAtMost(resourceMaxHeight)
+
+        dialogueTextView.width = maxWidth
+        dialogueTextView.maxWidth = maxWidth
+        dialogueTextView.maxHeight = maxHeight
+        dialogueTextView.minWidth = minWidth
     }
 
     private fun startTypewriter() {
