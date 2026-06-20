@@ -22,7 +22,7 @@
             android:contentDescription="@string/manual_reminder_back"
             android:padding="8dp"
             android:src="@drawable/ic_calendar_back"
-            android:tint="#F6F1E8" />
+            app:tint="#F6F1E8" />
 
         <TextView
             android:id="@+id/tvAssistantScreenTitle"

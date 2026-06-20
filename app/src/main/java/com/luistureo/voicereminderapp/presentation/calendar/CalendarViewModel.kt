@@ -195,10 +195,9 @@ class CalendarViewModel(
                 }
             }.onSuccess {
                 reloadCalendar()
-            }.onFailure { exception ->
+            }.onFailure {
                 publishState(
-                    errorMessage = exception.message
-                        ?: "No fue posible eliminar el evento seleccionado."
+                    errorMessage = "No fue posible eliminar el evento seleccionado."
                 )
             }
         }
@@ -219,9 +218,9 @@ class CalendarViewModel(
                 reminderScheduler.syncReminderSchedule(syncedReminder)
             }.onSuccess {
                 reloadCalendar()
-            }.onFailure { exception ->
+            }.onFailure {
                 publishState(
-                    errorMessage = exception.message ?: "No fue posible reactivar la cita."
+                    errorMessage = "No fue posible reactivar la cita."
                 )
             }
         }

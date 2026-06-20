@@ -1,0 +1,16 @@
+{
+  "client_id": "2a450f3c-966d-4c19-8fdf-dabb4566a911",
+  "authorization_user_agent": "DEFAULT",
+  "redirect_uri": "msauth://com.luistureo.voicereminderapp/RELEASE_SIGNATURE_HASH_NOT_CONFIGURED",
+  "account_mode": "SINGLE",
+  "broker_redirect_uri_registered": false,
+  "authorities": [
+    {
+      "type": "AAD",
+      "audience": {
+        "type": "AzureADandPersonalMicrosoftAccount",
+        "tenant_id": "common"
+      }
+    }
+  ]
+}

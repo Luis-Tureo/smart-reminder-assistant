@@ -52,7 +52,7 @@
                 android:contentDescription="@string/delete_reminder"
                 android:padding="8dp"
                 android:src="@drawable/ic_reminder_delete"
-                android:tint="@color/reminder_delete_red" />
+                app:tint="@color/reminder_delete_red" />
         </LinearLayout>
 
         <com.google.android.material.chip.ChipGroup

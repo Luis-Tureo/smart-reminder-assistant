@@ -71,7 +71,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@android:drawable/ic_btn_speak_now"
-                        android:tint="@color/reminder_icon_blue_fg" />
+                        app:tint="@color/reminder_icon_blue_fg" />
                 </FrameLayout>
 
                 <TextView
@@ -138,7 +138,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_reminder_calendar"
-                        android:tint="@color/reminder_icon_blue_fg" />
+                        app:tint="@color/reminder_icon_blue_fg" />
                 </FrameLayout>
 
                 <TextView
@@ -202,7 +202,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_reminder_calendar"
-                        android:tint="@color/calendar_indicator_reminder_text" />
+                        app:tint="@color/calendar_indicator_reminder_text" />
                 </FrameLayout>
 
                 <TextView
@@ -311,7 +311,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_reminder_note"
-                        android:tint="@color/reminder_icon_amber_fg" />
+                        app:tint="@color/reminder_icon_amber_fg" />
                 </FrameLayout>
 
                 <TextView
@@ -379,7 +379,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@android:drawable/ic_menu_camera"
-                        android:tint="@color/reminder_icon_blue_fg" />
+                        app:tint="@color/reminder_icon_blue_fg" />
                 </FrameLayout>
 
                 <TextView
@@ -441,7 +441,7 @@
                         android:layout_height="28dp"
                         android:contentDescription="@null"
                         android:src="@android:drawable/ic_dialog_info"
-                        android:tint="@color/primary_blue" />
+                        app:tint="@color/primary_blue" />
 
                     <TextView
                         android:layout_width="0dp"

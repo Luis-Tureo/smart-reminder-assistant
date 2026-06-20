@@ -446,15 +446,11 @@ class ReminderViewModel(
                 _assistantState.update { state ->
                     state.copy(reminders = reminders)
                 }
-            } catch (exception: Exception) {
+            } catch (_: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = if (exception.message.isNullOrBlank()) {
-                            UiText.StringResource(R.string.message_unknown_error)
-                        } else {
-                            UiText.DynamicString(exception.message.orEmpty())
-                        },
+                        error = UiText.StringResource(R.string.message_unknown_error),
                         formState = _formState.value
                     )
                 }
@@ -462,7 +458,7 @@ class ReminderViewModel(
                 _assistantState.update {
                     it.copy(
                         isLoading = false,
-                        error = exception.message ?: "No fue posible cargar los recordatorios."
+                        error = "No fue posible cargar los recordatorios."
                     )
                 }
             }
@@ -493,10 +489,10 @@ class ReminderViewModel(
                         }
                     )
                 )
-            }.onFailure { exception ->
+            }.onFailure {
                 _events.emit(
                     ReminderUiEvent.ShowMessage(
-                        exception.message ?: "No fue posible guardar el recordatorio."
+                        "No fue posible guardar el recordatorio."
                     )
                 )
             }
@@ -570,14 +566,10 @@ class ReminderViewModel(
                 reminderScheduler.cancelReminder(reminder.id)
                 reminderScheduler.scheduleNextDaySummary()
                 loadReminders()
-            } catch (exception: Exception) {
+            } catch (_: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = if (exception.message.isNullOrBlank()) {
-                            UiText.StringResource(R.string.message_delete_reminder_failed)
-                        } else {
-                            UiText.DynamicString(exception.message.orEmpty())
-                        }
+                        error = UiText.StringResource(R.string.message_delete_reminder_failed)
                     )
                 }
             }
@@ -595,14 +587,10 @@ class ReminderViewModel(
                 val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(resolvedReminder)
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
-            } catch (exception: Exception) {
+            } catch (_: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = if (exception.message.isNullOrBlank()) {
-                            UiText.StringResource(R.string.message_update_reminder_failed)
-                        } else {
-                            UiText.DynamicString(exception.message.orEmpty())
-                        }
+                        error = UiText.StringResource(R.string.message_update_reminder_failed)
                     )
                 }
             }
@@ -659,8 +647,8 @@ class ReminderViewModel(
             _events.emit(ReminderUiEvent.ShowMessage("Recordatorio guardado correctamente."))
             _events.emit(ReminderUiEvent.SpeakAssistantReply(successReply))
             _events.emit(ReminderUiEvent.StopAssistantConversation)
-        }.onFailure { exception ->
-            val errorMessage = exception.message ?: "No pude guardar el recordatorio."
+        }.onFailure {
+            val errorMessage = "No pude guardar el recordatorio."
             AssistantConversationLogger.log("Assistant save flow failed: $errorMessage")
             _assistantState.update {
                 it.copy(
@@ -872,11 +860,11 @@ class ReminderViewModel(
                         AssistantPhrases.SAVE_SUCCESS
                     )
                 )
-            }.onFailure { exception ->
+            }.onFailure {
                 resetVoiceState()
                 _events.emit(
                     ReminderUiEvent.SpeakAssistantReply(
-                        exception.message ?: AssistantPhrases.SAVE_ERROR
+                        AssistantPhrases.SAVE_ERROR
                     )
                 )
             }

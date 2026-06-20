@@ -1,6 +1,7 @@
 package com.luistureo.voicereminderapp.core.calendar.unified
 
 import android.util.Log
+import com.luistureo.voicereminderapp.BuildConfig
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 
 object CalendarSyncLogger {
@@ -756,6 +757,7 @@ object CalendarSyncLogger {
     }
 
     private inline fun safelyLog(block: () -> Unit) {
+        if (!BuildConfig.DEBUG) return
         runCatching(block)
     }
 

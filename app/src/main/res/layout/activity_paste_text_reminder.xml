@@ -20,7 +20,7 @@
             android:contentDescription="@string/paste_reminder_cancel"
             android:padding="10dp"
             android:src="@drawable/ic_calendar_back"
-            android:tint="@color/calendar_navigation_icon" />
+            app:tint="@color/calendar_navigation_icon" />
 
         <TextView
             android:layout_width="match_parent"

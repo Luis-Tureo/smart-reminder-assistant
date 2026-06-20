@@ -72,7 +72,7 @@
                                 android:contentDescription="@string/calendar_previous_month"
                                 android:padding="9dp"
                                 android:src="@drawable/ic_calendar_chevron_left"
-                                android:tint="@color/calendar_navigation_icon" />
+                                app:tint="@color/calendar_navigation_icon" />
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnMonthSelector"
@@ -120,7 +120,7 @@
                                 android:contentDescription="@string/calendar_next_month"
                                 android:padding="9dp"
                                 android:src="@drawable/ic_calendar_chevron_right"
-                                android:tint="@color/calendar_navigation_icon" />
+                                app:tint="@color/calendar_navigation_icon" />
                         </LinearLayout>
 
                     </LinearLayout>
