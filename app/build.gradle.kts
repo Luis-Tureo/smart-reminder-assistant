@@ -27,13 +27,15 @@ val hasReleaseSigningConfiguration = listOf(
     releaseKeyPassword
 ).all { !it.isNullOrBlank() }
 val releaseMsalConfigFile = file("src/release/res/raw/auth_config_single_account.json")
+val expectedReleaseMsalRedirectUri =
+    "msauth://com.luistureo.voicereminderapp/%2FH2TaEmQ8s92VDO8Ny7L8I0cu2o%3D"
 
 if (
     hasReleaseSigningConfiguration &&
-    releaseMsalConfigFile.readText().contains("RELEASE_SIGNATURE_HASH_NOT_CONFIGURED")
+    !releaseMsalConfigFile.readText().contains(expectedReleaseMsalRedirectUri)
 ) {
     throw GradleException(
-        "Configure the Microsoft Entra release signature hash before creating a signed release."
+        "The Microsoft Entra release redirect does not match the registered signing certificate."
     )
 }
 

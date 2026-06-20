@@ -14,7 +14,7 @@
 
                 <data
                     android:host="com.luistureo.voicereminderapp"
-                    android:path="/RELEASE_SIGNATURE_HASH_NOT_CONFIGURED"
+                    android:path="//H2TaEmQ8s92VDO8Ny7L8I0cu2o="
                     android:scheme="msauth" />
             </intent-filter>
         </activity>

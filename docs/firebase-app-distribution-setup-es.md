@@ -26,11 +26,11 @@ No inventar ni copiar el SHA-1 de depuración: Google valida la combinación exa
 2. En Autenticación, agregar una plataforma Android para `com.luistureo.voicereminderapp` con el hash de firma release real.
 3. Obtener el hash desde el certificado release siguiendo la herramienta/documentación de MSAL para Android. El valor usado por Entra y por el redirect `msauth` debe provenir del mismo certificado; no inventarlo.
 4. Mantener registrada la plataforma y redirect de depuración actuales.
-5. Antes de compilar la entrega, reemplazar `RELEASE_SIGNATURE_HASH_NOT_CONFIGURED` en `app/src/release/res/raw/auth_config_single_account.json` por el hash release codificado para URL y en `app/src/release/AndroidManifest.xml` por el hash equivalente esperado en `android:path`. Conservar el `client_id` público y el redirect `msauth://com.luistureo.voicereminderapp/<hash-release-codificado>`.
+5. Verificar que `app/src/release/res/raw/auth_config_single_account.json` conserve el redirect release registrado y que `app/src/release/AndroidManifest.xml` conserve su ruta decodificada equivalente. No reutilizar el redirect debug en release.
 6. No agregar un `client_secret`: Android usa un flujo de cliente público con permisos delegados `User.Read` y `Calendars.ReadWrite`.
 7. Probar inicio de sesión interactivo, adquisición silenciosa de token y sincronización de Microsoft Calendar en la APK release.
 
-La configuración principal de MSAL conserva el redirect de depuración y la variante release tiene archivos separados. La build firmada se bloquea mientras conserve el marcador, por lo que la preparación final de Microsoft es obligatoria antes de distribuir.
+La configuración principal de MSAL conserva el redirect de depuración y la variante release tiene archivos separados. Antes de distribuir, la firma del APK debe corresponder al hash registrado en Microsoft Entra.
 
 ## 4. Crear o seleccionar la aplicación Firebase
 
