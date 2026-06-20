@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.domain.model.Reminder
 
 class ReminderScheduler(
@@ -167,20 +168,30 @@ class ReminderScheduler(
     }
 
     private fun shouldSchedulePrimaryReminder(reminder: Reminder): Boolean {
-        return reminder.scheduleState.nextTriggerAtEpochMillis != null && !reminder.isCompleted
+        return ReminderAlarmPolicy.shouldSchedulePrimaryReminder(reminder)
     }
 
     private fun shouldScheduleUrgentRepeat(reminder: Reminder): Boolean {
-        return reminder.isUrgent &&
-                !reminder.isCompleted &&
-                reminder.scheduleState.activeAlertAtEpochMillis != null &&
-                reminder.scheduleState.nextUrgentRepeatAtEpochMillis != null
+        return ReminderAlarmPolicy.shouldScheduleUrgentRepeat(reminder)
     }
 
     private fun syncPrimaryAlarm(reminder: Reminder) {
         if (shouldSchedulePrimaryReminder(reminder)) {
             scheduleReminder(reminder)
         } else {
+            val nextTriggerAt = reminder.scheduleState.nextTriggerAtEpochMillis
+            if (
+                reminder.isSuspended &&
+                !reminder.isCompleted &&
+                (
+                        nextTriggerAt == null ||
+                                ReminderAlarmPolicy.isSuspendedOccurrence(reminder, nextTriggerAt)
+                        )
+            ) {
+                CalendarSyncLogger.alarmSkippedForSuspendedAppointment(
+                    reminder.originProvider
+                )
+            }
             cancelPrimaryReminder(reminder.id)
         }
     }

@@ -8,11 +8,15 @@ class ReminderScheduleStateResolver(
 ) {
 
     fun resolveOnSave(reminder: Reminder): ReminderScheduleState {
-        val nextTriggerAtEpochMillis = if (reminder.isCompleted) {
+        val candidateTriggerAtEpochMillis = if (reminder.isCompleted) {
             null
         } else {
             occurrenceCalculator.resolveNextTriggerAtEpochMillis(reminder)
         }
+        val nextTriggerAtEpochMillis = skipSuspendedOccurrence(
+            reminder,
+            candidateTriggerAtEpochMillis
+        )
 
         return ReminderScheduleState(
             nextTriggerAtEpochMillis = nextTriggerAtEpochMillis,
@@ -25,7 +29,7 @@ class ReminderScheduleStateResolver(
         occurrenceAtEpochMillis: Long,
         nowEpochMillis: Long = System.currentTimeMillis()
     ): ReminderScheduleState {
-        val nextTriggerAtEpochMillis = if (reminder.isCompleted) {
+        val candidateTriggerAtEpochMillis = if (reminder.isCompleted) {
             null
         } else {
             occurrenceCalculator.resolveNextTriggerAtEpochMillis(
@@ -33,6 +37,10 @@ class ReminderScheduleStateResolver(
                 fromEpochMillis = occurrenceAtEpochMillis
             )
         }
+        val nextTriggerAtEpochMillis = skipSuspendedOccurrence(
+            reminder,
+            candidateTriggerAtEpochMillis
+        )
         val activeAlertRepeatCount = if (reminder.isUrgent && !reminder.isCompleted) 1 else 0
         val nextUrgentRepeatAtEpochMillis = activeAlertRepeatCount
             .takeIf { it in 1 until MAX_URGENT_ALERT_COUNT }
@@ -44,6 +52,41 @@ class ReminderScheduleStateResolver(
             activeAlertAtEpochMillis = occurrenceAtEpochMillis.takeIf { activeAlertRepeatCount > 0 },
             activeAlertRepeatCount = activeAlertRepeatCount,
             nextUrgentRepeatAtEpochMillis = nextUrgentRepeatAtEpochMillis
+        )
+    }
+
+    fun resolveAfterSuspendedTrigger(
+        reminder: Reminder,
+        occurrenceAtEpochMillis: Long
+    ): ReminderScheduleState {
+        val nextTriggerAtEpochMillis = occurrenceCalculator.resolveNextTriggerAtEpochMillis(
+            reminder = reminder,
+            fromEpochMillis = occurrenceAtEpochMillis
+        )
+        return ReminderScheduleState(
+            nextTriggerAtEpochMillis = skipSuspendedOccurrence(
+                reminder,
+                nextTriggerAtEpochMillis
+            ),
+            lastTriggeredAtEpochMillis = reminder.scheduleState.lastTriggeredAtEpochMillis
+        )
+    }
+
+    private fun skipSuspendedOccurrence(
+        reminder: Reminder,
+        candidateAtEpochMillis: Long?
+    ): Long? {
+        if (!reminder.isSuspended || candidateAtEpochMillis == null) {
+            return candidateAtEpochMillis
+        }
+        if (reminder.suspendedOccurrenceAtEpochMillis != candidateAtEpochMillis) {
+            return candidateAtEpochMillis
+        }
+        if (!reminder.isRecurring) return null
+
+        return occurrenceCalculator.resolveNextTriggerAtEpochMillis(
+            reminder = reminder,
+            fromEpochMillis = candidateAtEpochMillis
         )
     }
 

@@ -8,8 +8,14 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <application
+    <queries>
+        <package android:name="com.google.android.apps.tachyon" />
+        <package android:name="com.microsoft.teams" />
+        <package android:name="com.microsoft.teams2" />
+    </queries>
 
+    <application
+        android:name=".SmartReminderApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -42,6 +48,10 @@
             android:exported="false"
             android:theme="@style/Theme.VoiceReminderApp" />
         <activity
+            android:name=".presentation.manual.PasteTextReminderActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
             android:name=".presentation.calendar.CalendarActivity"
             android:exported="false"
             android:theme="@style/Theme.VoiceReminderApp" />
@@ -49,6 +59,21 @@
             android:name=".presentation.assistant.AssistantActivity"
             android:exported="false"
             android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
+            android:name="com.microsoft.identity.client.BrowserTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="com.luistureo.voicereminderapp"
+                    android:path="/BW1s4fDEKCPSW1ifniiayKcRFFY="
+                    android:scheme="msauth" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".MainActivity"
             android:exported="true"

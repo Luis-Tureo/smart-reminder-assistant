@@ -122,15 +122,17 @@
                                 android:src="@drawable/ic_calendar_chevron_right"
                                 android:tint="@color/calendar_navigation_icon" />
                         </LinearLayout>
+
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardCalendarSyncStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="14dp"
                     app:cardBackgroundColor="@color/info_box_background"
-                    app:cardCornerRadius="22dp"
+                    app:cardCornerRadius="18dp"
                     app:cardElevation="0dp"
                     app:strokeColor="@color/calendar_card_stroke"
                     app:strokeWidth="1dp">
@@ -138,35 +140,163 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:orientation="vertical"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="12dp">
 
                         <TextView
-                            android:id="@+id/tvCalendarGoogleStatus"
-                            android:layout_width="0dp"
+                            android:id="@+id/tvCalendarSyncStatus"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/calendar_google_connect_hint"
+                            android:text="@string/calendar_sync_status_none"
                             android:textColor="@color/calendar_body_text"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnCalendarGoogleSync"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="wrap_content"
+                        <TextView
+                            android:id="@+id/tvCalendarLastSync"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:maxLines="2"
-                            android:minHeight="42dp"
-                            android:minWidth="0dp"
-                            android:paddingHorizontal="14dp"
-                            android:text="@string/calendar_google_connect_button"
-                            android:textAllCaps="false"
-                            android:textColor="@color/calendar_title_text"
-                            android:textSize="13sp"
-                            app:cornerRadius="20dp"
-                            app:strokeColor="@color/calendar_title_text" />
+                            android:layout_marginTop="2dp"
+                            android:textColor="@color/calendar_caption_text"
+                            android:textSize="11sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvCalendarSyncInlineNotice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/calendar_sync_delete_finished_inline"
+                            android:textColor="@color/calendar_body_text"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/containerCalendarSyncError"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_calendar_sync_error"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="10dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="6dp"
+                            android:paddingBottom="6dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:id="@+id/tvCalendarSyncError"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:maxLines="5"
+                                android:textColor="@color/reminder_delete_red"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:baselineAligned="false"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCalendarGoogleSync"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:minWidth="0dp"
+                                android:paddingHorizontal="8dp"
+                                android:text="@string/calendar_sync_google_connect"
+                                android:textAllCaps="false"
+                                android:textColor="@color/calendar_title_text"
+                                android:textSize="12sp"
+                                app:cornerRadius="18dp"
+                                app:strokeColor="@color/calendar_title_text" />
+
+                            <Space
+                                android:layout_width="8dp"
+                                android:layout_height="1dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCalendarMicrosoftSync"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:minWidth="0dp"
+                                android:paddingHorizontal="8dp"
+                                android:text="@string/calendar_sync_microsoft_connect"
+                                android:textAllCaps="false"
+                                android:textColor="@color/calendar_title_text"
+                                android:textSize="12sp"
+                                app:cornerRadius="18dp"
+                                app:strokeColor="@color/calendar_title_text" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/containerCalendarDisconnectActions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:baselineAligned="false"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginBottom="8dp"
+                                android:background="@color/calendar_card_stroke" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:baselineAligned="false"
+                                android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCalendarGoogleDisconnect"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_weight="1"
+                                android:minWidth="0dp"
+                                android:text="@string/calendar_sync_google_disconnect"
+                                android:textAllCaps="false"
+                                android:textColor="@color/reminder_delete_red"
+                                android:textSize="11sp"
+                                android:visibility="gone"
+                                app:cornerRadius="18dp"
+                                app:strokeColor="@color/reminder_delete_red" />
+
+                            <Space
+                                android:layout_width="8dp"
+                                android:layout_height="1dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCalendarMicrosoftDisconnect"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_weight="1"
+                                android:minWidth="0dp"
+                                android:text="@string/calendar_sync_microsoft_disconnect"
+                                android:textAllCaps="false"
+                                android:textColor="@color/reminder_delete_red"
+                                android:textSize="11sp"
+                                android:visibility="gone"
+                                app:cornerRadius="18dp"
+                                app:strokeColor="@color/reminder_delete_red" />
+                            </LinearLayout>
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

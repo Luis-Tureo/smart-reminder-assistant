@@ -18,6 +18,10 @@ class ReminderRepositoryImpl(
         return reminderDao.getAllReminders().map { it.toDomain() }
     }
 
+    override suspend fun getAllRemindersIncludingHidden(): List<Reminder> {
+        return reminderDao.getAllRemindersIncludingHidden().map { it.toDomain() }
+    }
+
     override suspend fun getReminderById(reminderId: Int): Reminder? {
         return reminderDao.getReminderById(reminderId)?.toDomain()
     }

@@ -36,7 +36,9 @@ object CalendarActionRules {
     }
 
     fun canDelete(detail: CalendarReminderDetailUiModel): Boolean {
-        return detail.localReminderId != null || !detail.googleCalendarEventId.isNullOrBlank()
+        return detail.localReminderId != null ||
+                !detail.googleCalendarEventId.isNullOrBlank() ||
+                detail.providerExternalIds.isNotEmpty()
     }
 
     fun shouldUseOfflineFallback(hasGoogleCalendarPermission: Boolean): Boolean {

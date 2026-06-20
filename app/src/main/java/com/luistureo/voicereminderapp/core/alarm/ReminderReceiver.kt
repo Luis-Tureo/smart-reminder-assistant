@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.luistureo.voicereminderapp.core.notification.NotificationHelper
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.speech.ReminderVoiceAssistant
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
@@ -78,6 +79,19 @@ class ReminderReceiver : BroadcastReceiver() {
 
         if (!isCurrentTrigger) {
             scheduler.syncReminderSchedule(reminder)
+            return
+        }
+
+        if (ReminderAlarmPolicy.isSuspendedOccurrence(reminder, occurrenceAtEpochMillis)) {
+            CalendarSyncLogger.alarmSkippedForSuspendedAppointment(reminder.originProvider)
+            val updatedReminder = reminder.copy(
+                scheduleState = scheduleStateResolver.resolveAfterSuspendedTrigger(
+                    reminder,
+                    occurrenceAtEpochMillis
+                )
+            )
+            repository.updateReminder(updatedReminder)
+            scheduler.syncReminderSchedule(updatedReminder)
             return
         }
 

@@ -23,15 +23,23 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.common.api.ApiException
 import com.google.android.material.button.MaterialButton
 import com.luistureo.voicereminderapp.core.alarm.ExactAlarmPermissionPolicy
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthException
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarErrorCode
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReconnectDecision
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
@@ -40,6 +48,7 @@ import com.luistureo.voicereminderapp.domain.usecase.SaveReminderDraftUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantActivity
 import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
+import com.luistureo.voicereminderapp.presentation.calendar.GoogleCalendarErrorUi
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
 import com.luistureo.voicereminderapp.presentation.ui.adapter.HomeReminderAdapter
@@ -66,7 +75,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var summaryPreferenceStore: NextDaySummaryPreferenceStore
     private lateinit var googleCalendarAuthManager: GoogleCalendarAuthManager
     private lateinit var googleCalendarSynchronizer: GoogleCalendarReminderSynchronizer
+    private lateinit var unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
     private lateinit var reminderRepository: ReminderRepositoryImpl
+    private var googleRecoveryAttempted = false
+    private var googleActivationRequested = false
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -81,36 +93,69 @@ class MainActivity : ComponentActivity() {
 
     private val googleCalendarSignInLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode != RESULT_OK || result.data == null) {
-                refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this,
-                    getString(R.string.google_calendar_sign_in_cancelled),
-                    Toast.LENGTH_SHORT
-                ).show()
+            CalendarSyncLogger.authResultReceived(
+                CalendarProvider.GOOGLE_CALENDAR,
+                if (result.resultCode == RESULT_OK) "ok" else "cancelled"
+            )
+            val data = result.data
+            if (data == null) {
+                val code = if (result.resultCode == RESULT_CANCELED) {
+                    GoogleCalendarErrorCode.AUTH_CANCELLED
+                } else {
+                    GoogleCalendarErrorCode.AUTH_UNKNOWN
+                }
+                if (code == GoogleCalendarErrorCode.AUTH_CANCELLED) {
+                    googleCalendarAuthManager.cancelPendingAuth()
+                    CalendarSyncLogger.authCancelled(
+                        CalendarProvider.GOOGLE_CALENDAR,
+                        reason = code.value
+                    )
+                } else {
+                    googleCalendarAuthManager.failPendingAuth(code)
+                }
+                showHomeGoogleAuthError(code)
                 return@registerForActivityResult
             }
 
-            val account = runCatching {
-                GoogleSignIn.getSignedInAccountFromIntent(result.data).result
-            }.getOrNull()
+            val accountResult = runCatching {
+                GoogleSignIn.getSignedInAccountFromIntent(data)
+                    .getResult(ApiException::class.java)
+            }
+            val account = accountResult.getOrNull()
 
-            if (googleCalendarAuthManager.hasCalendarPermission(account)) {
-                syncPendingGoogleCalendarChanges()
+            if (accountResult.isFailure) {
+                val code = GoogleCalendarErrorCode.fromSignInFailure(
+                    accountResult.exceptionOrNull()
+                        ?: IllegalStateException("home_auth_result_invalid")
+                )
+                if (code == GoogleCalendarErrorCode.AUTH_CANCELLED) {
+                    googleCalendarAuthManager.cancelPendingAuth()
+                } else {
+                    googleCalendarAuthManager.failPendingAuth(code)
+                    CalendarSyncLogger.googleAuthFailed(code.value)
+                }
+                showHomeGoogleAuthError(code)
+                return@registerForActivityResult
+            }
+
+            completeHomeGoogleSignIn(account)
+        }
+
+    private val googleCalendarRecoveryLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                completeHomeGoogleSignIn(googleCalendarAuthManager.getSignedInAccount())
             } else {
-                refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this,
-                    getString(R.string.google_calendar_permission_missing),
-                    Toast.LENGTH_SHORT
-                ).show()
+                googleCalendarAuthManager.failPendingAuth(
+                    GoogleCalendarErrorCode.AUTH_SCOPE_DENIED
+                )
+                showHomeGoogleAuthError(GoogleCalendarErrorCode.AUTH_SCOPE_DENIED)
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         initViews()
         setupViewModel()
         setupCore()
@@ -152,6 +197,11 @@ class MainActivity : ComponentActivity() {
             context = applicationContext,
             reminderRepository = reminderRepository
         )
+        unifiedCalendarSynchronizer = UnifiedCalendarSynchronizer(
+            context = applicationContext,
+            reminderRepository = reminderRepository,
+            googleCalendarSynchronizer = googleCalendarSynchronizer
+        )
 
         val factory = ReminderViewModelFactory(
             context = applicationContext,
@@ -160,7 +210,7 @@ class MainActivity : ComponentActivity() {
             getReminderByIdUseCase = GetReminderByIdUseCase(reminderRepository),
             deleteReminderUseCase = DeleteReminderUseCase(reminderRepository),
             updateReminderUseCase = UpdateReminderUseCase(reminderRepository),
-            googleCalendarSynchronizer = googleCalendarSynchronizer
+            unifiedCalendarSynchronizer = unifiedCalendarSynchronizer
         )
 
         reminderViewModel = ViewModelProvider(this, factory)[ReminderViewModel::class.java]
@@ -208,12 +258,14 @@ class MainActivity : ComponentActivity() {
         }
 
         googleCalendarSyncButton.setOnClickListener {
-            if (googleCalendarAuthManager.hasCalendarPermission()) {
-                syncPendingGoogleCalendarChanges()
-            } else {
-                googleCalendarSignInLauncher.launch(
-                    googleCalendarAuthManager.buildSignInIntent()
-                )
+            CalendarSyncLogger.authButtonPressed(CalendarProvider.GOOGLE_CALENDAR)
+            when {
+                googleCalendarAuthManager.isConnected() -> {
+                    googleCalendarAuthManager.pauseSync()
+                    refreshGoogleCalendarStatus()
+                }
+                googleCalendarAuthManager.isPaused() -> startHomeGoogleAuth()
+                else -> startHomeGoogleAuth()
             }
         }
 
@@ -356,9 +408,9 @@ class MainActivity : ComponentActivity() {
 
     private fun refreshGoogleCalendarStatus() {
         val account = googleCalendarAuthManager.getSignedInAccount()
-        val isConnected = googleCalendarAuthManager.hasCalendarPermission(account)
+        val isConnected = googleCalendarAuthManager.isConnected(account)
 
-        googleCalendarStatusText.text = if (isConnected) {
+        googleCalendarStatusText.text = if (isConnected || googleCalendarAuthManager.isPaused(account)) {
             getString(
                 R.string.google_calendar_connected,
                 account?.email.orEmpty().ifBlank { getString(R.string.google_calendar_account) }
@@ -368,36 +420,135 @@ class MainActivity : ComponentActivity() {
         }
 
         googleCalendarSyncButton.text = if (isConnected) {
-            getString(R.string.google_calendar_sync_button)
+            getString(R.string.calendar_sync_google_deactivate)
+        } else if (googleCalendarAuthManager.isPaused(account)) {
+            getString(R.string.calendar_sync_google_activate)
         } else {
-            getString(R.string.google_calendar_connect_button)
+            getString(R.string.calendar_sync_google_connect)
         }
     }
 
-    private fun syncPendingGoogleCalendarChanges() {
+    private fun startHomeGoogleAuth(preserveActivationRequest: Boolean = false) {
+        if (!preserveActivationRequest) {
+            googleActivationRequested = googleCalendarAuthManager.hasConnectedSession() &&
+                    !googleCalendarAuthManager.isSyncEnabled
+        }
+        googleRecoveryAttempted = false
+        CalendarSyncLogger.ui(
+            "home_google_sync_button",
+            mapOf("buttonAction" to "connect_google")
+        )
+        CalendarSyncLogger.authStarted(CalendarProvider.GOOGLE_CALENDAR)
+        googleCalendarAuthManager.prepareReconnect { decision ->
+            runOnUiThread {
+                when (decision) {
+                    GoogleCalendarReconnectDecision.REUSE_VALID_SESSION -> {
+                        lifecycleScope.launch {
+                            runCatching { googleCalendarAuthManager.reactivateExistingSession() }
+                                .onSuccess { connected ->
+                                    if (connected) syncPendingCalendarChanges()
+                                    else startHomeGoogleAuth(preserveActivationRequest = true)
+                                }
+                                .onFailure { exception ->
+                                    val code = GoogleCalendarErrorCode.fromSyncFailure(exception)
+                                    if (code.invalidatesSession) {
+                                        startHomeGoogleAuth(preserveActivationRequest = true)
+                                    } else {
+                                        showHomeGoogleAuthError(code)
+                                    }
+                                }
+                        }
+                    }
+                    GoogleCalendarReconnectDecision.NEEDS_LOGIN -> launchHomeGoogleAuth()
+                }
+            }
+        }
+    }
+
+    private fun completeHomeGoogleSignIn(account: GoogleSignInAccount?) {
         lifecycleScope.launch {
             runCatching {
-                googleCalendarSynchronizer.syncPendingReminders()
+                googleCalendarAuthManager.completeSignIn(
+                    account = account,
+                    activated = googleActivationRequested
+                )
+            }
+                .onSuccess { connected ->
+                    if (connected) {
+                        CalendarSyncLogger.authSuccess(CalendarProvider.GOOGLE_CALENDAR)
+                        refreshGoogleCalendarStatus()
+                        syncPendingCalendarChanges()
+                    } else {
+                        showHomeGoogleAuthError(GoogleCalendarErrorCode.AUTH_SCOPE_DENIED)
+                    }
+                }
+                .onFailure { exception ->
+                    val recoverable = exception as? GoogleCalendarAuthException.UserActionRequired
+                    if (recoverable?.recoveryIntent != null && !googleRecoveryAttempted) {
+                        googleRecoveryAttempted = true
+                        runCatching {
+                            googleCalendarRecoveryLauncher.launch(recoverable.recoveryIntent)
+                        }.onFailure { launchFailure ->
+                            val code = GoogleCalendarErrorCode.fromSignInFailure(launchFailure)
+                            googleCalendarAuthManager.failPendingAuth(code)
+                            showHomeGoogleAuthError(code)
+                        }
+                        return@onFailure
+                    }
+                    val code = GoogleCalendarErrorCode.fromSyncFailure(exception)
+                    googleCalendarAuthManager.failPendingAuth(code)
+                    CalendarSyncLogger.googleAuthFailed(code.value)
+                    showHomeGoogleAuthError(code)
+                }
+        }
+    }
+
+    private fun launchHomeGoogleAuth() {
+        runCatching {
+            CalendarSyncLogger.authLaunched(CalendarProvider.GOOGLE_CALENDAR)
+            googleCalendarSignInLauncher.launch(googleCalendarAuthManager.buildSignInIntent())
+        }.onFailure { exception ->
+            val code = GoogleCalendarErrorCode.fromSignInFailure(exception)
+            googleCalendarAuthManager.failPendingAuth(code)
+            CalendarSyncLogger.googleAuthFailed(code.value)
+            showHomeGoogleAuthError(code)
+        }
+    }
+
+    private fun showHomeGoogleAuthError(code: GoogleCalendarErrorCode) {
+        googleCalendarStatusText.text = getString(GoogleCalendarErrorUi.messageRes(code))
+        googleCalendarSyncButton.text = if (
+            googleCalendarAuthManager.hasConnectedSession() &&
+            !googleCalendarAuthManager.isSyncEnabled
+        ) {
+            getString(R.string.calendar_sync_google_activate)
+        } else if (googleCalendarAuthManager.hasConnectedSession()) {
+            getString(R.string.calendar_sync_google_deactivate)
+        } else {
+            getString(R.string.calendar_sync_google_connect)
+        }
+        CalendarSyncLogger.inlineErrorShown(
+            CalendarProvider.GOOGLE_CALENDAR,
+            code.value
+        )
+    }
+
+    private fun syncPendingCalendarChanges() {
+        lifecycleScope.launch {
+            runCatching {
+                unifiedCalendarSynchronizer.syncPendingReminders()
             }.onSuccess { summary ->
                 reminderViewModel.loadReminders()
                 refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this@MainActivity,
-                    getString(
-                        R.string.google_calendar_sync_finished,
-                        summary.syncedCount,
-                        summary.failedCount,
-                        summary.pendingDeleteCount
-                    ),
-                    Toast.LENGTH_LONG
-                ).show()
             }.onFailure { exception ->
-                refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this@MainActivity,
-                    exception.message ?: getString(R.string.google_calendar_sync_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
+                val code = GoogleCalendarErrorCode.fromSyncFailure(exception)
+                CalendarSyncLogger.error(
+                    CalendarProvider.GOOGLE_CALENDAR,
+                    action = "home_sync_pending",
+                    fallbackReason = code.value
+                )
+                googleCalendarAuthManager.markConnectionError(code)
+                showHomeGoogleAuthError(code)
             }
         }
     }

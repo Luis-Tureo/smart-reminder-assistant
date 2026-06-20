@@ -26,6 +26,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
 import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
@@ -155,6 +156,11 @@ class ManualReminderActivity : ComponentActivity() {
             context = applicationContext,
             reminderRepository = repository
         )
+        val unifiedCalendarSynchronizer = UnifiedCalendarSynchronizer(
+            context = applicationContext,
+            reminderRepository = repository,
+            googleCalendarSynchronizer = googleCalendarSynchronizer
+        )
 
         val factory = ReminderViewModelFactory(
             context = applicationContext,
@@ -163,7 +169,7 @@ class ManualReminderActivity : ComponentActivity() {
             getReminderByIdUseCase = GetReminderByIdUseCase(repository),
             deleteReminderUseCase = DeleteReminderUseCase(repository),
             updateReminderUseCase = UpdateReminderUseCase(repository),
-            googleCalendarSynchronizer = googleCalendarSynchronizer
+            unifiedCalendarSynchronizer = unifiedCalendarSynchronizer
         )
 
         reminderViewModel = ViewModelProvider(this, factory)[ReminderViewModel::class.java]

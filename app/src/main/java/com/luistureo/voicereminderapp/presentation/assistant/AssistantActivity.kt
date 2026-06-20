@@ -17,6 +17,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.speech.SpeechRecognizerManager
 import com.luistureo.voicereminderapp.core.speech.VoiceAssistantSpeaker
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
@@ -129,6 +130,11 @@ class AssistantActivity : ComponentActivity() {
             context = applicationContext,
             reminderRepository = repository
         )
+        val unifiedCalendarSynchronizer = UnifiedCalendarSynchronizer(
+            context = applicationContext,
+            reminderRepository = repository,
+            googleCalendarSynchronizer = googleCalendarSynchronizer
+        )
 
         val factory = ReminderViewModelFactory(
             context = applicationContext,
@@ -137,7 +143,7 @@ class AssistantActivity : ComponentActivity() {
             getReminderByIdUseCase = GetReminderByIdUseCase(repository),
             deleteReminderUseCase = DeleteReminderUseCase(repository),
             updateReminderUseCase = UpdateReminderUseCase(repository),
-            googleCalendarSynchronizer = googleCalendarSynchronizer
+            unifiedCalendarSynchronizer = unifiedCalendarSynchronizer
         )
 
         reminderViewModel = ViewModelProvider(this, factory)[ReminderViewModel::class.java]

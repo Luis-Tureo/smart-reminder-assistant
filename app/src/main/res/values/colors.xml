@@ -106,6 +106,10 @@
     <color name="calendar_filter_unselected_text">#6F7C89</color>
     <color name="calendar_filter_unselected_stroke">#DDE6EE</color>
     <color name="calendar_filter_selected_stroke">#9CB0C2</color>
+    <color name="calendar_duplicate_warning_background">#FFF8E6</color>
+    <color name="calendar_duplicate_warning_stroke">#D8B25C</color>
+    <color name="calendar_duplicate_warning_text">#5D4714</color>
+    <color name="calendar_duplicate_badge_background">#FFF0BF</color>
 
     <!-- Compatibilidad -->
     <color name="white">#FFFFFF</color>

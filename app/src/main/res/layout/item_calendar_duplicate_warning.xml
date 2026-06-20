@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="@color/calendar_duplicate_warning_background"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/calendar_duplicate_warning_stroke"
+    app:strokeWidth="1dp">
+
+    <TextView
+        android:id="@+id/tvCalendarDuplicateWarning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp"
+        android:text="@string/calendar_duplicate_inline_warning"
+        android:textColor="@color/calendar_duplicate_warning_text"
+        android:textSize="13sp" />
+
+</com.google.android.material.card.MaterialCardView>

@@ -3,6 +3,8 @@ package com.luistureo.voicereminderapp.domain.usecase
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.utils.ReminderTypeResolver
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
+import com.luistureo.voicereminderapp.domain.model.GoogleCalendarSyncState
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderScheduleState
@@ -40,8 +42,39 @@ class SaveReminderDraftUseCase(
                 ?: scheduleStateResolver.clearUrgentAlert(ReminderScheduleState()),
             googleCalendarEventId = existingReminder?.googleCalendarEventId,
             googleCalendarSyncState = existingReminder?.googleCalendarSyncState
-                ?: com.luistureo.voicereminderapp.domain.model.GoogleCalendarSyncState.PENDING,
-            googleCalendarLastSyncAtEpochMillis = existingReminder?.googleCalendarLastSyncAtEpochMillis
+                ?: GoogleCalendarSyncState.PENDING,
+            googleCalendarLastSyncAtEpochMillis = existingReminder?.googleCalendarLastSyncAtEpochMillis,
+            microsoftCalendarLastSyncAtEpochMillis = existingReminder
+                ?.microsoftCalendarLastSyncAtEpochMillis,
+            microsoftCalendarEventId = existingReminder?.microsoftCalendarEventId,
+            externalIdsByProvider = existingReminder?.externalIdsByProvider.orEmpty(),
+            originProvider = existingReminder?.originProvider ?: CalendarProvider.APP,
+            syncedProviders = existingReminder?.syncedProviders ?: setOf(CalendarProvider.APP),
+            providerSyncStates = existingReminder?.providerSyncStates.orEmpty(),
+            syncedFingerprintsByProvider = existingReminder
+                ?.syncedFingerprintsByProvider
+                .orEmpty(),
+            pendingCreateProviders = existingReminder?.pendingCreateProviders
+                ?: setOf(
+                    CalendarProvider.GOOGLE_CALENDAR,
+                    CalendarProvider.MICROSOFT_CALENDAR
+                ),
+            pendingUpdateProviders = if (existingReminder == null) {
+                emptySet()
+            } else {
+                existingReminder.pendingUpdateProviders + existingReminder.linkedExternalProviders
+            },
+            pendingDeleteProviders = existingReminder?.pendingDeleteProviders.orEmpty(),
+            meetingUrl = existingReminder?.meetingUrl,
+            meetingProvider = existingReminder?.meetingProvider,
+            isOnlineMeeting = existingReminder?.isOnlineMeeting ?: false,
+            meetingUrlsByProvider = existingReminder?.meetingUrlsByProvider.orEmpty(),
+            isSuspended = existingReminder?.isSuspended ?: false,
+            suspendedOccurrenceAtEpochMillis = existingReminder?.suspendedOccurrenceAtEpochMillis,
+            lastEditedSource = CalendarProvider.APP,
+            externalEditNote = existingReminder?.externalEditNote,
+            isAllDay = existingReminder?.isAllDay ?: false,
+            hiddenFromApp = existingReminder?.hiddenFromApp ?: false
         )
 
         val resolvedReminder = baseReminder.copy(

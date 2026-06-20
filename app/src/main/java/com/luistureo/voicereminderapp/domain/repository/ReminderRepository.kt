@@ -8,6 +8,8 @@ interface ReminderRepository {
 
     suspend fun getAllReminders(): List<Reminder>
 
+    suspend fun getAllRemindersIncludingHidden(): List<Reminder> = getAllReminders()
+
     suspend fun getReminderById(reminderId: Int): Reminder?
 
     suspend fun deleteReminder(reminder: Reminder)

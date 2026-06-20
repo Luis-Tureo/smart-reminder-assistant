@@ -3,7 +3,7 @@ package com.luistureo.voicereminderapp.presentation.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
@@ -17,7 +17,7 @@ class ReminderViewModelFactory(
     private val getReminderByIdUseCase: GetReminderByIdUseCase,
     private val deleteReminderUseCase: DeleteReminderUseCase,
     private val updateReminderUseCase: UpdateReminderUseCase,
-    private val googleCalendarSynchronizer: GoogleCalendarReminderSynchronizer
+    private val unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -30,7 +30,7 @@ class ReminderViewModelFactory(
                 getReminderByIdUseCase = getReminderByIdUseCase,
                 deleteReminderUseCase = deleteReminderUseCase,
                 updateReminderUseCase = updateReminderUseCase,
-                googleCalendarSynchronizer = googleCalendarSynchronizer
+                unifiedCalendarSynchronizer = unifiedCalendarSynchronizer
             ) as T
         }
 

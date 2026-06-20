@@ -2,6 +2,9 @@ package com.luistureo.voicereminderapp.presentation.calendar
 
 import android.os.Bundle
 import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.graphics.Paint
+import android.net.Uri
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -22,20 +25,38 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.common.api.ApiException
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthException
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarErrorCode
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReconnectDecision
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthController
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthProvider
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthResult
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarErrorCode
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarAutoSyncStateStore
+import com.luistureo.voicereminderapp.core.calendar.unified.MeetingUrlPolicy
+import com.luistureo.voicereminderapp.core.calendar.unified.MeetingOpenCoordinator
+import com.luistureo.voicereminderapp.core.calendar.unified.MeetingContentSanitizer
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
+import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
+import com.luistureo.voicereminderapp.presentation.manual.PasteTextReminderActivity
 import kotlinx.coroutines.launch
 
 class CalendarActivity : AppCompatActivity() {
@@ -46,8 +67,16 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var monthSelectorButton: MaterialButton
     private lateinit var yearSelectorButton: MaterialButton
     private lateinit var plannerCardContainer: LinearLayout
-    private lateinit var googleCalendarStatusView: TextView
+    private lateinit var calendarSyncStatusView: TextView
+    private lateinit var calendarLastSyncView: TextView
+    private lateinit var calendarSyncInlineNoticeView: TextView
+    private lateinit var calendarSyncErrorContainer: View
+    private lateinit var calendarSyncErrorView: TextView
     private lateinit var googleCalendarSyncButton: MaterialButton
+    private lateinit var microsoftCalendarSyncButton: MaterialButton
+    private lateinit var googleCalendarDisconnectButton: MaterialButton
+    private lateinit var microsoftCalendarDisconnectButton: MaterialButton
+    private lateinit var calendarDisconnectActionsContainer: View
     private lateinit var calendarGridCard: MaterialCardView
     private lateinit var weekdayContainer: LinearLayout
     private lateinit var calendarGrid: GridLayout
@@ -66,45 +95,92 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var calendarViewModel: CalendarViewModel
     private lateinit var googleCalendarAuthManager: GoogleCalendarAuthManager
     private lateinit var googleCalendarSynchronizer: GoogleCalendarReminderSynchronizer
+    private lateinit var unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
+    private lateinit var microsoftCalendarAuthController: MicrosoftCalendarAuthController
+    private lateinit var calendarAutoSyncStateStore: CalendarAutoSyncStateStore
 
     private var activeFilter: CalendarIndicatorStyle? = null
     private var lastErrorMessage: String? = null
+    private var lastDuplicateWarningLogKey: String? = null
     private var lastRenderedMonthTitle: String? = null
     private var lastSelectedDateTitle: String? = null
     private var lastRenderedState: CalendarUiState? = null
+    private var googleProviderUiState = CalendarProviderUiState.DISCONNECTED
+    private var microsoftProviderUiState = CalendarProviderUiState.DISCONNECTED
+    private var googleSyncError: String? = null
+    private var microsoftSyncError: String? = null
+    private var lastLoggedGoogleState: CalendarProviderUiState? = null
+    private var lastLoggedMicrosoftState: CalendarProviderUiState? = null
+    private var lastVisibleMonthSyncError: CalendarSyncInlineError? = null
+    private var googleRecoveryAttempted = false
+    private var googleActivationRequested = false
 
     private val googleCalendarSignInLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode != RESULT_OK || result.data == null) {
-                refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this,
-                    getString(R.string.google_calendar_sign_in_cancelled),
-                    Toast.LENGTH_SHORT
-                ).show()
+            CalendarSyncLogger.authResultReceived(
+                CalendarProvider.GOOGLE_CALENDAR,
+                if (result.resultCode == RESULT_OK) "ok" else "cancelled"
+            )
+            val data = result.data
+            if (data == null) {
+                val code = if (result.resultCode == RESULT_CANCELED) {
+                    GoogleCalendarErrorCode.AUTH_CANCELLED
+                } else {
+                    GoogleCalendarErrorCode.AUTH_UNKNOWN
+                }
+                if (code == GoogleCalendarErrorCode.AUTH_CANCELLED) {
+                    CalendarSyncLogger.authCancelled(
+                        CalendarProvider.GOOGLE_CALENDAR,
+                        reason = code.value
+                    )
+                    googleCalendarAuthManager.cancelPendingAuth()
+                }
+                showGoogleInlineError(code)
                 return@registerForActivityResult
             }
 
-            val account = runCatching {
-                GoogleSignIn.getSignedInAccountFromIntent(result.data).result
-            }.getOrNull()
+            val accountResult = runCatching {
+                GoogleSignIn.getSignedInAccountFromIntent(data)
+                    .getResult(ApiException::class.java)
+            }
+            val account = accountResult.getOrNull()
 
-            if (googleCalendarAuthManager.hasCalendarPermission(account)) {
-                syncPendingGoogleCalendarChanges()
+            if (accountResult.isFailure) {
+                val code = GoogleCalendarErrorCode.fromSignInFailure(
+                    accountResult.exceptionOrNull() ?: IllegalStateException("sign_in_failed")
+                )
+                if (code == GoogleCalendarErrorCode.AUTH_CANCELLED) {
+                    CalendarSyncLogger.authCancelled(
+                        CalendarProvider.GOOGLE_CALENDAR,
+                        reason = code.value
+                    )
+                    googleCalendarAuthManager.cancelPendingAuth()
+                } else {
+                    CalendarSyncLogger.googleAuthFailed(code.value)
+                }
+                showGoogleInlineError(code)
+                return@registerForActivityResult
+            }
+
+            completeGoogleSignIn(account)
+        }
+
+    private val googleCalendarRecoveryLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            CalendarSyncLogger.authResultReceived(
+                CalendarProvider.GOOGLE_CALENDAR,
+                if (result.resultCode == RESULT_OK) "scope_recovery_ok" else "scope_denied"
+            )
+            if (result.resultCode == RESULT_OK) {
+                completeGoogleSignIn(googleCalendarAuthManager.getSignedInAccount())
             } else {
-                refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this,
-                    getString(R.string.google_calendar_permission_missing),
-                    Toast.LENGTH_SHORT
-                ).show()
+                showGoogleInlineError(GoogleCalendarErrorCode.AUTH_SCOPE_DENIED)
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calendar)
-
         initViews()
         setupToolbar()
         setupViewModel()
@@ -116,6 +192,16 @@ class CalendarActivity : AppCompatActivity() {
         super.onResume()
         calendarViewModel.reloadCalendar()
         refreshGoogleCalendarStatus()
+        if (::unifiedCalendarSynchronizer.isInitialized) {
+            microsoftCalendarAuthController.refreshConnectionState { isConnected ->
+                runOnUiThread {
+                    refreshGoogleCalendarStatus()
+                    if (isConnected && !googleCalendarAuthManager.isConnected()) {
+                        syncMicrosoftCalendarChanges()
+                    }
+                }
+            }
+        }
     }
 
     private fun initViews() {
@@ -125,8 +211,18 @@ class CalendarActivity : AppCompatActivity() {
         monthSelectorButton = findViewById(R.id.btnMonthSelector)
         yearSelectorButton = findViewById(R.id.btnYearSelector)
         plannerCardContainer = findViewById(R.id.containerCalendarPlannerCard)
-        googleCalendarStatusView = findViewById(R.id.tvCalendarGoogleStatus)
+        calendarSyncStatusView = findViewById(R.id.tvCalendarSyncStatus)
+        calendarLastSyncView = findViewById(R.id.tvCalendarLastSync)
+        calendarSyncInlineNoticeView = findViewById(R.id.tvCalendarSyncInlineNotice)
+        calendarSyncErrorContainer = findViewById(R.id.containerCalendarSyncError)
+        calendarSyncErrorView = findViewById(R.id.tvCalendarSyncError)
         googleCalendarSyncButton = findViewById(R.id.btnCalendarGoogleSync)
+        microsoftCalendarSyncButton = findViewById(R.id.btnCalendarMicrosoftSync)
+        googleCalendarDisconnectButton = findViewById(R.id.btnCalendarGoogleDisconnect)
+        microsoftCalendarDisconnectButton = findViewById(R.id.btnCalendarMicrosoftDisconnect)
+        calendarDisconnectActionsContainer = findViewById(
+            R.id.containerCalendarDisconnectActions
+        )
         calendarGridCard = findViewById(R.id.cardCalendarGrid)
         weekdayContainer = findViewById(R.id.containerCalendarWeekdays)
         calendarGrid = findViewById(R.id.gridCalendarDays)
@@ -172,11 +268,19 @@ class CalendarActivity : AppCompatActivity() {
             context = applicationContext,
             reminderRepository = repository
         )
+        unifiedCalendarSynchronizer = UnifiedCalendarSynchronizer(
+            context = applicationContext,
+            reminderRepository = repository,
+            googleCalendarSynchronizer = googleCalendarSynchronizer
+        )
+        microsoftCalendarAuthController = MicrosoftCalendarAuthProvider.get(applicationContext)
+        calendarAutoSyncStateStore = CalendarAutoSyncStateStore(applicationContext)
         val factory = CalendarViewModelFactory(
             getRemindersUseCase = GetRemindersUseCase(repository),
             deleteReminderUseCase = DeleteReminderUseCase(repository),
+            updateReminderUseCase = UpdateReminderUseCase(repository),
             googleCalendarAuthManager = googleCalendarAuthManager,
-            googleCalendarSynchronizer = googleCalendarSynchronizer,
+            unifiedCalendarSynchronizer = unifiedCalendarSynchronizer,
             reminderScheduler = ReminderScheduler(applicationContext)
         )
 
@@ -213,13 +317,17 @@ class CalendarActivity : AppCompatActivity() {
         }
 
         googleCalendarSyncButton.setOnClickListener {
-            if (googleCalendarAuthManager.hasCalendarPermission()) {
-                syncPendingGoogleCalendarChanges()
-            } else {
-                googleCalendarSignInLauncher.launch(
-                    googleCalendarAuthManager.buildSignInIntent()
-                )
-            }
+            handleGoogleCalendarSyncClick()
+        }
+
+        microsoftCalendarSyncButton.setOnClickListener {
+            handleMicrosoftCalendarSyncClick()
+        }
+        googleCalendarDisconnectButton.setOnClickListener {
+            showDisconnectConfirmation(CalendarProvider.GOOGLE_CALENDAR)
+        }
+        microsoftCalendarDisconnectButton.setOnClickListener {
+            showDisconnectConfirmation(CalendarProvider.MICROSOFT_CALENDAR)
         }
 
         createReminderButton.setOnClickListener {
@@ -257,12 +365,21 @@ class CalendarActivity : AppCompatActivity() {
         calendarGridCard.isVisible = CalendarActionRules.shouldShowMonthGrid(activeFilter)
         renderCalendarDays(state.days)
         if (activeFilter == null) {
-            renderDayDetails(state.selectedDateReminders)
+            renderDayDetails(
+                reminders = state.selectedDateReminders,
+                duplicateWarning = state.selectedDateDuplicateWarning
+            )
         } else {
             renderFilteredItems(CalendarActionRules.filterItems(state.filteredItems, activeFilter))
         }
         renderError(state.errorMessage)
-
+        renderVisibleMonthSyncError(state.syncError)
+        if (state.showDeleteSyncSuccess) {
+            calendarSyncInlineNoticeView.text = getString(
+                R.string.calendar_sync_delete_finished_inline
+            )
+            calendarSyncInlineNoticeView.isVisible = true
+        }
         if (shouldAnimateMonthChange) {
             animateMonthChange()
         }
@@ -479,8 +596,31 @@ class CalendarActivity : AppCompatActivity() {
             .start()
     }
 
-    private fun renderDayDetails(reminders: List<CalendarReminderDetailUiModel>) {
+    private fun renderDayDetails(
+        reminders: List<CalendarReminderDetailUiModel>,
+        duplicateWarning: CalendarDuplicateWarningUiModel?
+    ) {
         detailContainer.removeAllViews()
+
+        if (duplicateWarning != null) {
+            detailContainer.addView(
+                LayoutInflater.from(this).inflate(
+                    R.layout.item_calendar_duplicate_warning,
+                    detailContainer,
+                    false
+                )
+            )
+            val logKey = "${duplicateWarning.selectedDate}:${duplicateWarning.duplicateCount}"
+            if (lastDuplicateWarningLogKey != logKey) {
+                CalendarSyncLogger.duplicateWarningShownInline(
+                    duplicateCount = duplicateWarning.duplicateCount,
+                    selectedDay = duplicateWarning.selectedDate.toString()
+                )
+                lastDuplicateWarningLogKey = logKey
+            }
+        } else {
+            lastDuplicateWarningLogKey = null
+        }
 
         reminders.forEach { detail ->
             detailContainer.addView(createDetailView(detail))
@@ -521,14 +661,35 @@ class CalendarActivity : AppCompatActivity() {
         val titleView = detailView.findViewById<TextView>(R.id.tvCalendarDetailTitle)
         val descriptionView =
             detailView.findViewById<TextView>(R.id.tvCalendarDetailDescription)
+        val providerView = detailView.findViewById<TextView>(R.id.tvCalendarDetailProvider)
+        val externalNoteView =
+            detailView.findViewById<TextView>(R.id.tvCalendarDetailExternalNote)
         val timeView = detailView.findViewById<TextView>(R.id.tvCalendarDetailTime)
         val typeView = detailView.findViewById<TextView>(R.id.tvCalendarDetailType)
         val completedView = detailView.findViewById<TextView>(R.id.tvCalendarDetailCompleted)
+        val nearbyScheduleView =
+            detailView.findViewById<TextView>(R.id.tvCalendarDetailNearbySchedule)
         val deleteButton = detailView.findViewById<ImageButton>(R.id.btnCalendarDetailDelete)
+        val openMeetingButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarOpenMeeting)
+        val reactivateButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarReactivate)
+        val actionsContainer =
+            detailView.findViewById<LinearLayout>(R.id.containerCalendarDetailActions)
 
         titleView.text = detail.title
-        descriptionView.text = listOfNotNull(dateTitle, detail.detail.takeIf { it.isNotBlank() })
+        val safeDescription = MeetingContentSanitizer.cleanDescription(detail.detail)
+        val renderedDescription = listOfNotNull(
+            dateTitle?.takeIf { it.isNotBlank() },
+            safeDescription.takeIf { it.isNotBlank() }
+        )
+            .distinct()
             .joinToString(separator = "\n")
+        descriptionView.isVisible = renderedDescription.isNotBlank()
+        descriptionView.text = renderedDescription
+        val providerLines = detail.providerLines.filter(String::isNotBlank).distinct()
+        providerView.isVisible = providerLines.isNotEmpty()
+        providerView.text = providerLines.joinToString(separator = "\n")
+        externalNoteView.isVisible = !detail.externalEditNote.isNullOrBlank()
+        externalNoteView.text = detail.externalEditNote.orEmpty()
         timeView.text = detail.time
         typeView.text = when (forcedStyle ?: detail.toIndicatorStyle()) {
             CalendarIndicatorStyle.BIRTHDAY -> getString(R.string.calendar_type_birthday)
@@ -546,6 +707,7 @@ class CalendarActivity : AppCompatActivity() {
         typeView.setTextColor(ContextCompat.getColor(this, typeStyle.textColorResId))
 
         completedView.isVisible = detail.isCompleted && forcedStyle != CalendarIndicatorStyle.COMPLETED
+        nearbyScheduleView.isVisible = detail.hasNearbySchedule
         if (detail.isCompleted) {
             completedView.setBackgroundResource(CalendarIndicatorStyle.COMPLETED.backgroundResId)
             completedView.setTextColor(
@@ -557,8 +719,113 @@ class CalendarActivity : AppCompatActivity() {
         deleteButton.setOnClickListener {
             showDeleteConfirmation(detail)
         }
+        val canOpenMeeting = MeetingUrlPolicy.isSupportedMeetingUrl(detail.meetingUrl)
+        openMeetingButton.isVisible = canOpenMeeting
+        CalendarSyncLogger.joinButtonVisibility(
+            MeetingUrlPolicy.providerForUrl(detail.meetingUrl),
+            canOpenMeeting
+        )
+        openMeetingButton.setOnClickListener {
+            detail.meetingUrl?.let(::openMeetingUrl)
+        }
+        reactivateButton.isVisible = detail.canReactivate
+        reactivateButton.setOnClickListener {
+            calendarViewModel.reactivateCalendarItem(detail)
+        }
+        actionsContainer.isVisible = canOpenMeeting || detail.canReactivate
+        val reactivateLayoutParams = reactivateButton.layoutParams as LinearLayout.LayoutParams
+        reactivateLayoutParams.bottomMargin = if (canOpenMeeting && detail.canReactivate) {
+            resources.getDimensionPixelSize(R.dimen.calendar_detail_action_spacing)
+        } else {
+            0
+        }
+        reactivateButton.layoutParams = reactivateLayoutParams
+        applySuspendedStyle(
+            views = listOf(titleView, descriptionView, providerView, externalNoteView, timeView),
+            isSuspended = detail.isSuspended
+        )
 
         return detailView
+    }
+
+    private fun applySuspendedStyle(
+        views: List<TextView>,
+        isSuspended: Boolean
+    ) {
+        views.forEach { view ->
+            view.paintFlags = if (isSuspended) {
+                view.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            } else {
+                view.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            }
+            view.alpha = if (isSuspended) 0.62f else 1f
+        }
+    }
+
+    private fun openMeetingUrl(url: String) {
+        if (!MeetingUrlPolicy.isSupportedMeetingUrl(url)) {
+            CalendarSyncLogger.meetingOpenResult(
+                CalendarProvider.APP,
+                appOpenAttempted = false,
+                browserFallbackUsed = false,
+                invalidUrlRejected = true,
+                result = "no_crash"
+            )
+            return
+        }
+        val provider = MeetingUrlPolicy.providerForUrl(url) ?: CalendarProvider.APP
+        val uri = runCatching { Uri.parse(url) }.getOrNull()
+        if (uri == null) {
+            CalendarSyncLogger.meetingOpenResult(
+                provider,
+                appOpenAttempted = false,
+                browserFallbackUsed = false,
+                invalidUrlRejected = true,
+                result = "no_crash"
+            )
+            return
+        }
+        val providerIntent = providerPackages(provider)
+            .asSequence()
+            .map { packageName ->
+                Intent(Intent.ACTION_VIEW, uri).setPackage(packageName)
+            }
+            .firstOrNull { it.resolveActivity(packageManager) != null }
+        CalendarSyncLogger.meetingLinkOpen(
+            provider,
+            "app_open_attempted",
+            if (providerIntent != null) "yes" else "not_installed"
+        )
+        val result = MeetingOpenCoordinator.open(
+            url = url,
+            providerAppAvailable = providerIntent != null,
+            openProviderApp = {
+                try {
+                    startActivity(providerIntent ?: throw ActivityNotFoundException())
+                } catch (exception: ActivityNotFoundException) {
+                    throw exception
+                }
+            },
+            openBrowser = {
+                CalendarSyncLogger.meetingLinkOpen(provider, "browser_fallback_used", "started")
+                startActivity(Intent(Intent.ACTION_VIEW, uri))
+            }
+        )
+        CalendarSyncLogger.meetingLinkOpen(provider, "meeting_open_finished", result.name.lowercase())
+        CalendarSyncLogger.meetingOpenResult(
+            provider = provider,
+            appOpenAttempted = providerIntent != null,
+            browserFallbackUsed = result == MeetingOpenCoordinator.Result.BROWSER_OPENED ||
+                    result == MeetingOpenCoordinator.Result.NO_HANDLER,
+            invalidUrlRejected = result == MeetingOpenCoordinator.Result.INVALID_URL,
+            result = result.name.lowercase()
+        )
+    }
+
+    private fun providerPackages(provider: CalendarProvider): List<String> = when (provider) {
+        CalendarProvider.GOOGLE_CALENDAR -> listOf("com.google.android.apps.tachyon")
+        CalendarProvider.MICROSOFT_CALENDAR -> listOf("com.microsoft.teams2", "com.microsoft.teams")
+        CalendarProvider.APP -> emptyList()
     }
 
     private fun renderSelectedDateSummary(state: CalendarUiState) {
@@ -696,14 +963,32 @@ class CalendarActivity : AppCompatActivity() {
     private fun showCreateReminderChoice() {
         val options = arrayOf(
             getString(R.string.calendar_create_manual_choice),
-            getString(R.string.calendar_create_camera_choice)
+            getString(R.string.calendar_create_camera_choice),
+            getString(R.string.calendar_create_paste_choice)
         )
 
         AlertDialog.Builder(this)
             .setTitle(R.string.calendar_create_choice_title)
             .setItems(options) { _, which ->
-                val source = CalendarActionRules.creationChoices()[which]
-                openReminderCreation(source)
+                if (which == 2) {
+                    val selectedDate = lastRenderedState?.days
+                        ?.firstOrNull { it.isSelected }
+                        ?.date
+                    startActivity(
+                        Intent(this, PasteTextReminderActivity::class.java).apply {
+                            selectedDate?.let { date ->
+                                putExtra(
+                                    PasteTextReminderActivity.EXTRA_SELECTED_DATE,
+                                    CalendarActionRules.formatPrefilledDate(date)
+                                )
+                            }
+                        }
+                    )
+                    CalendarSyncLogger.ui("paste_text_reminder_opened_from_calendar")
+                } else {
+                    val source = CalendarActionRules.creationChoices()[which]
+                    openReminderCreation(source)
+                }
             }
             .show()
     }
@@ -723,50 +1008,635 @@ class CalendarActivity : AppCompatActivity() {
         if (!::googleCalendarAuthManager.isInitialized) return
 
         val account = googleCalendarAuthManager.getSignedInAccount()
-        val isConnected = googleCalendarAuthManager.hasCalendarPermission(account)
-
-        googleCalendarStatusView.text = if (isConnected) {
-            getString(
-                R.string.google_calendar_connected,
-                account?.email.orEmpty().ifBlank { getString(R.string.google_calendar_account) }
-            )
-        } else {
-            getString(R.string.calendar_google_connect_hint)
+        val hasGoogleSession = googleCalendarAuthManager.hasConnectedSession(account)
+        googleCalendarAuthManager.lastErrorCode?.let { code ->
+            if (googleSyncError == null) {
+                googleSyncError = getString(GoogleCalendarErrorUi.messageRes(code))
+            }
         }
+        val isMicrosoftConnected = ::microsoftCalendarAuthController.isInitialized &&
+                microsoftCalendarAuthController.isConnected
+        val hasMicrosoftSession = ::microsoftCalendarAuthController.isInitialized &&
+                microsoftCalendarAuthController.hasSession
+        microsoftCalendarAuthController.lastErrorCode?.let { code ->
+            if (microsoftSyncError == null) {
+                microsoftSyncError = getString(MicrosoftCalendarErrorUi.messageRes(code))
+            }
+        }
+        googleProviderUiState = CalendarSyncUiPolicy.resolveGoogleProviderState(
+            currentState = googleProviderUiState,
+            syncEnabled = googleCalendarAuthManager.isSyncEnabled,
+            hasSession = hasGoogleSession,
+            hasError = googleSyncError != null || googleCalendarAuthManager.hasConnectionError
+        )
+        microsoftProviderUiState = CalendarSyncUiPolicy.resolveProviderState(
+            currentState = microsoftProviderUiState,
+            syncEnabled = microsoftCalendarAuthController.isSyncEnabled,
+            hasSession = hasMicrosoftSession,
+            hasError = microsoftSyncError != null
+        )
+        val panelState = CalendarSyncUiPolicy.resolve(
+            googleConnected = googleCalendarAuthManager.isConnected(account),
+            microsoftConnected = isMicrosoftConnected,
+            microsoftAuthConfigured = microsoftCalendarAuthController.isAuthConfigured,
+            googlePaused = hasGoogleSession && !googleCalendarAuthManager.isSyncEnabled,
+            microsoftPaused = hasMicrosoftSession &&
+                    !microsoftCalendarAuthController.isSyncEnabled
+        )
+        val googleMainAction = CalendarSyncUiPolicy.googleMainAction(
+            state = googleProviderUiState,
+            hasSession = hasGoogleSession
+        )
 
-        googleCalendarSyncButton.text = if (isConnected) {
-            getString(R.string.google_calendar_sync_button)
+        calendarSyncStatusView.text = when (panelState.status) {
+            CalendarSyncStatus.GOOGLE_AND_MICROSOFT ->
+                getString(R.string.calendar_sync_status_both_active)
+            CalendarSyncStatus.GOOGLE ->
+                getString(R.string.calendar_sync_status_google_active)
+            CalendarSyncStatus.GOOGLE_PAUSED ->
+                getString(R.string.calendar_sync_status_google_paused)
+            CalendarSyncStatus.MICROSOFT_PAUSED ->
+                getString(R.string.calendar_sync_status_microsoft_paused)
+            CalendarSyncStatus.MICROSOFT ->
+                getString(R.string.calendar_sync_status_microsoft_active)
+            CalendarSyncStatus.NOT_CONNECTED ->
+                getString(R.string.calendar_sync_status_none)
+        }
+        val lastSyncAt = listOfNotNull(
+            calendarAutoSyncStateStore.get(CalendarProvider.GOOGLE_CALENDAR)
+                .lastSuccessAtEpochMillis.takeIf { hasGoogleSession && it > 0L },
+            calendarAutoSyncStateStore.get(CalendarProvider.MICROSOFT_CALENDAR)
+                .lastSuccessAtEpochMillis.takeIf { hasMicrosoftSession && it > 0L }
+        ).maxOrNull() ?: 0L
+        calendarLastSyncView.text = CalendarSyncUiPolicy.lastSyncLabel(
+            lastSyncAt,
+            System.currentTimeMillis()
+        ).orEmpty()
+        calendarLastSyncView.isVisible = calendarLastSyncView.text.isNotBlank()
+
+        googleCalendarSyncButton.text = getString(
+            when {
+                googleMainAction == CalendarSyncButtonAction.ACTIVATE_GOOGLE ->
+                    R.string.calendar_sync_google_activate
+                googleMainAction == CalendarSyncButtonAction.PAUSE_GOOGLE ->
+                    R.string.calendar_sync_google_pause
+                else -> R.string.calendar_sync_google_connect
+            }
+        )
+        microsoftCalendarSyncButton.text = getString(
+            when {
+                panelState.microsoftButtonAction ==
+                        CalendarSyncButtonAction.ACTIVATE_MICROSOFT ->
+                    R.string.calendar_sync_microsoft_activate
+                panelState.microsoftButtonAction ==
+                        CalendarSyncButtonAction.PAUSE_MICROSOFT ->
+                    R.string.calendar_sync_microsoft_pause
+                else -> R.string.calendar_sync_microsoft_connect
+            }
+        )
+        googleCalendarSyncButton.isEnabled =
+            googleProviderUiState != CalendarProviderUiState.SYNCING &&
+                    googleProviderUiState != CalendarProviderUiState.CONNECTING
+        microsoftCalendarSyncButton.isEnabled =
+            microsoftProviderUiState != CalendarProviderUiState.SYNCING
+        googleCalendarDisconnectButton.isVisible = hasGoogleSession
+        microsoftCalendarDisconnectButton.isVisible = hasMicrosoftSession
+        calendarDisconnectActionsContainer.isVisible = hasGoogleSession || hasMicrosoftSession
+        renderInlineSyncError()
+        logProviderStateChanges()
+    }
+
+    private fun handleGoogleCalendarSyncClick() {
+        CalendarSyncLogger.authButtonPressed(CalendarProvider.GOOGLE_CALENDAR)
+        val hasSession = googleCalendarAuthManager.hasConnectedSession()
+        val action = CalendarSyncUiPolicy.googleMainAction(
+            state = googleProviderUiState,
+            hasSession = hasSession
+        )
+        CalendarSyncLogger.googleButtonTapped(
+            stateBefore = googleProviderUiState.name,
+            action = action.name
+        )
+        if (action == CalendarSyncButtonAction.PAUSE_GOOGLE) {
+            CalendarSyncLogger.ui(
+                "google_sync_button",
+                    mapOf("buttonAction" to "pause_google")
+            )
+            pauseCalendarProvider(CalendarProvider.GOOGLE_CALENDAR)
         } else {
-            getString(R.string.calendar_google_connect_button)
+            startGoogleCalendarAuth()
         }
     }
 
-    private fun syncPendingGoogleCalendarChanges() {
+    private fun handleMicrosoftCalendarSyncClick() {
+        CalendarSyncLogger.authButtonPressed(CalendarProvider.MICROSOFT_CALENDAR)
+        CalendarSyncLogger.ui(
+            "microsoft_sync_button",
+            mapOf(
+                "buttonAction" to when {
+                    microsoftCalendarAuthController.isConnected -> "pause_microsoft"
+                    microsoftCalendarAuthController.isAuthConfigured -> "connect_microsoft"
+                    else -> "connect_microsoft"
+                }
+            )
+        )
+
+        if (microsoftCalendarAuthController.isConnected) {
+            pauseCalendarProvider(CalendarProvider.MICROSOFT_CALENDAR)
+            return
+        }
+
+        if (microsoftCalendarAuthController.hasSession) {
+            activateMicrosoftCalendar()
+            return
+        }
+
+        startMicrosoftCalendarAuth()
+    }
+
+    private fun startGoogleCalendarAuth(preserveActivationRequest: Boolean = false) {
+        if (!preserveActivationRequest) {
+            googleActivationRequested = googleCalendarAuthManager.hasConnectedSession() &&
+                    !googleCalendarAuthManager.isSyncEnabled
+        }
+        googleSyncError = null
+        googleRecoveryAttempted = false
+        googleCalendarAuthManager.clearConnectionError()
+        googleProviderUiState = CalendarProviderUiState.CONNECTING
+        refreshGoogleCalendarStatus()
+        CalendarSyncLogger.ui("google_sync_button", mapOf("buttonAction" to "connect_google"))
+        CalendarSyncLogger.authStarted(CalendarProvider.GOOGLE_CALENDAR)
+        googleCalendarAuthManager.prepareReconnect { decision ->
+            runOnUiThread {
+                when (decision) {
+                    GoogleCalendarReconnectDecision.REUSE_VALID_SESSION -> {
+                        verifyReusedGoogleSession()
+                    }
+                    GoogleCalendarReconnectDecision.NEEDS_LOGIN -> {
+                        launchGoogleCalendarAuth()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun completeGoogleSignIn(
+        account: GoogleSignInAccount?
+    ) {
+        lifecycleScope.launch {
+            runCatching {
+                googleCalendarAuthManager.completeSignIn(
+                    account = account,
+                    activated = googleActivationRequested
+                )
+            }
+                .onSuccess { connected ->
+                    if (!connected) {
+                        showGoogleInlineError(GoogleCalendarErrorCode.AUTH_SCOPE_DENIED)
+                        return@onSuccess
+                    }
+                    CalendarSyncLogger.authSuccess(CalendarProvider.GOOGLE_CALENDAR)
+                    googleSyncError = null
+                    googleProviderUiState = CalendarProviderUiState.CONNECTED
+                    refreshGoogleCalendarStatus()
+                    CalendarSyncLogger.uiUpdated(
+                        CalendarProvider.GOOGLE_CALENDAR,
+                        "connected"
+                    )
+                    syncGoogleCalendarChanges()
+                }
+                .onFailure { exception ->
+                    val recoverable = exception as? GoogleCalendarAuthException.UserActionRequired
+                    if (
+                        recoverable?.recoveryIntent != null &&
+                        !googleRecoveryAttempted
+                    ) {
+                        googleRecoveryAttempted = true
+                        CalendarSyncLogger.authLaunched(CalendarProvider.GOOGLE_CALENDAR)
+                        runCatching {
+                            googleCalendarRecoveryLauncher.launch(recoverable.recoveryIntent)
+                        }.onFailure { launchFailure ->
+                            val code = GoogleCalendarErrorCode.fromSignInFailure(launchFailure)
+                            showGoogleInlineError(code)
+                        }
+                        return@onFailure
+                    }
+                    val code = GoogleCalendarErrorCode.fromSyncFailure(exception)
+                    CalendarSyncLogger.googleAuthFailed(code.value)
+                    showGoogleInlineError(code)
+                }
+        }
+    }
+
+    private fun verifyReusedGoogleSession() {
+        lifecycleScope.launch {
+            runCatching { googleCalendarAuthManager.reactivateExistingSession() }
+                .onSuccess { connected ->
+                    if (!connected) {
+                        startGoogleCalendarAuth(preserveActivationRequest = true)
+                        return@onSuccess
+                    }
+                    CalendarSyncLogger.authSuccess(CalendarProvider.GOOGLE_CALENDAR)
+                    googleProviderUiState = CalendarProviderUiState.CONNECTED
+                    refreshGoogleCalendarStatus()
+                    syncGoogleCalendarChanges()
+                }
+                .onFailure { exception ->
+                    val code = GoogleCalendarErrorCode.fromSyncFailure(exception)
+                    if (code.invalidatesSession) {
+                        startGoogleCalendarAuth(preserveActivationRequest = true)
+                    } else {
+                        showGoogleInlineError(code)
+                    }
+                }
+        }
+    }
+
+    private fun launchGoogleCalendarAuth() {
+        runCatching {
+            CalendarSyncLogger.authLaunched(CalendarProvider.GOOGLE_CALENDAR)
+            googleCalendarSignInLauncher.launch(googleCalendarAuthManager.buildSignInIntent())
+        }.onFailure { exception ->
+            val code = GoogleCalendarErrorCode.fromSignInFailure(exception)
+            CalendarSyncLogger.googleAuthFailed(code.value)
+            showGoogleInlineError(code)
+        }
+    }
+
+    private fun startMicrosoftCalendarAuth() {
+        microsoftSyncError = null
+        microsoftProviderUiState = CalendarProviderUiState.SYNCING
+        refreshGoogleCalendarStatus()
+        microsoftCalendarAuthController.signIn(this) { result ->
+            runOnUiThread {
+                when (result) {
+                    MicrosoftCalendarAuthResult.Success -> {
+                        microsoftSyncError = null
+                        refreshGoogleCalendarStatus()
+                        syncMicrosoftCalendarChanges()
+                    }
+                    MicrosoftCalendarAuthResult.Cancelled -> {
+                        showMicrosoftInlineError(MicrosoftCalendarErrorCode.AUTH_CANCELLED)
+                    }
+                    MicrosoftCalendarAuthResult.MissingConfig -> {
+                        CalendarSyncLogger.fallback(
+                            provider = CalendarProvider.MICROSOFT_CALENDAR,
+                            action = "auth_start",
+                            fallbackReason = "missing_config"
+                        )
+                        showMicrosoftInlineError(
+                            MicrosoftCalendarErrorCode.AUTH_MSAL_CLIENT_ERROR
+                        )
+                    }
+                    is MicrosoftCalendarAuthResult.Error -> {
+                        CalendarSyncLogger.error(
+                            provider = CalendarProvider.MICROSOFT_CALENDAR,
+                            action = "auth",
+                            fallbackReason = result.cause.javaClass.simpleName
+                        )
+                        showMicrosoftInlineError(
+                            MicrosoftCalendarErrorCode.fromAuthFailure(result.cause)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showDisconnectConfirmation(provider: CalendarProvider) {
+        val providerName = when (provider) {
+            CalendarProvider.GOOGLE_CALENDAR -> "Google"
+            CalendarProvider.MICROSOFT_CALENDAR -> "Microsoft"
+            CalendarProvider.APP -> return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.calendar_sync_disconnect_title, providerName))
+            .setMessage(R.string.calendar_sync_disconnect_message)
+            .setNegativeButton(R.string.reminder_cancel_action, null)
+            .setPositiveButton(R.string.calendar_sync_disconnect_confirm) { _, _ ->
+                disconnectCalendarProvider(provider)
+            }
+            .show()
+    }
+
+    private fun pauseCalendarProvider(provider: CalendarProvider) {
+        when (provider) {
+            CalendarProvider.GOOGLE_CALENDAR -> {
+                googleCalendarAuthManager.pauseSync()
+                handleProviderPauseResult(provider, Result.success(Unit))
+            }
+            CalendarProvider.MICROSOFT_CALENDAR ->
+                handleProviderPauseResult(
+                    provider,
+                    runCatching { microsoftCalendarAuthController.pauseSync() }
+                )
+            CalendarProvider.APP -> Unit
+        }
+    }
+
+    private fun handleProviderPauseResult(
+        provider: CalendarProvider,
+        result: Result<Unit>
+    ) {
+        result.onSuccess {
+            when (provider) {
+                CalendarProvider.GOOGLE_CALENDAR -> {
+                    googleSyncError = null
+                    googleProviderUiState = CalendarProviderUiState.PAUSED
+                    calendarSyncInlineNoticeView.text = getString(
+                        R.string.calendar_sync_google_disabled_inline
+                    )
+                }
+                CalendarProvider.MICROSOFT_CALENDAR -> {
+                    microsoftSyncError = null
+                    microsoftProviderUiState = CalendarProviderUiState.PAUSED
+                    calendarSyncInlineNoticeView.text = getString(
+                        R.string.calendar_sync_microsoft_disabled_inline
+                    )
+                }
+                CalendarProvider.APP -> return@onSuccess
+            }
+            calendarSyncInlineNoticeView.isVisible = true
+            CalendarSyncLogger.deactivate(provider, phase = "finished")
+            refreshGoogleCalendarStatus()
+        }.onFailure { exception ->
+            CalendarSyncLogger.error(
+                provider,
+                action = "deactivate",
+                fallbackReason = exception.javaClass.simpleName
+            )
+            showProviderInlineError(provider, exception)
+        }
+    }
+
+    private fun disconnectCalendarProvider(provider: CalendarProvider) {
+        val callback: (Result<Unit>) -> Unit = { result ->
+            runOnUiThread {
+                result.onSuccess {
+                    when (provider) {
+                        CalendarProvider.GOOGLE_CALENDAR -> {
+                            googleSyncError = null
+                            googleProviderUiState = CalendarProviderUiState.DISCONNECTED
+                        }
+                        CalendarProvider.MICROSOFT_CALENDAR -> {
+                            microsoftSyncError = null
+                            microsoftProviderUiState = CalendarProviderUiState.DISCONNECTED
+                        }
+                        CalendarProvider.APP -> Unit
+                    }
+                    calendarAutoSyncStateStore.clear(provider)
+                    refreshGoogleCalendarStatus()
+                }.onFailure { error ->
+                    showProviderInlineError(provider, error)
+                }
+            }
+        }
+        when (provider) {
+            CalendarProvider.GOOGLE_CALENDAR -> googleCalendarAuthManager.disconnect(callback)
+            CalendarProvider.MICROSOFT_CALENDAR ->
+                microsoftCalendarAuthController.signOut(callback)
+            CalendarProvider.APP -> Unit
+        }
+    }
+
+    private fun activateMicrosoftCalendar() {
+        microsoftSyncError = null
+        microsoftProviderUiState = CalendarProviderUiState.SYNCING
+        refreshGoogleCalendarStatus()
+        microsoftCalendarAuthController.activateExistingSession { result ->
+            runOnUiThread {
+                when (result) {
+                    MicrosoftCalendarAuthResult.Success -> {
+                        microsoftProviderUiState = CalendarProviderUiState.CONNECTED
+                        syncMicrosoftCalendarChanges()
+                    }
+                    MicrosoftCalendarAuthResult.Cancelled ->
+                        showMicrosoftInlineError(MicrosoftCalendarErrorCode.AUTH_CANCELLED)
+                    MicrosoftCalendarAuthResult.MissingConfig ->
+                        showMicrosoftInlineError(MicrosoftCalendarErrorCode.AUTH_MSAL_CLIENT_ERROR)
+                    is MicrosoftCalendarAuthResult.Error -> {
+                        val code = MicrosoftCalendarErrorCode.fromAuthFailure(result.cause)
+                        if (code.invalidatesSession) {
+                            startMicrosoftCalendarAuth()
+                        } else {
+                            showMicrosoftInlineError(code)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showInlineSyncError(provider: CalendarProvider, reason: String) {
+        if (provider == CalendarProvider.GOOGLE_CALENDAR) {
+            showGoogleInlineError(GoogleCalendarErrorCode.fromLegacyReason(reason))
+            return
+        }
+        showMicrosoftInlineError(
+            MicrosoftCalendarErrorCode.fromStoredValue(reason)
+                ?: MicrosoftCalendarErrorCode.fromFailure(IllegalStateException(reason))
+        )
+    }
+
+    private fun showProviderInlineError(provider: CalendarProvider, error: Throwable) {
+        when (provider) {
+            CalendarProvider.GOOGLE_CALENDAR ->
+                showGoogleInlineError(GoogleCalendarErrorCode.fromSyncFailure(error))
+            CalendarProvider.MICROSOFT_CALENDAR ->
+                showMicrosoftInlineError(MicrosoftCalendarErrorCode.fromFailure(error))
+            CalendarProvider.APP -> Unit
+        }
+    }
+
+    private fun showMicrosoftInlineError(code: MicrosoftCalendarErrorCode) {
+        microsoftCalendarAuthController.markConnectionError(code)
+        microsoftSyncError = getString(MicrosoftCalendarErrorUi.messageRes(code))
+        microsoftProviderUiState = CalendarProviderUiState.ERROR
+        CalendarSyncLogger.inlineErrorShown(CalendarProvider.MICROSOFT_CALENDAR, code.value)
+        refreshGoogleCalendarStatus()
+    }
+
+    private fun showGoogleInlineError(code: GoogleCalendarErrorCode) {
+        if (
+            !googleCalendarAuthManager.hasConnectionError ||
+            googleCalendarAuthManager.lastErrorCode != code
+        ) {
+            googleCalendarAuthManager.markConnectionError(code)
+        }
+        googleSyncError = getString(GoogleCalendarErrorUi.messageRes(code))
+        googleProviderUiState = CalendarProviderUiState.ERROR
+        CalendarSyncLogger.inlineErrorShown(CalendarProvider.GOOGLE_CALENDAR, code.value)
+        refreshGoogleCalendarStatus()
+    }
+
+    private fun renderVisibleMonthSyncError(error: CalendarSyncInlineError?) {
+        if (error == lastVisibleMonthSyncError) return
+        val previousError = lastVisibleMonthSyncError
+        lastVisibleMonthSyncError = error
+        if (error != null) {
+            if (error.provider == CalendarProvider.GOOGLE_CALENDAR) {
+                showGoogleInlineError(GoogleCalendarErrorCode.fromLegacyReason(error.reason))
+            } else {
+                showMicrosoftInlineError(
+                    MicrosoftCalendarErrorCode.fromStoredValue(error.reason)
+                        ?: MicrosoftCalendarErrorCode.fromFailure(
+                            IllegalStateException(error.reason)
+                        )
+                )
+            }
+            return
+        }
+        when (previousError?.provider) {
+            CalendarProvider.GOOGLE_CALENDAR -> {
+                googleSyncError = null
+                googleCalendarAuthManager.clearConnectionError()
+            }
+            CalendarProvider.MICROSOFT_CALENDAR -> {
+                microsoftSyncError = null
+                microsoftCalendarAuthController.clearConnectionError()
+                CalendarSyncLogger.inlineErrorCleared(CalendarProvider.MICROSOFT_CALENDAR)
+            }
+            else -> Unit
+        }
+        refreshGoogleCalendarStatus()
+    }
+
+    private fun renderInlineSyncError() {
+        val message = googleSyncError ?: microsoftSyncError
+        calendarSyncErrorContainer.isVisible = message != null
+        calendarSyncErrorView.text = message.orEmpty()
+    }
+
+    private fun logProviderStateChanges() {
+        if (lastLoggedGoogleState != googleProviderUiState) {
+            val previousState = lastLoggedGoogleState
+            lastLoggedGoogleState = googleProviderUiState
+            CalendarSyncLogger.providerStateChanged(
+                CalendarProvider.GOOGLE_CALENDAR,
+                googleProviderUiState.name,
+                previousState?.name
+            )
+        }
+        if (lastLoggedMicrosoftState != microsoftProviderUiState) {
+            val previousState = lastLoggedMicrosoftState
+            lastLoggedMicrosoftState = microsoftProviderUiState
+            CalendarSyncLogger.providerStateChanged(
+                CalendarProvider.MICROSOFT_CALENDAR,
+                microsoftProviderUiState.name,
+                previousState?.name
+            )
+        }
+    }
+
+    private fun syncGoogleCalendarChanges() {
+        googleProviderUiState = CalendarProviderUiState.SYNCING
+        refreshGoogleCalendarStatus()
         lifecycleScope.launch {
             runCatching {
                 googleCalendarSynchronizer.syncPendingReminders()
             }.onSuccess { summary ->
-                calendarViewModel.reloadCalendar()
-                refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this@CalendarActivity,
-                    getString(
-                        R.string.google_calendar_sync_finished,
-                        summary.syncedCount,
-                        summary.failedCount,
-                        summary.pendingDeleteCount
-                    ),
-                    Toast.LENGTH_LONG
-                ).show()
+                showInlineDeleteSuccess(summary.completedDeleteCount)
+                val failureCode = summary.failureCode
+                if (failureCode == null) {
+                    googleSyncError = null
+                    googleCalendarAuthManager.clearConnectionError()
+                    calendarAutoSyncStateStore.recordSuccess(
+                        CalendarProvider.GOOGLE_CALENDAR,
+                        System.currentTimeMillis()
+                    )
+                    googleProviderUiState = CalendarProviderUiState.CONNECTED
+                    calendarViewModel.reloadCalendar(forceExternalSync = true)
+                    refreshGoogleCalendarStatus()
+                } else {
+                    CalendarSyncLogger.error(
+                        CalendarProvider.GOOGLE_CALENDAR,
+                        action = "sync_google_button",
+                        fallbackReason = failureCode.value
+                    )
+                    calendarAutoSyncStateStore.recordFailure(
+                        CalendarProvider.GOOGLE_CALENDAR,
+                        failureCode.value,
+                        System.currentTimeMillis()
+                    )
+                    showGoogleInlineError(failureCode)
+                    calendarViewModel.reloadCalendar()
+                }
             }.onFailure { exception ->
-                refreshGoogleCalendarStatus()
-                Toast.makeText(
-                    this@CalendarActivity,
-                    exception.message ?: getString(R.string.google_calendar_sync_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
+                val code = GoogleCalendarErrorCode.fromSyncFailure(exception)
+                CalendarSyncLogger.error(
+                    CalendarProvider.GOOGLE_CALENDAR,
+                    action = "sync_google_button",
+                    fallbackReason = code.value
+                )
+                showGoogleInlineError(code)
+                calendarAutoSyncStateStore.recordFailure(
+                    CalendarProvider.GOOGLE_CALENDAR,
+                    code.value,
+                    System.currentTimeMillis()
+                )
             }
         }
+    }
+
+    private fun syncMicrosoftCalendarChanges() {
+        microsoftProviderUiState = CalendarProviderUiState.SYNCING
+        refreshGoogleCalendarStatus()
+        lifecycleScope.launch {
+            runCatching {
+                unifiedCalendarSynchronizer.syncMicrosoftCalendar()
+            }.onSuccess { summary ->
+                showInlineDeleteSuccess(summary.completedDeleteCount)
+                calendarViewModel.reloadCalendar()
+                val failureCode = summary.microsoftFailureCode
+                if (failureCode == null) {
+                    val hadInlineError = microsoftSyncError != null
+                    microsoftSyncError = null
+                    microsoftCalendarAuthController.clearConnectionError()
+                    if (hadInlineError) {
+                        CalendarSyncLogger.inlineErrorCleared(
+                            CalendarProvider.MICROSOFT_CALENDAR
+                        )
+                    }
+                    calendarAutoSyncStateStore.recordSuccess(
+                        CalendarProvider.MICROSOFT_CALENDAR,
+                        System.currentTimeMillis()
+                    )
+                    microsoftProviderUiState = CalendarProviderUiState.CONNECTED
+                    refreshGoogleCalendarStatus()
+                } else {
+                    calendarAutoSyncStateStore.recordFailure(
+                        CalendarProvider.MICROSOFT_CALENDAR,
+                        failureCode.value,
+                        System.currentTimeMillis(),
+                        summary.microsoftRetryAfterMillis
+                    )
+                    showMicrosoftInlineError(failureCode)
+                }
+            }.onFailure { exception ->
+                val code = MicrosoftCalendarErrorCode.fromFailure(exception)
+                calendarAutoSyncStateStore.recordFailure(
+                    CalendarProvider.MICROSOFT_CALENDAR,
+                    code.value,
+                    System.currentTimeMillis(),
+                    (exception as? com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftGraphApiException)
+                        ?.retryAfterSeconds?.times(1_000L)
+                )
+                CalendarSyncLogger.error(
+                    CalendarProvider.MICROSOFT_CALENDAR,
+                    action = "sync_microsoft_button",
+                    fallbackReason = code.value
+                )
+                showMicrosoftInlineError(code)
+            }
+        }
+    }
+
+    private fun showInlineDeleteSuccess(completedDeleteCount: Int) {
+        if (completedDeleteCount <= 0) return
+        calendarSyncInlineNoticeView.text = getString(
+            R.string.calendar_sync_delete_finished_inline
+        )
+        calendarSyncInlineNoticeView.isVisible = true
     }
 
     private fun buildFilterTitle(style: CalendarIndicatorStyle): String {

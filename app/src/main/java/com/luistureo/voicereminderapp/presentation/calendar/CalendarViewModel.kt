@@ -5,23 +5,28 @@ import androidx.lifecycle.viewModelScope
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.calendar.ChileanHoliday
 import com.luistureo.voicereminderapp.core.calendar.ChileanHolidayProvider
-import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthException
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
-import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarEvent
-import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
-import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarRestClient
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarErrorCode
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarErrorCode
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarConflictPolicy
+import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSuspensionPolicy
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarCardDisplayPolicy
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSyncSummary
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter as ReminderDateTimeFormatter
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
+import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.Normalizer
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -37,9 +42,9 @@ import kotlin.math.min
 class CalendarViewModel(
     private val getRemindersUseCase: GetRemindersUseCase,
     private val deleteReminderUseCase: DeleteReminderUseCase,
+    private val updateReminderUseCase: UpdateReminderUseCase,
     private val googleCalendarAuthManager: GoogleCalendarAuthManager,
-    private val googleCalendarRestClient: GoogleCalendarRestClient,
-    private val googleCalendarSynchronizer: GoogleCalendarReminderSynchronizer,
+    private val unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer,
     private val reminderScheduler: ReminderScheduler,
     private val holidayProvider: ChileanHolidayProvider
 ) : ViewModel() {
@@ -53,7 +58,14 @@ class CalendarViewModel(
         val type: ReminderType,
         val isCompleted: Boolean,
         val localReminderId: Int? = null,
-        val googleCalendarEventId: String? = null
+        val googleCalendarEventId: String? = null,
+        val providerExternalIds: Map<CalendarProvider, String> = emptyMap(),
+        val providerLines: List<String> = emptyList(),
+        val meetingUrl: String? = null,
+        val externalEditNote: String? = null,
+        val isSuspended: Boolean = false,
+        val isAllDay: Boolean = false,
+        val occurrenceAtEpochMillis: Long? = null
     )
 
     private val locale = Locale.forLanguageTag("es-CL")
@@ -71,6 +83,8 @@ class CalendarViewModel(
     private var selectedDate: LocalDate = today
     private var calendarEntries: List<CalendarEntry> = emptyList()
     private var cachedReminders: List<Reminder> = emptyList()
+    private var lastExternalImportAtEpochMillis: Long = 0L
+    private var lastExternalImportMonth: YearMonth? = null
 
     private val _uiState = MutableStateFlow(
         CalendarUiState(
@@ -87,32 +101,48 @@ class CalendarViewModel(
         reloadCalendar()
     }
 
-    fun reloadCalendar() {
+    fun reloadCalendar(forceExternalSync: Boolean = false) {
+        if (forceExternalSync) {
+            lastExternalImportAtEpochMillis = 0L
+            lastExternalImportMonth = null
+        }
         _uiState.update { currentState ->
             currentState.copy(isLoading = true, errorMessage = null)
         }
 
         viewModelScope.launch {
+            val externalSyncResult = runCatching {
+                syncExternalCalendarsForVisibleMonth()
+            }
+            externalSyncResult.exceptionOrNull()?.let { exception ->
+                CalendarSyncLogger.visibleMonthLoad(
+                    provider = visibleMonthErrorProvider(),
+                    succeeded = false,
+                    reason = visibleMonthFailureReason(exception)
+                )
+            } ?: CalendarSyncLogger.visibleMonthLoad(
+                provider = visibleMonthSuccessProvider(),
+                succeeded = true
+            )
             val cachedRemindersResult = runCatching { loadCachedReminders() }
             cachedReminders = cachedRemindersResult.getOrDefault(emptyList())
+            calendarEntries = cachedReminders.toCachedCalendarEntries()
 
-            runCatching {
-                loadGoogleCalendarEntries()
-            }.onSuccess { googleEntries ->
-                calendarEntries = googleEntries
-                publishState()
-            }.onFailure { googleException ->
-                calendarEntries = cachedRemindersResult
-                    .getOrDefault(emptyList())
-                    .toCachedCalendarEntries()
-
-                publishState(
-                    errorMessage = buildFallbackMessage(
-                        googleException = googleException,
-                        cacheException = cachedRemindersResult.exceptionOrNull()
+            publishState(
+                errorMessage = buildFallbackMessage(
+                    cacheException = cachedRemindersResult.exceptionOrNull()
+                ),
+                syncError = externalSyncResult.exceptionOrNull()?.let { exception ->
+                    CalendarSyncInlineError(
+                        provider = visibleMonthErrorProvider(),
+                        reason = visibleMonthFailureReason(exception)
                     )
-                )
-            }
+                },
+                showDeleteSyncSuccess = externalSyncResult.getOrNull()
+                    ?.completedDeleteCount
+                    ?.let { it > 0 }
+                    ?: _uiState.value.showDeleteSyncSuccess
+            )
         }
     }
 
@@ -156,14 +186,12 @@ class CalendarViewModel(
                 }
 
                 if (reminder != null) {
-                    googleCalendarSynchronizer.deleteReminderEvent(reminder)
-                    deleteReminderUseCase(reminder)
+                    val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(reminder)
+                    if (deletionResult.pendingDeleteProviders.isEmpty()) {
+                        deleteReminderUseCase(deletionResult)
+                    }
                     reminderScheduler.cancelReminder(reminder.id)
                     reminderScheduler.scheduleNextDaySummary()
-                } else {
-                    item.googleCalendarEventId?.let { eventId ->
-                        googleCalendarSynchronizer.deleteEventById(eventId)
-                    }
                 }
             }.onSuccess {
                 reloadCalendar()
@@ -171,6 +199,29 @@ class CalendarViewModel(
                 publishState(
                     errorMessage = exception.message
                         ?: "No fue posible eliminar el evento seleccionado."
+                )
+            }
+        }
+    }
+
+    fun reactivateCalendarItem(item: CalendarReminderDetailUiModel) {
+        viewModelScope.launch {
+            runCatching {
+                val reminder = item.localReminderId?.let { reminderId ->
+                    cachedReminders.firstOrNull { it.id == reminderId }
+                } ?: return@runCatching
+                val reactivatedReminder = CalendarSuspensionPolicy.reactivate(reminder)
+
+                CalendarSyncLogger.appointmentReactivated(reminder.originProvider)
+
+                updateReminderUseCase(reactivatedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(reactivatedReminder)
+                reminderScheduler.syncReminderSchedule(syncedReminder)
+            }.onSuccess {
+                reloadCalendar()
+            }.onFailure { exception ->
+                publishState(
+                    errorMessage = exception.message ?: "No fue posible reactivar la cita."
                 )
             }
         }
@@ -187,28 +238,38 @@ class CalendarViewModel(
             )
     }
 
-    private suspend fun loadGoogleCalendarEntries(): List<CalendarEntry> {
-        if (CalendarActionRules.shouldUseOfflineFallback(googleCalendarAuthManager.hasCalendarPermission())) {
-            throw GoogleCalendarAuthException.NotConnected
-        }
-
-        val (rangeStart, rangeEndExclusive) = buildVisibleDateRange(visibleMonth)
-        val accessToken = googleCalendarAuthManager.getAccessToken()
-        val googleEvents = googleCalendarRestClient.listEvents(
-            accessToken = accessToken,
-            timeMin = rangeStart.atStartOfDay(zoneId).toInstant(),
-            timeMax = rangeEndExclusive.atStartOfDay(zoneId).toInstant()
-        )
-
-        return googleEvents
-            .flatMap { event ->
-                event.toCalendarEntries(rangeStart, rangeEndExclusive)
+    private suspend fun syncExternalCalendarsForVisibleMonth(): UnifiedCalendarSyncSummary? {
+        return if (
+            !googleCalendarAuthManager.isConnected() &&
+            !unifiedCalendarSynchronizer.isMicrosoftConnected
+        ) {
+            null
+        } else {
+            val nowEpochMillis = System.currentTimeMillis()
+            if (
+                lastExternalImportMonth == visibleMonth &&
+                nowEpochMillis - lastExternalImportAtEpochMillis <
+                EXTERNAL_IMPORT_COOLDOWN_MILLIS
+            ) {
+                CalendarSyncLogger.cooldown(
+                    provider = null,
+                    action = "calendar_open_import",
+                    remainingMillis = EXTERNAL_IMPORT_COOLDOWN_MILLIS -
+                            (nowEpochMillis - lastExternalImportAtEpochMillis)
+                )
+                null
+            } else {
+                lastExternalImportAtEpochMillis = nowEpochMillis
+                lastExternalImportMonth = visibleMonth
+                val (rangeStart, rangeEndExclusive) = buildVisibleDateRange(visibleMonth)
+                val timeMin = rangeStart.atStartOfDay(zoneId).toInstant()
+                val timeMax = rangeEndExclusive.atStartOfDay(zoneId).toInstant()
+                unifiedCalendarSynchronizer.importExternalEvents(
+                    timeMin = timeMin,
+                    timeMax = timeMax
+                )
             }
-            .sortedWith(
-                compareBy<CalendarEntry> { it.date }
-                    .thenBy { it.time ?: LocalTime.MIN }
-                    .thenBy { it.title }
-            )
+        }
     }
 
     private fun List<Reminder>.toCachedCalendarEntries(): List<CalendarEntry> {
@@ -218,19 +279,41 @@ class CalendarViewModel(
         forEach { reminder ->
             var currentDate = rangeStart
             val reminderTime = ReminderDateTimeFormatter.toLocalTime(reminder.scheduledAtEpochMillis)
+            val reminderStartAt = reminder.scheduledAtEpochMillis
 
             while (currentDate.isBefore(rangeEndExclusive)) {
                 if (occurrenceCalculator.occursOnDate(reminder, currentDate)) {
+                    val occurrenceAt = currentDate
+                        .atTime(reminderTime)
+                        .atZone(zoneId)
+                        .toInstant()
+                        .toEpochMilli()
+                    val isSuspendedOccurrence = reminder.isSuspended &&
+                            (
+                                    reminder.suspendedOccurrenceAtEpochMillis == null ||
+                                            reminder.suspendedOccurrenceAtEpochMillis == occurrenceAt ||
+                                            reminder.suspendedOccurrenceAtEpochMillis == reminderStartAt
+                                    )
                     entries += CalendarEntry(
-                        id = reminder.id.toString(),
+                        id = CalendarConflictPolicy.occurrenceCandidateId(
+                            reminder.id,
+                            occurrenceAt
+                        ),
                         title = reminder.title,
                         detail = reminder.detail,
                         date = currentDate,
-                        time = reminderTime,
+                        time = if (reminder.isAllDay) null else reminderTime,
                         type = reminder.type,
                         isCompleted = reminder.isCompleted,
                         localReminderId = reminder.id,
-                        googleCalendarEventId = reminder.googleCalendarEventId
+                        googleCalendarEventId = reminder.googleCalendarEventId,
+                        providerExternalIds = reminder.externalIdsByProvider,
+                        providerLines = UnifiedCalendarCardDisplayPolicy.buildProviderLines(reminder),
+                        meetingUrl = reminder.meetingUrl,
+                        externalEditNote = reminder.externalEditNote,
+                        isSuspended = isSuspendedOccurrence,
+                        isAllDay = reminder.isAllDay,
+                        occurrenceAtEpochMillis = occurrenceAt
                     )
                 }
 
@@ -245,73 +328,30 @@ class CalendarViewModel(
         )
     }
 
-    private fun GoogleCalendarEvent.toCalendarEntries(
-        rangeStart: LocalDate,
-        rangeEndExclusive: LocalDate
-    ): List<CalendarEntry> {
-        val resolvedType = resolveEventType(title, description)
-        val resolvedDetail = description.trim().ifBlank {
-            if (isAllDay) {
-                "Evento de Google Calendar de dia completo."
-            } else {
-                "Evento de Google Calendar."
-            }
-        }
-
-        if (isAllDay) {
-            val eventStart = startDate ?: return emptyList()
-            val eventEndExclusive = endDate ?: eventStart.plusDays(1)
-            val entries = mutableListOf<CalendarEntry>()
-            var currentDate = maxOfDate(eventStart, rangeStart)
-            val lastDateExclusive = minOfDate(eventEndExclusive, rangeEndExclusive)
-
-            while (currentDate.isBefore(lastDateExclusive)) {
-                entries += CalendarEntry(
-                    id = "$id-${currentDate}",
-                    title = title,
-                    detail = resolvedDetail,
-                    date = currentDate,
-                    time = null,
-                    type = resolvedType,
-                    isCompleted = isCompleted,
-                    googleCalendarEventId = id
-                )
-                currentDate = currentDate.plusDays(1)
-            }
-
-            return entries
-        }
-
-        val startAt = startDateTime ?: return emptyList()
-        val eventDate = startAt.withZoneSameInstant(zoneId).toLocalDate()
-        if (eventDate.isBefore(rangeStart) || !eventDate.isBefore(rangeEndExclusive)) {
-            return emptyList()
-        }
-
-        return listOf(
-            CalendarEntry(
-                id = id,
-                title = title,
-                detail = resolvedDetail,
-                date = eventDate,
-                time = startAt.withZoneSameInstant(zoneId).toLocalTime(),
-                type = resolvedType,
-                isCompleted = isCompleted,
-                googleCalendarEventId = id
-            )
-        )
-    }
-
-    private fun publishState(errorMessage: String? = null) {
+    private fun publishState(
+        errorMessage: String? = null,
+        syncError: CalendarSyncInlineError? = null,
+        showDeleteSyncSuccess: Boolean = _uiState.value.showDeleteSyncSuccess
+    ) {
         val entriesByDate = calendarEntries.groupBy { it.date }
         val holidaysByDate = holidayProvider.getHolidaysForMonth(visibleMonth)
         val selectedDateEntries = entriesByDate[selectedDate].orEmpty()
         val selectedDateHolidays = holidayProvider.getHolidays(selectedDate)
+        val duplicateGroups = buildDuplicateGroups(calendarEntries)
+        val duplicateItemIds = duplicateGroups
+            .flatMap { group -> group.candidates.map { candidate -> candidate.id } }
+            .toSet()
+        val selectedDuplicateItemIds = duplicateGroups
+            .filter { group -> group.candidates.firstOrNull()?.date == selectedDate }
+            .flatMap { group -> group.candidates.map { candidate -> candidate.id } }
+            .toSet()
 
         _uiState.update { currentState ->
             currentState.copy(
                 isLoading = false,
                 errorMessage = errorMessage,
+                syncError = syncError,
+                showDeleteSyncSuccess = showDeleteSyncSuccess,
                 monthTitle = visibleMonth.format(monthTitleFormatter).toUiTitleCase(),
                 selectedMonthIndex = visibleMonth.monthValue - 1,
                 selectedYear = visibleMonth.year,
@@ -324,9 +364,13 @@ class CalendarViewModel(
                 ),
                 selectedHolidays = selectedDateHolidays.map { holiday -> holiday.name },
                 selectedDateReminders = selectedDateEntries.map { entry ->
-                    entry.toDetailUiModel()
+                    entry.toDetailUiModel(hasNearbySchedule = entry.id in selectedDuplicateItemIds)
                 },
-                filteredItems = buildFilteredItems(calendarEntries, holidaysByDate),
+                filteredItems = buildFilteredItems(
+                    entries = calendarEntries,
+                    holidaysByDate = holidaysByDate,
+                    duplicateItemIds = duplicateItemIds
+                ),
                 emptyStateMessage = if (selectedDateEntries.isEmpty()) {
                     if (selectedDateHolidays.isEmpty()) {
                         "No hay eventos para este dia."
@@ -335,20 +379,70 @@ class CalendarViewModel(
                     }
                 } else {
                     ""
-                }
+                },
+                selectedDateDuplicateWarning = selectedDuplicateItemIds
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { ids ->
+                        CalendarDuplicateWarningUiModel(
+                            selectedDate = selectedDate,
+                            duplicateCount = ids.size
+                        )
+                    }
             )
         }
     }
 
+    private fun visibleMonthErrorProvider(): CalendarProvider {
+        return if (googleCalendarAuthManager.isConnected()) {
+            CalendarProvider.GOOGLE_CALENDAR
+        } else {
+            CalendarProvider.MICROSOFT_CALENDAR
+        }
+    }
+
+    private fun visibleMonthSuccessProvider(): CalendarProvider? {
+        return when {
+            googleCalendarAuthManager.isConnected() -> CalendarProvider.GOOGLE_CALENDAR
+            unifiedCalendarSynchronizer.isMicrosoftConnected ->
+                CalendarProvider.MICROSOFT_CALENDAR
+            else -> null
+        }
+    }
+
+    private fun visibleMonthFailureReason(exception: Throwable): String {
+        return when (visibleMonthErrorProvider()) {
+            CalendarProvider.MICROSOFT_CALENDAR ->
+                MicrosoftCalendarErrorCode.fromFailure(exception).value
+            else -> GoogleCalendarErrorCode.fromSyncFailure(exception).value
+        }
+    }
+
+    private fun buildDuplicateGroups(
+        entries: List<CalendarEntry>
+    ): List<CalendarConflictPolicy.ConflictGroup> {
+        return CalendarConflictPolicy.findConflicts(
+            entries.filter { !it.isSuspended }.map { entry ->
+                CalendarConflictPolicy.Candidate(
+                    id = entry.id,
+                    startAtEpochMillis = entry.occurrenceAtEpochMillis,
+                    isAllDay = entry.isAllDay
+                )
+            }
+        )
+    }
+
     private fun buildFilteredItems(
         entries: List<CalendarEntry>,
-        holidaysByDate: Map<LocalDate, List<ChileanHoliday>>
+        holidaysByDate: Map<LocalDate, List<ChileanHoliday>>,
+        duplicateItemIds: Set<String>
     ): List<CalendarFilteredListItemUiModel> {
         val eventItems = entries.map { entry ->
             CalendarFilteredListItemUiModel(
                 date = entry.date,
                 dateTitle = entry.date.format(selectedDateFormatter).toUiTitleCase(),
-                detail = entry.toDetailUiModel(),
+                detail = entry.toDetailUiModel(
+                    hasNearbySchedule = entry.id in duplicateItemIds
+                ),
                 style = entry.toIndicatorStyle()
             )
         }
@@ -370,7 +464,9 @@ class CalendarViewModel(
         )
     }
 
-    private fun CalendarEntry.toDetailUiModel(): CalendarReminderDetailUiModel {
+    private fun CalendarEntry.toDetailUiModel(
+        hasNearbySchedule: Boolean = false
+    ): CalendarReminderDetailUiModel {
         return CalendarReminderDetailUiModel(
             id = id,
             title = title,
@@ -380,6 +476,12 @@ class CalendarViewModel(
             isCompleted = isCompleted,
             localReminderId = localReminderId,
             googleCalendarEventId = googleCalendarEventId,
+            providerExternalIds = providerExternalIds,
+            providerLines = providerLines,
+            meetingUrl = meetingUrl,
+            externalEditNote = externalEditNote,
+            hasNearbySchedule = hasNearbySchedule,
+            isSuspended = isSuspended,
             canDelete = CalendarActionRules.canDelete(
                 CalendarReminderDetailUiModel(
                     id = id,
@@ -389,9 +491,11 @@ class CalendarViewModel(
                     type = type,
                     isCompleted = isCompleted,
                     localReminderId = localReminderId,
-                    googleCalendarEventId = googleCalendarEventId
+                    googleCalendarEventId = googleCalendarEventId,
+                    providerExternalIds = providerExternalIds
                 )
-            )
+            ),
+            canReactivate = isSuspended && localReminderId != null
         )
     }
 
@@ -507,41 +611,9 @@ class CalendarViewModel(
     }
 
     private fun buildFallbackMessage(
-        googleException: Throwable,
         cacheException: Throwable?
-    ): String {
-        val baseMessage = when (googleException) {
-            is GoogleCalendarAuthException ->
-                "Google Calendar no esta conectado. Mostrando recordatorios guardados en el dispositivo."
-
-            else ->
-                "No fue posible cargar Google Calendar. Mostrando datos guardados en el dispositivo."
-        }
-
-        return if (cacheException == null) {
-            baseMessage
-        } else {
-            "$baseMessage El cache local no pudo cargarse por completo."
-        }
-    }
-
-    private fun resolveEventType(title: String, description: String): ReminderType {
-        val normalizedContent = normalizeText("$title $description")
-
-        return if (
-            "cumple" in normalizedContent ||
-            "cumpleanos" in normalizedContent ||
-            "birthday" in normalizedContent
-        ) {
-            ReminderType.BIRTHDAY
-        } else {
-            ReminderType.DEFAULT
-        }
-    }
-
-    private fun normalizeText(value: String): String {
-        return Normalizer.normalize(value.lowercase(locale), Normalizer.Form.NFD)
-            .replace(Regex("""\p{InCombiningDiacriticalMarks}+"""), "")
+    ): String? {
+        return cacheException?.let { "El cache local no pudo cargarse por completo." }
     }
 
     private fun pluralize(value: Int, singular: String): String {
@@ -559,14 +631,6 @@ class CalendarViewModel(
         return targetMonth.atDay(resolvedDay)
     }
 
-    private fun maxOfDate(first: LocalDate, second: LocalDate): LocalDate {
-        return if (first.isAfter(second)) first else second
-    }
-
-    private fun minOfDate(first: LocalDate, second: LocalDate): LocalDate {
-        return if (first.isBefore(second)) first else second
-    }
-
     private fun String.toUiTitleCase(): String {
         return replaceFirstChar { currentChar ->
             if (currentChar.isLowerCase()) {
@@ -575,5 +639,9 @@ class CalendarViewModel(
                 currentChar.toString()
             }
         }
+    }
+
+    private companion object {
+        const val EXTERNAL_IMPORT_COOLDOWN_MILLIS = 10 * 60_000L
     }
 }

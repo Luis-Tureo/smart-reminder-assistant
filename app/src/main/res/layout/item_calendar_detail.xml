@@ -14,7 +14,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="15dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -44,29 +45,24 @@
 
             <ImageButton
                 android:id="@+id/btnCalendarDetailDelete"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/bg_delete_circle"
                 android:contentDescription="@string/delete_reminder"
-                android:padding="9dp"
+                android:padding="8dp"
                 android:src="@drawable/ic_reminder_delete"
                 android:tint="@color/reminder_delete_red" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvCalendarDetailDescription"
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/groupCalendarDetailMetadata"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@color/calendar_body_text"
-            android:textSize="14sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:orientation="horizontal">
+            app:chipSpacingHorizontal="6dp"
+            app:chipSpacingVertical="6dp"
+            app:singleLine="false">
 
             <TextView
                 android:id="@+id/tvCalendarDetailTime"
@@ -79,10 +75,6 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <Space
-                android:layout_width="8dp"
-                android:layout_height="1dp" />
-
             <TextView
                 android:id="@+id/tvCalendarDetailType"
                 android:layout_width="wrap_content"
@@ -91,6 +83,93 @@
                 android:paddingVertical="6dp"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <TextView
+            android:id="@+id/tvCalendarDetailDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:ellipsize="end"
+            android:maxLines="3"
+            android:textColor="@color/calendar_body_text"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvCalendarDetailNearbySchedule"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_calendar_nearby_schedule_badge"
+            android:paddingHorizontal="9dp"
+            android:paddingVertical="4dp"
+            android:text="@string/calendar_duplicate_nearby_badge"
+            android:textColor="@color/calendar_duplicate_warning_text"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvCalendarDetailProvider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="2dp"
+            android:textColor="@color/calendar_caption_text"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvCalendarDetailExternalNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/calendar_caption_text"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/containerCalendarDetailActions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCalendarReactivate"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/calendar_reactivate_appointment"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:insetBottom="0dp"
+                android:insetTop="0dp"
+                app:cornerRadius="20dp"
+                />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCalendarOpenMeeting"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingVertical="10dp"
+                android:text="@string/calendar_open_meeting"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:insetBottom="0dp"
+                android:insetTop="0dp"
+                app:backgroundTint="@color/primary_blue"
+                app:cornerRadius="20dp"
+                app:icon="@drawable/ic_meeting_video"
+                app:iconGravity="textStart"
+                app:iconPadding="7dp"
+                app:iconTint="@color/white" />
         </LinearLayout>
     </LinearLayout>
 

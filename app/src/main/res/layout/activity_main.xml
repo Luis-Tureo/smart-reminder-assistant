@@ -251,7 +251,7 @@
                     android:layout_marginTop="14dp"
                     android:minHeight="44dp"
                     android:paddingHorizontal="20dp"
-                    android:text="@string/google_calendar_connect_button"
+                    android:text="@string/calendar_sync_google_connect"
                     android:textAllCaps="false"
                     android:textColor="@color/calendar_title_text"
                     android:textSize="14sp"
@@ -259,6 +259,18 @@
                     app:layout_constraintStart_toStartOf="@id/tvGoogleCalendarStatus"
                     app:layout_constraintTop_toBottomOf="@id/tvGoogleCalendarStatus"
                     app:strokeColor="@color/calendar_title_text" />
+
+                <TextView
+                    android:id="@+id/tvCalendarNotificationRecommendation"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/calendar_duplicate_alert_recommendation"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="12sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@id/btnGoogleCalendarSync"
+                    app:layout_constraintTop_toBottomOf="@id/btnGoogleCalendarSync" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 

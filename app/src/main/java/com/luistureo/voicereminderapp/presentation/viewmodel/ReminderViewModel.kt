@@ -4,8 +4,8 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luistureo.voicereminderapp.R
-import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
+import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.nlp.ReminderEntityExtractor
 import com.luistureo.voicereminderapp.core.nlp.ReminderContentCleaner
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextCleaner
@@ -53,7 +53,7 @@ class ReminderViewModel(
     private val getReminderByIdUseCase: GetReminderByIdUseCase,
     private val deleteReminderUseCase: DeleteReminderUseCase,
     private val updateReminderUseCase: UpdateReminderUseCase,
-    private val googleCalendarSynchronizer: GoogleCalendarReminderSynchronizer
+    private val unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
 ) : ViewModel() {
 
     private data class ParsedVoiceInput(
@@ -479,7 +479,7 @@ class ReminderViewModel(
 
             runCatching {
                 val savedReminder = saveReminderDraftUseCase(draft)
-                val syncedReminder = googleCalendarSynchronizer.syncSavedReminder(savedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(savedReminder)
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
             }.onSuccess {
@@ -563,8 +563,10 @@ class ReminderViewModel(
     fun deleteReminder(reminder: Reminder) {
         viewModelScope.launch {
             try {
-                googleCalendarSynchronizer.deleteReminderEvent(reminder)
-                deleteReminderUseCase(reminder)
+                val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(reminder)
+                if (deletionResult.pendingDeleteProviders.isEmpty()) {
+                    deleteReminderUseCase(deletionResult)
+                }
                 reminderScheduler.cancelReminder(reminder.id)
                 reminderScheduler.scheduleNextDaySummary()
                 loadReminders()
@@ -590,7 +592,7 @@ class ReminderViewModel(
                 )
 
                 updateReminderUseCase(resolvedReminder)
-                val syncedReminder = googleCalendarSynchronizer.syncSavedReminder(resolvedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(resolvedReminder)
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
             } catch (exception: Exception) {
@@ -633,7 +635,7 @@ class ReminderViewModel(
                     recurrence = null
                 )
             )
-            val syncedReminder = googleCalendarSynchronizer.syncSavedReminder(savedReminder)
+            val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(savedReminder)
             reminderScheduler.syncReminderSchedule(syncedReminder)
             loadReminders()
         }.onSuccess {
@@ -859,7 +861,7 @@ class ReminderViewModel(
 
             runCatching {
                 val savedReminder = saveReminderDraftUseCase(draft)
-                val syncedReminder = googleCalendarSynchronizer.syncSavedReminder(savedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(savedReminder)
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
             }.onSuccess {

@@ -1,5 +1,6 @@
 package com.luistureo.voicereminderapp.presentation.calendar
 
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import java.time.LocalDate
 
@@ -17,7 +18,15 @@ data class CalendarUiState(
     val selectedHolidays: List<String> = emptyList(),
     val selectedDateReminders: List<CalendarReminderDetailUiModel> = emptyList(),
     val filteredItems: List<CalendarFilteredListItemUiModel> = emptyList(),
-    val emptyStateMessage: String = ""
+    val emptyStateMessage: String = "",
+    val showDeleteSyncSuccess: Boolean = false,
+    val syncError: CalendarSyncInlineError? = null,
+    val selectedDateDuplicateWarning: CalendarDuplicateWarningUiModel? = null
+)
+
+data class CalendarSyncInlineError(
+    val provider: CalendarProvider,
+    val reason: String
 )
 
 data class CalendarDayUiModel(
@@ -52,7 +61,14 @@ data class CalendarReminderDetailUiModel(
     val isCompleted: Boolean,
     val localReminderId: Int? = null,
     val googleCalendarEventId: String? = null,
-    val canDelete: Boolean = true
+    val providerExternalIds: Map<CalendarProvider, String> = emptyMap(),
+    val providerLines: List<String> = emptyList(),
+    val meetingUrl: String? = null,
+    val externalEditNote: String? = null,
+    val hasNearbySchedule: Boolean = false,
+    val isSuspended: Boolean = false,
+    val canDelete: Boolean = true,
+    val canReactivate: Boolean = false
 )
 
 data class CalendarFilteredListItemUiModel(
@@ -61,4 +77,9 @@ data class CalendarFilteredListItemUiModel(
     val detail: CalendarReminderDetailUiModel? = null,
     val holidayName: String? = null,
     val style: CalendarIndicatorStyle
+)
+
+data class CalendarDuplicateWarningUiModel(
+    val selectedDate: LocalDate,
+    val duplicateCount: Int
 )

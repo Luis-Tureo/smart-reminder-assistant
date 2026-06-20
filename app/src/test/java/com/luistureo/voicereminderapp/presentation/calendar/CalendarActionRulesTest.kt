@@ -2,6 +2,7 @@ package com.luistureo.voicereminderapp.presentation.calendar
 
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -54,9 +55,16 @@ class CalendarActionRulesTest {
     }
 
     @Test
-    fun deleteIsAvailableForLocalOrGoogleItemsOnly() {
+    fun deleteIsAvailableForLocalOrExternalProviderItems() {
         assertTrue(CalendarActionRules.canDelete(detail(localId = 7, googleId = null)))
         assertTrue(CalendarActionRules.canDelete(detail(localId = null, googleId = "event-1")))
+        assertTrue(
+            CalendarActionRules.canDelete(
+                detail(localId = null, googleId = null).copy(
+                    providerExternalIds = mapOf(CalendarProvider.MICROSOFT_CALENDAR to "event-2")
+                )
+            )
+        )
         assertFalse(CalendarActionRules.canDelete(detail(localId = null, googleId = null)))
     }
 
