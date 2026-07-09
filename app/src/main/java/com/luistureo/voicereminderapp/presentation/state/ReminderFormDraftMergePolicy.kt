@@ -21,7 +21,9 @@ object ReminderFormDraftMergePolicy {
             date = draft.date ?: currentFormState.date,
             time = draft.time ?: currentFormState.time,
             isUrgent = currentFormState.isUrgent || draft.isUrgent,
-            source = source
+            source = source,
+            syncTargetProviders = draft.syncTargetProviders.takeIf { it.isNotEmpty() }
+                ?: currentFormState.syncTargetProviders
         )
     }
 }

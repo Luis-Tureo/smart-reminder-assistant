@@ -7,27 +7,30 @@ import com.luistureo.voicereminderapp.domain.model.Reminder
 
 object UnifiedCalendarSyncPolicy {
 
-    private val externalProviders = setOf(
-        CalendarProvider.GOOGLE_CALENDAR,
-        CalendarProvider.MICROSOFT_CALENDAR
-    )
+    private val externalProviders = PerReminderCalendarSyncPolicy.externalProviders
 
     fun prepareAppUpsert(reminder: Reminder): Reminder {
-        val providersToCreate = externalProviders.filterTo(mutableSetOf()) { provider ->
-            reminder.externalIdsByProvider[provider].isNullOrBlank()
-        }
-        val providersToUpdate = externalProviders - providersToCreate
-
         return reminder.copy(
-            pendingCreateProviders = reminder.pendingCreateProviders + providersToCreate,
-            pendingUpdateProviders = reminder.pendingUpdateProviders + providersToUpdate,
             lastEditedSource = CalendarProvider.APP,
             externalEditNote = null,
             hiddenFromApp = false
         )
     }
 
-    fun prepareAppDelete(reminder: Reminder): Reminder {
+    fun prepareAppDelete(
+        reminder: Reminder,
+        deleteExternalCalendars: Boolean = true
+    ): Reminder {
+        if (!deleteExternalCalendars) {
+            return reminder.copy(
+                pendingCreateProviders = reminder.pendingCreateProviders - externalProviders,
+                pendingUpdateProviders = reminder.pendingUpdateProviders - externalProviders,
+                pendingDeleteProviders = reminder.pendingDeleteProviders - externalProviders,
+                hiddenFromApp = true,
+                lastEditedSource = CalendarProvider.APP
+            )
+        }
+
         val linkedProviders = reminder.externalIdsByProvider
             .filterValues { it.isNotBlank() }
             .keys
@@ -129,13 +132,14 @@ object UnifiedCalendarSyncPolicy {
 
     fun markProviderPendingDelete(
         reminder: Reminder,
-        provider: CalendarProvider
+        provider: CalendarProvider,
+        hideFromApp: Boolean = reminder.hiddenFromApp
     ): Reminder {
         return reminder.copy(
             providerSyncStates = reminder.providerSyncStates +
                     (provider to CalendarProviderSyncState.PENDING_DELETE),
             pendingDeleteProviders = reminder.pendingDeleteProviders + provider,
-            hiddenFromApp = true
+            hiddenFromApp = hideFromApp
         )
     }
 

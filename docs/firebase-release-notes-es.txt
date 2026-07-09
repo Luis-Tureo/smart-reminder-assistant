@@ -1,0 +1,9 @@
+Primera beta privada de Smart Reminder.
+
+- Creación y gestión de recordatorios con programación de alarmas.
+- Sincronización con Google Calendar y Microsoft Calendar.
+- Acceso controlado a reuniones de Google Meet y Microsoft Teams.
+- Creación mediante voz y texto pegado.
+- Asistente con síntesis de voz y fallback local.
+
+Versión destinada exclusivamente a evaluación privada.

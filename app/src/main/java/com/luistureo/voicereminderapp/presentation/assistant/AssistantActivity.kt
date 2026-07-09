@@ -10,18 +10,24 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.checkbox.MaterialCheckBox
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthController
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthProvider
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.speech.SpeechRecognizerManager
 import com.luistureo.voicereminderapp.core.speech.VoiceAssistantSpeaker
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetReminderByIdUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
@@ -44,17 +50,23 @@ class AssistantActivity : ComponentActivity() {
     private lateinit var assistantView: AssistantView
     private lateinit var assistantSceneContainer: View
     private lateinit var assistantDialogueBubble: AssistantDialogueBubbleView
+    private lateinit var syncOptionsContainer: View
+    private lateinit var googleSyncCheckBox: MaterialCheckBox
+    private lateinit var microsoftSyncCheckBox: MaterialCheckBox
 
     private lateinit var assistantAnimator: AssistantAnimator
     private lateinit var reminderViewModel: ReminderViewModel
     private lateinit var speechManager: SpeechRecognizerManager
     private lateinit var voiceAssistantSpeaker: VoiceAssistantSpeaker
+    private lateinit var googleCalendarAuthManager: GoogleCalendarAuthManager
+    private lateinit var microsoftCalendarAuthController: MicrosoftCalendarAuthController
 
     private var currentAssistantVisualState: AssistantVisualState = AssistantVisualState.IDLE
     private var hasPendingSuccessState: Boolean = false
     private var assistantResetJob: Job? = null
     private val assistantSpeechQueue = ArrayDeque<String>()
     private var isAssistantSpeechQueueActive: Boolean = false
+    private var availableSyncProviders: Set<CalendarProvider> = emptySet()
 
     private val voiceAudioPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -79,6 +91,7 @@ class AssistantActivity : ComponentActivity() {
         setupViewModel()
         setupSpeech()
         setupListeners()
+        refreshCalendarSyncOptions()
         observeAssistantState()
         observeEvents()
     }
@@ -115,6 +128,9 @@ class AssistantActivity : ComponentActivity() {
         assistantView = findViewById(R.id.assistantView)
         assistantSceneContainer = findViewById(R.id.assistantSceneContainer)
         assistantDialogueBubble = findViewById(R.id.assistantDialogueBubble)
+        syncOptionsContainer = findViewById(R.id.containerAssistantCalendarSyncOptions)
+        googleSyncCheckBox = findViewById(R.id.checkAssistantSyncGoogle)
+        microsoftSyncCheckBox = findViewById(R.id.checkAssistantSyncMicrosoft)
     }
 
     private fun setupAssistant() {
@@ -126,6 +142,8 @@ class AssistantActivity : ComponentActivity() {
     private fun setupViewModel() {
         val database = ReminderDatabase.getDatabase(this)
         val repository = ReminderRepositoryImpl(database.reminderDao())
+        googleCalendarAuthManager = GoogleCalendarAuthManager(applicationContext)
+        microsoftCalendarAuthController = MicrosoftCalendarAuthProvider.get(applicationContext)
         val googleCalendarSynchronizer = GoogleCalendarReminderSynchronizer(
             context = applicationContext,
             reminderRepository = repository
@@ -211,7 +229,71 @@ class AssistantActivity : ComponentActivity() {
                 checkAudioPermissionAndStart()
             }
         }
+        googleSyncCheckBox.setOnCheckedChangeListener { _, _ ->
+            reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
+        }
+        microsoftSyncCheckBox.setOnCheckedChangeListener { _, _ ->
+            reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
+        }
 
+    }
+
+    private fun refreshCalendarSyncOptions() {
+        updateAvailableSyncProviders(
+            buildSet {
+                if (googleCalendarAuthManager.isConnected()) add(CalendarProvider.GOOGLE_CALENDAR)
+                if (microsoftCalendarAuthController.isConnected) {
+                    add(CalendarProvider.MICROSOFT_CALENDAR)
+                }
+            }
+        )
+        microsoftCalendarAuthController.refreshConnectionState { isConnected ->
+            runOnUiThread {
+                updateAvailableSyncProviders(
+                    buildSet {
+                        if (googleCalendarAuthManager.isConnected()) {
+                            add(CalendarProvider.GOOGLE_CALENDAR)
+                        }
+                        if (isConnected) {
+                            add(CalendarProvider.MICROSOFT_CALENDAR)
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private fun updateAvailableSyncProviders(providers: Set<CalendarProvider>) {
+        availableSyncProviders = providers
+        syncOptionsContainer.isVisible = providers.isNotEmpty()
+        googleSyncCheckBox.isVisible = CalendarProvider.GOOGLE_CALENDAR in providers
+        microsoftSyncCheckBox.isVisible = CalendarProvider.MICROSOFT_CALENDAR in providers
+        reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
+    }
+
+    private fun selectedSyncTargetProviders(): Set<CalendarProvider> {
+        return buildSet {
+            if (
+                googleSyncCheckBox.isVisible &&
+                googleSyncCheckBox.isChecked &&
+                CalendarProvider.GOOGLE_CALENDAR in availableSyncProviders
+            ) {
+                add(CalendarProvider.GOOGLE_CALENDAR)
+            }
+            if (
+                microsoftSyncCheckBox.isVisible &&
+                microsoftSyncCheckBox.isChecked &&
+                CalendarProvider.MICROSOFT_CALENDAR in availableSyncProviders
+            ) {
+                add(CalendarProvider.MICROSOFT_CALENDAR)
+            }
+        }
+    }
+
+    private fun resetSyncTargetSelection() {
+        googleSyncCheckBox.isChecked = false
+        microsoftSyncCheckBox.isChecked = false
+        reminderViewModel.setAssistantSyncTargetProviders(emptySet())
     }
 
     private fun observeAssistantState() {
@@ -254,6 +336,7 @@ class AssistantActivity : ComponentActivity() {
                                 event.message.contains("actualizado", ignoreCase = true)
                             ) {
                                 hasPendingSuccessState = true
+                                resetSyncTargetSelection()
                             }
                         }
 
@@ -300,6 +383,7 @@ class AssistantActivity : ComponentActivity() {
         )
         renderAssistantState(AssistantVisualState.THINKING)
         reminderViewModel.startAssistantSession()
+        reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
     }
 
     private fun startSpeechRecognition() {

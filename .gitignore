@@ -14,3 +14,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+keystore.properties
+*.jks
+*.keystore
+**/google-services.json
+**/service-account*.json
+**/firebase-service-account*.json
+.firebase/
+firebase-debug.log
+firebase-token*
+.env
+.env.*
+!.env.example

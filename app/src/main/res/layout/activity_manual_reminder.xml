@@ -29,7 +29,7 @@
                 android:contentDescription="@string/manual_reminder_back"
                 android:padding="8dp"
                 android:src="@drawable/ic_calendar_back"
-                android:tint="#F6F1E8" />
+                app:tint="#F6F1E8" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -451,6 +451,51 @@
                             android:layout_weight="1.2" />
                     </LinearLayout>
                 </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/containerManualCalendarSyncOptions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/calendar_sync_targets_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/checkManualSyncGoogle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/calendar_sync_target_google"
+                    android:visibility="gone" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/checkManualSyncMicrosoft"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/calendar_sync_target_microsoft"
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

@@ -14,11 +14,15 @@ import androidx.activity.addCallback
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthController
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthProvider
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.nlp.PastedReminderDateOrigin
@@ -29,6 +33,7 @@ import com.luistureo.voicereminderapp.core.nlp.ReminderTextParserLogger
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
@@ -52,18 +57,24 @@ class PasteTextReminderActivity : ComponentActivity() {
     private lateinit var dateNotice: TextView
     private lateinit var urgentSwitch: SwitchMaterial
     private lateinit var recurrenceSpinner: Spinner
+    private lateinit var syncOptionsContainer: View
+    private lateinit var googleSyncCheckBox: MaterialCheckBox
+    private lateinit var microsoftSyncCheckBox: MaterialCheckBox
     private lateinit var confirmationSummary: TextView
     private lateinit var saveButton: MaterialButton
 
     private lateinit var saveReminderDraftUseCase: SaveReminderDraftUseCase
     private lateinit var unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
     private lateinit var reminderScheduler: ReminderScheduler
+    private lateinit var googleCalendarAuthManager: GoogleCalendarAuthManager
+    private lateinit var microsoftCalendarAuthController: MicrosoftCalendarAuthController
 
     private var selectedCalendarDay: LocalDate? = null
     private var selectedDate: LocalDate? = null
     private var selectedTime: LocalTime? = null
     private var parsedDateOrigin: PastedReminderDateOrigin = PastedReminderDateOrigin.MISSING
     private var isSaving = false
+    private var availableSyncProviders: Set<CalendarProvider> = emptySet()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +83,7 @@ class PasteTextReminderActivity : ComponentActivity() {
         initViews()
         setupRecurrenceSpinner()
         setupListeners()
+        refreshCalendarSyncOptions()
         selectedCalendarDay = intent.getStringExtra(EXTRA_SELECTED_DATE)
             ?.let(DateTimeFormatter::parseDate)
         onBackPressedDispatcher.addCallback(this) { cancelAndFinish() }
@@ -85,6 +97,8 @@ class PasteTextReminderActivity : ComponentActivity() {
             applicationContext,
             repository
         )
+        googleCalendarAuthManager = GoogleCalendarAuthManager(applicationContext)
+        microsoftCalendarAuthController = MicrosoftCalendarAuthProvider.get(applicationContext)
         saveReminderDraftUseCase = SaveReminderDraftUseCase(repository)
         unifiedCalendarSynchronizer = UnifiedCalendarSynchronizer(
             applicationContext,
@@ -107,6 +121,9 @@ class PasteTextReminderActivity : ComponentActivity() {
         dateNotice = findViewById(R.id.tvPasteReminderDateNotice)
         urgentSwitch = findViewById(R.id.switchPasteReminderUrgent)
         recurrenceSpinner = findViewById(R.id.spinnerPasteReminderRecurrence)
+        syncOptionsContainer = findViewById(R.id.containerPasteCalendarSyncOptions)
+        googleSyncCheckBox = findViewById(R.id.checkPasteSyncGoogle)
+        microsoftSyncCheckBox = findViewById(R.id.checkPasteSyncMicrosoft)
         confirmationSummary = findViewById(R.id.tvPasteReminderConfirmationSummary)
         saveButton = findViewById(R.id.btnSavePastedReminder)
     }
@@ -139,6 +156,38 @@ class PasteTextReminderActivity : ComponentActivity() {
         findViewById<MaterialButton>(R.id.btnCancelPastedReminder).setOnClickListener {
             cancelAndFinish()
         }
+    }
+
+    private fun refreshCalendarSyncOptions() {
+        updateAvailableSyncProviders(
+            buildSet {
+                if (googleCalendarAuthManager.isConnected()) add(CalendarProvider.GOOGLE_CALENDAR)
+                if (microsoftCalendarAuthController.isConnected) {
+                    add(CalendarProvider.MICROSOFT_CALENDAR)
+                }
+            }
+        )
+        microsoftCalendarAuthController.refreshConnectionState { isConnected ->
+            runOnUiThread {
+                updateAvailableSyncProviders(
+                    buildSet {
+                        if (googleCalendarAuthManager.isConnected()) {
+                            add(CalendarProvider.GOOGLE_CALENDAR)
+                        }
+                        if (isConnected) {
+                            add(CalendarProvider.MICROSOFT_CALENDAR)
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private fun updateAvailableSyncProviders(providers: Set<CalendarProvider>) {
+        availableSyncProviders = providers
+        syncOptionsContainer.isVisible = providers.isNotEmpty()
+        googleSyncCheckBox.isVisible = CalendarProvider.GOOGLE_CALENDAR in providers
+        microsoftSyncCheckBox.isVisible = CalendarProvider.MICROSOFT_CALENDAR in providers
     }
 
     private fun analyzeText() {
@@ -294,8 +343,28 @@ class PasteTextReminderActivity : ComponentActivity() {
             time = DateTimeFormatter.formatTime(time.hour, time.minute),
             isUrgent = urgentSwitch.isChecked,
             source = ReminderSource.MANUAL,
-            recurrence = recurrenceSpinner.selectedItemPosition.toRecurrence()
+            recurrence = recurrenceSpinner.selectedItemPosition.toRecurrence(),
+            syncTargetProviders = selectedSyncTargetProviders()
         )
+    }
+
+    private fun selectedSyncTargetProviders(): Set<CalendarProvider> {
+        return buildSet {
+            if (
+                googleSyncCheckBox.isVisible &&
+                googleSyncCheckBox.isChecked &&
+                CalendarProvider.GOOGLE_CALENDAR in availableSyncProviders
+            ) {
+                add(CalendarProvider.GOOGLE_CALENDAR)
+            }
+            if (
+                microsoftSyncCheckBox.isVisible &&
+                microsoftSyncCheckBox.isChecked &&
+                CalendarProvider.MICROSOFT_CALENDAR in availableSyncProviders
+            ) {
+                add(CalendarProvider.MICROSOFT_CALENDAR)
+            }
+        }
     }
 
     private fun buildConfirmationSummary(draft: ReminderDraft): String {

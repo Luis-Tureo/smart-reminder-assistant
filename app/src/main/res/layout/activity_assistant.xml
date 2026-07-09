@@ -22,7 +22,7 @@
             android:contentDescription="@string/manual_reminder_back"
             android:padding="8dp"
             android:src="@drawable/ic_calendar_back"
-            android:tint="#F6F1E8" />
+            app:tint="#F6F1E8" />
 
         <TextView
             android:id="@+id/tvAssistantScreenTitle"
@@ -105,6 +105,40 @@
                         android:contentDescription="@string/assistant_dialogue_content_description" />
                 </FrameLayout>
             </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/containerAssistantCalendarSyncOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_result_box"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/calendar_sync_targets_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/checkAssistantSyncGoogle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/calendar_sync_target_google"
+                    android:visibility="gone" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/checkAssistantSyncMicrosoft"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/calendar_sync_target_microsoft"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSpeakAssistant"

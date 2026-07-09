@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
-import com.luistureo.voicereminderapp.domain.model.GoogleCalendarSyncState
 import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.presentation.state.HomeReminderListItem
@@ -173,12 +172,6 @@ class HomeReminderAdapter(
             reminder.recurrenceLabel?.let { add(it) }
             if (reminder.isUrgent) add("Urgente")
             if (reminder.isRecurring && !reminder.isRecurringActive) add("Inactiva")
-            when (reminder.googleCalendarSyncState) {
-                GoogleCalendarSyncState.SYNCED -> Unit
-                GoogleCalendarSyncState.NOT_CONNECTED -> add("Google Calendar sin conectar")
-                GoogleCalendarSyncState.PENDING -> add("Google Calendar pendiente")
-                GoogleCalendarSyncState.FAILED -> add("Google Calendar no sincronizado")
-            }
         }
 
         holder.scheduleMeta.isVisible = parts.isNotEmpty()

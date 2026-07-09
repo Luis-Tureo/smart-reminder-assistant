@@ -24,7 +24,7 @@
 
         <!-- Navigation bar -->
         <item name="android:navigationBarColor">@color/screen_background</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
 
         <!-- Botones -->
         <item name="materialButtonStyle">@style/Widget.Voice.Button</item>

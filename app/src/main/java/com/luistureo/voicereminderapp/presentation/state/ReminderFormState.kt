@@ -1,5 +1,6 @@
 package com.luistureo.voicereminderapp.presentation.state
 
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
 
@@ -12,5 +13,6 @@ data class ReminderFormState(
     val time: String = "",
     val isUrgent: Boolean = false,
     val source: ReminderSource = ReminderSource.MANUAL,
-    val recurrence: ReminderRecurrence? = null
+    val recurrence: ReminderRecurrence? = null,
+    val syncTargetProviders: Set<CalendarProvider> = emptySet()
 )

@@ -672,6 +672,9 @@ class CalendarActivity : AppCompatActivity() {
         val deleteButton = detailView.findViewById<ImageButton>(R.id.btnCalendarDetailDelete)
         val openMeetingButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarOpenMeeting)
         val reactivateButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarReactivate)
+        val syncGoogleButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarSyncGoogle)
+        val syncMicrosoftButton =
+            detailView.findViewById<MaterialButton>(R.id.btnCalendarSyncMicrosoft)
         val actionsContainer =
             detailView.findViewById<LinearLayout>(R.id.containerCalendarDetailActions)
 
@@ -732,7 +735,25 @@ class CalendarActivity : AppCompatActivity() {
         reactivateButton.setOnClickListener {
             calendarViewModel.reactivateCalendarItem(detail)
         }
-        actionsContainer.isVisible = canOpenMeeting || detail.canReactivate
+        syncGoogleButton.isVisible = CalendarProvider.GOOGLE_CALENDAR in detail.syncActions
+        syncGoogleButton.setOnClickListener {
+            calendarViewModel.syncCalendarItemWithProvider(
+                detail,
+                CalendarProvider.GOOGLE_CALENDAR
+            )
+        }
+        syncMicrosoftButton.isVisible =
+            CalendarProvider.MICROSOFT_CALENDAR in detail.syncActions
+        syncMicrosoftButton.setOnClickListener {
+            calendarViewModel.syncCalendarItemWithProvider(
+                detail,
+                CalendarProvider.MICROSOFT_CALENDAR
+            )
+        }
+        actionsContainer.isVisible = canOpenMeeting ||
+                detail.canReactivate ||
+                syncGoogleButton.isVisible ||
+                syncMicrosoftButton.isVisible
         val reactivateLayoutParams = reactivateButton.layoutParams as LinearLayout.LayoutParams
         reactivateLayoutParams.bottomMargin = if (canOpenMeeting && detail.canReactivate) {
             resources.getDimensionPixelSize(R.dimen.calendar_detail_action_spacing)
@@ -994,12 +1015,45 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmation(detail: CalendarReminderDetailUiModel) {
+        val linkedExternalProviders = detail.providerExternalIds
+            .filterKeys { it != CalendarProvider.APP }
+            .filterValues { it.isNotBlank() }
+            .keys
+        if (linkedExternalProviders.isNotEmpty()) {
+            val options = arrayOf(
+                getString(R.string.calendar_delete_local_only),
+                getString(R.string.calendar_delete_with_synced_calendars),
+                getString(R.string.reminder_cancel_action)
+            )
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.calendar_delete_title))
+                .setMessage(getString(R.string.calendar_delete_synced_message, detail.title))
+                .setItems(options) { dialog, which ->
+                    when (which) {
+                        0 -> calendarViewModel.deleteCalendarItem(
+                            item = detail,
+                            deleteExternalCalendars = false
+                        )
+                        1 -> calendarViewModel.deleteCalendarItem(
+                            item = detail,
+                            deleteExternalCalendars = true
+                        )
+                        else -> dialog.dismiss()
+                    }
+                }
+                .show()
+            return
+        }
+
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.calendar_delete_title))
             .setMessage(getString(R.string.calendar_delete_message, detail.title))
             .setNegativeButton(R.string.reminder_cancel_action, null)
             .setPositiveButton(R.string.delete_reminder) { _, _ ->
-                calendarViewModel.deleteCalendarItem(detail)
+                calendarViewModel.deleteCalendarItem(
+                    item = detail,
+                    deleteExternalCalendars = false
+                )
             }
             .show()
     }

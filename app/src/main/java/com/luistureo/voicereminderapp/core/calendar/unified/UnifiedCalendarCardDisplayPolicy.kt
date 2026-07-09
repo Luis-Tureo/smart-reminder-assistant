@@ -47,12 +47,6 @@ object UnifiedCalendarCardDisplayPolicy {
 
         syncedLabel?.takeIf { !it.endsWith(": ") }?.let(lines::add)
 
-        val pendingProviders = UnifiedCalendarSyncPolicy.pendingProviders(reminder)
-            .filter { it != CalendarProvider.APP }
-        if (pendingProviders.isNotEmpty()) {
-            lines += "Sincronización pendiente: ${pendingProviders.toDisplayList()}"
-        }
-
         if (reminder.isSuspended) {
             lines += "Cita suspendida desde Smart Reminder Assistant"
         }

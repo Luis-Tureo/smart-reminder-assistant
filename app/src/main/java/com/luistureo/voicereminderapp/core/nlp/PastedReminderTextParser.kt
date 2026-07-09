@@ -1,6 +1,7 @@
 package com.luistureo.voicereminderapp.core.nlp
 
 import android.util.Log
+import com.luistureo.voicereminderapp.BuildConfig
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
 import java.text.Normalizer
@@ -142,6 +143,7 @@ object ReminderTextParserLogger {
     fun cancelled() = safeLog("cancelled")
 
     private fun safeLog(message: String) {
+        if (!BuildConfig.DEBUG) return
         runCatching { Log.d(TAG, message) }
     }
 }

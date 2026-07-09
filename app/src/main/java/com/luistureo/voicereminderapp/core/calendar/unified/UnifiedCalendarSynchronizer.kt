@@ -39,9 +39,32 @@ class UnifiedCalendarSynchronizer(
         if (currentReminder != reminder) {
             reminderRepository.updateReminder(currentReminder)
         }
-        currentReminder = googleCalendarSynchronizer.syncSavedReminder(currentReminder)
+        val beforeGoogleSync = currentReminder
+        if (CalendarProvider.GOOGLE_CALENDAR in currentReminder.pendingDeleteProviders) {
+            currentReminder = googleCalendarSynchronizer.deleteReminderEvent(currentReminder)
+        }
+        if (
+            CalendarProvider.GOOGLE_CALENDAR in currentReminder.pendingCreateProviders ||
+            CalendarProvider.GOOGLE_CALENDAR in currentReminder.pendingUpdateProviders
+        ) {
+            currentReminder = googleCalendarSynchronizer.syncSavedReminder(currentReminder)
+        }
+        if (currentReminder != beforeGoogleSync) {
+            reminderRepository.updateReminder(currentReminder)
+        }
 
-        val microsoftResult = microsoftCalendarSynchronizer.syncSavedReminder(currentReminder)
+        val microsoftResult = if (
+            CalendarProvider.MICROSOFT_CALENDAR in currentReminder.pendingDeleteProviders
+        ) {
+            microsoftCalendarSynchronizer.deleteReminderEvent(currentReminder)
+        } else if (
+            CalendarProvider.MICROSOFT_CALENDAR in currentReminder.pendingCreateProviders ||
+            CalendarProvider.MICROSOFT_CALENDAR in currentReminder.pendingUpdateProviders
+        ) {
+            microsoftCalendarSynchronizer.syncSavedReminder(currentReminder)
+        } else {
+            currentReminder
+        }
         if (microsoftResult != currentReminder) {
             reminderRepository.updateReminder(microsoftResult)
             currentReminder = microsoftResult
@@ -57,14 +80,24 @@ class UnifiedCalendarSynchronizer(
         return currentReminder
     }
 
-    suspend fun deleteReminderEvent(reminder: Reminder): Reminder {
+    suspend fun deleteReminderEvent(
+        reminder: Reminder,
+        deleteExternalCalendars: Boolean = true
+    ): Reminder {
         CalendarSyncLogger.syncStarted(
             provider = null,
             action = "delete_reminder_event",
             pendingDeleteCount = reminder.pendingDeleteProviders.size
         )
-        var currentReminder = UnifiedCalendarSyncPolicy.prepareAppDelete(reminder)
+        var currentReminder = UnifiedCalendarSyncPolicy.prepareAppDelete(
+            reminder = reminder,
+            deleteExternalCalendars = deleteExternalCalendars
+        )
         reminderRepository.updateReminder(currentReminder)
+
+        if (!deleteExternalCalendars) {
+            return currentReminder
+        }
 
         if (CalendarProvider.GOOGLE_CALENDAR in currentReminder.pendingDeleteProviders) {
             currentReminder = googleCalendarSynchronizer.deleteReminderEvent(currentReminder)
@@ -349,8 +382,11 @@ class UnifiedCalendarSynchronizer(
         return CalendarProvider.MICROSOFT_CALENDAR in pendingCreateProviders ||
                 CalendarProvider.MICROSOFT_CALENDAR in pendingUpdateProviders ||
                 CalendarProvider.MICROSOFT_CALENDAR in pendingDeleteProviders ||
-                (!hasMicrosoftExternalId && originProvider != CalendarProvider.MICROSOFT_CALENDAR) ||
-                microsoftState == CalendarProviderSyncState.FAILED
+                (
+                        microsoftState == CalendarProviderSyncState.FAILED &&
+                                hasMicrosoftExternalId &&
+                                CalendarProvider.MICROSOFT_CALENDAR in syncedProviders
+                        )
     }
 }
 

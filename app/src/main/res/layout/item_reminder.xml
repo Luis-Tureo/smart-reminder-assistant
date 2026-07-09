@@ -39,7 +39,7 @@
                     android:layout_gravity="center"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_reminder_dumbbell"
-                    android:tint="@color/reminder_icon_blue_fg" />
+                    app:tint="@color/reminder_icon_blue_fg" />
             </FrameLayout>
 
             <LinearLayout
@@ -105,7 +105,7 @@
                         android:layout_height="18dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_reminder_calendar"
-                        android:tint="@color/reminder_accent" />
+                        app:tint="@color/reminder_accent" />
 
                     <TextView
                         android:id="@+id/tvReminderDate"
@@ -131,7 +131,7 @@
                         android:layout_height="17dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_reminder_clock"
-                        android:tint="@color/reminder_text_soft" />
+                        app:tint="@color/reminder_text_soft" />
 
                     <TextView
                         android:id="@+id/tvReminderTime"
@@ -195,7 +195,7 @@
                 android:contentDescription="@string/delete_reminder"
                 android:padding="4dp"
                 android:src="@drawable/ic_reminder_delete"
-                android:tint="@color/reminder_delete_tint" />
+                app:tint="@color/reminder_delete_tint" />
         </LinearLayout>
 
     </LinearLayout>

@@ -2,6 +2,7 @@ package com.luistureo.voicereminderapp.domain.usecase
 
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
+import com.luistureo.voicereminderapp.core.calendar.unified.PerReminderCalendarSyncPolicy
 import com.luistureo.voicereminderapp.core.utils.ReminderTypeResolver
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.GoogleCalendarSyncState
@@ -42,7 +43,7 @@ class SaveReminderDraftUseCase(
                 ?: scheduleStateResolver.clearUrgentAlert(ReminderScheduleState()),
             googleCalendarEventId = existingReminder?.googleCalendarEventId,
             googleCalendarSyncState = existingReminder?.googleCalendarSyncState
-                ?: GoogleCalendarSyncState.PENDING,
+                ?: GoogleCalendarSyncState.SYNCED,
             googleCalendarLastSyncAtEpochMillis = existingReminder?.googleCalendarLastSyncAtEpochMillis,
             microsoftCalendarLastSyncAtEpochMillis = existingReminder
                 ?.microsoftCalendarLastSyncAtEpochMillis,
@@ -54,16 +55,8 @@ class SaveReminderDraftUseCase(
             syncedFingerprintsByProvider = existingReminder
                 ?.syncedFingerprintsByProvider
                 .orEmpty(),
-            pendingCreateProviders = existingReminder?.pendingCreateProviders
-                ?: setOf(
-                    CalendarProvider.GOOGLE_CALENDAR,
-                    CalendarProvider.MICROSOFT_CALENDAR
-                ),
-            pendingUpdateProviders = if (existingReminder == null) {
-                emptySet()
-            } else {
-                existingReminder.pendingUpdateProviders + existingReminder.linkedExternalProviders
-            },
+            pendingCreateProviders = existingReminder?.pendingCreateProviders.orEmpty(),
+            pendingUpdateProviders = existingReminder?.pendingUpdateProviders.orEmpty(),
             pendingDeleteProviders = existingReminder?.pendingDeleteProviders.orEmpty(),
             meetingUrl = existingReminder?.meetingUrl,
             meetingProvider = existingReminder?.meetingProvider,
@@ -77,8 +70,14 @@ class SaveReminderDraftUseCase(
             hiddenFromApp = existingReminder?.hiddenFromApp ?: false
         )
 
-        val resolvedReminder = baseReminder.copy(
-            scheduleState = scheduleStateResolver.resolveOnSave(baseReminder)
+        val targetedReminder = PerReminderCalendarSyncPolicy.applyTargets(
+            reminder = baseReminder,
+            targetProviders = draft.syncTargetProviders,
+            markExistingForUpdate = existingReminder != null
+        )
+
+        val resolvedReminder = targetedReminder.copy(
+            scheduleState = scheduleStateResolver.resolveOnSave(targetedReminder)
         )
 
         return if (draft.reminderId == 0) {

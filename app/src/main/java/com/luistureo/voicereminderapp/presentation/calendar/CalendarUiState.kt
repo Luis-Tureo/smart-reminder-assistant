@@ -67,6 +67,7 @@ data class CalendarReminderDetailUiModel(
     val externalEditNote: String? = null,
     val hasNearbySchedule: Boolean = false,
     val isSuspended: Boolean = false,
+    val syncActions: Set<CalendarProvider> = emptySet(),
     val canDelete: Boolean = true,
     val canReactivate: Boolean = false
 )

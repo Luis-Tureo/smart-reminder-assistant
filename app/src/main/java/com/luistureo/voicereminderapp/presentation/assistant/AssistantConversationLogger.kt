@@ -1,16 +1,17 @@
 package com.luistureo.voicereminderapp.presentation.assistant
 
 import android.util.Log
+import com.luistureo.voicereminderapp.BuildConfig
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 
 object AssistantConversationLogger {
     private const val TAG = "AssistantConversation"
 
     fun log(message: String) {
+        if (!BuildConfig.DEBUG) return
         runCatching {
             Log.d(TAG, message)
         }
-        println("$TAG: $message")
     }
 
     fun logParsedInput(
