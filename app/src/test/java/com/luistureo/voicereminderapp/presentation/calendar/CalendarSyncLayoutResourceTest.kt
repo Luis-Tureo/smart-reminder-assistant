@@ -149,7 +149,9 @@ class CalendarSyncLayoutResourceTest {
         assertTrue(layout.contains("android:layout_marginTop=\"7dp\""))
         assertTrue(layout.contains("android:layout_marginTop=\"10dp\""))
         assertTrue(activity.contains("descriptionView.isVisible = renderedDescription.isNotBlank()"))
-        assertTrue(activity.contains("actionsContainer.isVisible = canOpenMeeting || detail.canReactivate"))
+        assertTrue(activity.contains("actionsContainer.isVisible = canOpenMeeting ||"))
+        assertTrue(activity.contains("syncGoogleButton.isVisible"))
+        assertTrue(activity.contains("syncMicrosoftButton.isVisible"))
     }
 
     @Test
@@ -162,6 +164,8 @@ class CalendarSyncLayoutResourceTest {
             "tvCalendarDetailExternalNote",
             "containerCalendarDetailActions",
             "btnCalendarReactivate",
+            "btnCalendarSyncGoogle",
+            "btnCalendarSyncMicrosoft",
             "btnCalendarOpenMeeting"
         )
 

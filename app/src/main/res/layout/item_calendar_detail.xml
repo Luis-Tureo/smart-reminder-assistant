@@ -152,6 +152,34 @@
                 />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCalendarSyncGoogle"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/calendar_sync_google_action"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:insetBottom="0dp"
+                android:insetTop="0dp"
+                app:cornerRadius="20dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCalendarSyncMicrosoft"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/calendar_sync_microsoft_action"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:insetBottom="0dp"
+                android:insetTop="0dp"
+                app:cornerRadius="20dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCalendarOpenMeeting"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

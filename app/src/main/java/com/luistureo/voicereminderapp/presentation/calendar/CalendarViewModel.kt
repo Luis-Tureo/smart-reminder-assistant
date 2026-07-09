@@ -10,6 +10,7 @@ import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarErrorCo
 import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarErrorCode
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarConflictPolicy
+import com.luistureo.voicereminderapp.core.calendar.unified.PerReminderCalendarSyncPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSuspensionPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarCardDisplayPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
@@ -64,6 +65,7 @@ class CalendarViewModel(
         val meetingUrl: String? = null,
         val externalEditNote: String? = null,
         val isSuspended: Boolean = false,
+        val syncActions: Set<CalendarProvider> = emptySet(),
         val isAllDay: Boolean = false,
         val occurrenceAtEpochMillis: Long? = null
     )
@@ -177,6 +179,13 @@ class CalendarViewModel(
     }
 
     fun deleteCalendarItem(item: CalendarReminderDetailUiModel) {
+        deleteCalendarItem(item, deleteExternalCalendars = true)
+    }
+
+    fun deleteCalendarItem(
+        item: CalendarReminderDetailUiModel,
+        deleteExternalCalendars: Boolean
+    ) {
         viewModelScope.launch {
             runCatching {
                 val reminder = item.localReminderId?.let { reminderId ->
@@ -186,7 +195,10 @@ class CalendarViewModel(
                 }
 
                 if (reminder != null) {
-                    val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(reminder)
+                    val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(
+                        reminder = reminder,
+                        deleteExternalCalendars = deleteExternalCalendars
+                    )
                     if (deletionResult.pendingDeleteProviders.isEmpty()) {
                         deleteReminderUseCase(deletionResult)
                     }
@@ -198,6 +210,35 @@ class CalendarViewModel(
             }.onFailure {
                 publishState(
                     errorMessage = "No fue posible eliminar el evento seleccionado."
+                )
+            }
+        }
+    }
+
+    fun syncCalendarItemWithProvider(
+        item: CalendarReminderDetailUiModel,
+        provider: CalendarProvider
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                val reminder = item.localReminderId?.let { reminderId ->
+                    cachedReminders.firstOrNull { it.id == reminderId }
+                } ?: return@runCatching
+                val updatedReminder = PerReminderCalendarSyncPolicy.applyTargets(
+                    reminder = reminder,
+                    targetProviders = PerReminderCalendarSyncPolicy.selectedTargets(reminder) +
+                            provider,
+                    markExistingForUpdate = false
+                )
+
+                updateReminderUseCase(updatedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(updatedReminder)
+                reminderScheduler.syncReminderSchedule(syncedReminder)
+            }.onSuccess {
+                reloadCalendar()
+            }.onFailure {
+                publishState(
+                    errorMessage = "No fue posible sincronizar con ${provider.displayName}."
                 )
             }
         }
@@ -311,6 +352,7 @@ class CalendarViewModel(
                         meetingUrl = reminder.meetingUrl,
                         externalEditNote = reminder.externalEditNote,
                         isSuspended = isSuspendedOccurrence,
+                        syncActions = reminder.buildSyncActions(),
                         isAllDay = reminder.isAllDay,
                         occurrenceAtEpochMillis = occurrenceAt
                     )
@@ -481,6 +523,7 @@ class CalendarViewModel(
             externalEditNote = externalEditNote,
             hasNearbySchedule = hasNearbySchedule,
             isSuspended = isSuspended,
+            syncActions = syncActions,
             canDelete = CalendarActionRules.canDelete(
                 CalendarReminderDetailUiModel(
                     id = id,
@@ -496,6 +539,29 @@ class CalendarViewModel(
             ),
             canReactivate = isSuspended && localReminderId != null
         )
+    }
+
+    private fun Reminder.buildSyncActions(): Set<CalendarProvider> {
+        return buildSet {
+            if (
+                PerReminderCalendarSyncPolicy.canSyncImportedReminderTo(
+                    reminder = this@buildSyncActions,
+                    provider = CalendarProvider.GOOGLE_CALENDAR,
+                    isProviderConnected = googleCalendarAuthManager.isConnected()
+                )
+            ) {
+                add(CalendarProvider.GOOGLE_CALENDAR)
+            }
+            if (
+                PerReminderCalendarSyncPolicy.canSyncImportedReminderTo(
+                    reminder = this@buildSyncActions,
+                    provider = CalendarProvider.MICROSOFT_CALENDAR,
+                    isProviderConnected = unifiedCalendarSynchronizer.isMicrosoftConnected
+                )
+            ) {
+                add(CalendarProvider.MICROSOFT_CALENDAR)
+            }
+        }
     }
 
     private fun CalendarEntry.toIndicatorStyle(): CalendarIndicatorStyle {

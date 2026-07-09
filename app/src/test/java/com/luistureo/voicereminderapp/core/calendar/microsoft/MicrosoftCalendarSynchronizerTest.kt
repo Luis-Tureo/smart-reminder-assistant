@@ -48,7 +48,7 @@ class MicrosoftCalendarSynchronizerTest {
             imported.meetingUrlsByProvider[CalendarProvider.MICROSOFT_CALENDAR]
         )
         assertEquals("https://teams.microsoft.com/l/meetup-join/test", imported.meetingUrl)
-        assertTrue(CalendarProvider.GOOGLE_CALENDAR in imported.pendingCreateProviders)
+        assertFalse(CalendarProvider.GOOGLE_CALENDAR in imported.pendingCreateProviders)
     }
 
     @Test
@@ -88,7 +88,7 @@ class MicrosoftCalendarSynchronizerTest {
     }
 
     @Test
-    fun microsoftEditUpdatesAppAndQueuesGoogleUpdate() = runBlocking {
+    fun microsoftEditUpdatesAppWithoutQueuingGoogleUpdate() = runBlocking {
         val repository = FakeReminderRepository()
         repository.insertReminder(
             Reminder(
@@ -122,7 +122,7 @@ class MicrosoftCalendarSynchronizerTest {
 
         assertEquals("Titulo actualizado", imported.title)
         assertEquals("Cita editada desde Microsoft Calendar", imported.externalEditNote)
-        assertTrue(CalendarProvider.GOOGLE_CALENDAR in imported.pendingUpdateProviders)
+        assertFalse(CalendarProvider.GOOGLE_CALENDAR in imported.pendingUpdateProviders)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.luistureo.voicereminderapp.presentation.manual
 
 import android.app.DatePickerDialog
+import android.app.AlertDialog
 import android.app.TimePickerDialog
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -21,11 +22,15 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthController
+import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarAuthProvider
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderDraftExtractor
 import com.luistureo.voicereminderapp.core.ocr.CameraReminderScanResult
@@ -33,6 +38,7 @@ import com.luistureo.voicereminderapp.core.ocr.LocalImageTextRecognizer
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
+import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.ReminderDraft
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrence
 import com.luistureo.voicereminderapp.domain.model.ReminderRecurrenceUnit
@@ -76,9 +82,14 @@ class ManualReminderActivity : ComponentActivity() {
     private lateinit var timeButton: MaterialButton
     private lateinit var urgentSwitch: SwitchMaterial
     private lateinit var recurrenceButtons: Map<RecurrenceOption, MaterialButton>
+    private lateinit var syncOptionsContainer: View
+    private lateinit var googleSyncCheckBox: MaterialCheckBox
+    private lateinit var microsoftSyncCheckBox: MaterialCheckBox
 
     private lateinit var reminderViewModel: ReminderViewModel
     private lateinit var cameraDraftExtractor: CameraReminderDraftExtractor
+    private lateinit var googleCalendarAuthManager: GoogleCalendarAuthManager
+    private lateinit var microsoftCalendarAuthController: MicrosoftCalendarAuthController
 
     private var currentReminderId: Int = 0
     private var currentSource: ReminderSource = ReminderSource.MANUAL
@@ -89,6 +100,8 @@ class ManualReminderActivity : ComponentActivity() {
     private var currentCameraImageUri: Uri? = null
     private var isProcessingCameraImage: Boolean = false
     private var isDateLocked: Boolean = false
+    private var availableSyncProviders: Set<CalendarProvider> = emptySet()
+    private var linkedSyncProviders: Set<CalendarProvider> = emptySet()
 
     private val cameraPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -139,6 +152,7 @@ class ManualReminderActivity : ComponentActivity() {
         initCameraTools()
         setupRecurrenceOptions()
         setupListeners()
+        refreshCalendarSyncOptions()
         observeState()
         observeEvents()
         loadInitialForm()
@@ -152,6 +166,8 @@ class ManualReminderActivity : ComponentActivity() {
     private fun initViewModel() {
         val database = ReminderDatabase.getDatabase(this)
         val repository = ReminderRepositoryImpl(database.reminderDao())
+        googleCalendarAuthManager = GoogleCalendarAuthManager(applicationContext)
+        microsoftCalendarAuthController = MicrosoftCalendarAuthProvider.get(applicationContext)
         val googleCalendarSynchronizer = GoogleCalendarReminderSynchronizer(
             context = applicationContext,
             reminderRepository = repository
@@ -191,6 +207,9 @@ class ManualReminderActivity : ComponentActivity() {
         dateButton = findViewById(R.id.btnSelectDate)
         timeButton = findViewById(R.id.btnSelectTime)
         urgentSwitch = findViewById(R.id.switchUrgent)
+        syncOptionsContainer = findViewById(R.id.containerManualCalendarSyncOptions)
+        googleSyncCheckBox = findViewById(R.id.checkManualSyncGoogle)
+        microsoftSyncCheckBox = findViewById(R.id.checkManualSyncMicrosoft)
         recurrenceButtons = mapOf(
             RecurrenceOption.NONE to findViewById(R.id.btnRecurrenceNone),
             RecurrenceOption.DAILY to findViewById(R.id.btnRecurrenceDaily),
@@ -229,6 +248,38 @@ class ManualReminderActivity : ComponentActivity() {
                 updateRecurrenceButtons()
             }
         }
+    }
+
+    private fun refreshCalendarSyncOptions() {
+        updateAvailableSyncProviders(
+            buildSet {
+                if (googleCalendarAuthManager.isConnected()) add(CalendarProvider.GOOGLE_CALENDAR)
+                if (microsoftCalendarAuthController.isConnected) {
+                    add(CalendarProvider.MICROSOFT_CALENDAR)
+                }
+            }
+        )
+        microsoftCalendarAuthController.refreshConnectionState { isConnected ->
+            runOnUiThread {
+                updateAvailableSyncProviders(
+                    buildSet {
+                        if (googleCalendarAuthManager.isConnected()) {
+                            add(CalendarProvider.GOOGLE_CALENDAR)
+                        }
+                        if (isConnected) {
+                            add(CalendarProvider.MICROSOFT_CALENDAR)
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private fun updateAvailableSyncProviders(providers: Set<CalendarProvider>) {
+        availableSyncProviders = providers
+        syncOptionsContainer.isVisible = providers.isNotEmpty()
+        googleSyncCheckBox.isVisible = CalendarProvider.GOOGLE_CALENDAR in providers
+        microsoftSyncCheckBox.isVisible = CalendarProvider.MICROSOFT_CALENDAR in providers
     }
 
     private fun observeState() {
@@ -314,6 +365,11 @@ class ManualReminderActivity : ComponentActivity() {
         updateDateTimeButtons()
 
         urgentSwitch.isChecked = formState.isUrgent
+        linkedSyncProviders = formState.syncTargetProviders
+        googleSyncCheckBox.isChecked = CalendarProvider.GOOGLE_CALENDAR in
+                formState.syncTargetProviders
+        microsoftSyncCheckBox.isChecked = CalendarProvider.MICROSOFT_CALENDAR in
+                formState.syncTargetProviders
         selectedRecurrenceOption = formState.recurrence?.toOption() ?: RecurrenceOption.NONE
         updateRecurrenceButtons()
 
@@ -422,10 +478,51 @@ class ManualReminderActivity : ComponentActivity() {
             time = selectedTimeValue,
             isUrgent = urgentSwitch.isChecked,
             source = currentSource,
-            recurrence = buildRecurrence()
+            recurrence = buildRecurrence(),
+            syncTargetProviders = selectedSyncTargetProviders()
         )
 
-        reminderViewModel.saveReminderDraft(draft)
+        val removedProviders = linkedSyncProviders - draft.syncTargetProviders
+        if (currentReminderId > 0 && removedProviders.isNotEmpty()) {
+            showCalendarDetachConfirmation(draft, removedProviders)
+        } else {
+            reminderViewModel.saveReminderDraft(draft)
+        }
+    }
+
+    private fun selectedSyncTargetProviders(): Set<CalendarProvider> {
+        return buildSet {
+            addAll(linkedSyncProviders - availableSyncProviders)
+            if (
+                googleSyncCheckBox.isVisible &&
+                googleSyncCheckBox.isChecked &&
+                CalendarProvider.GOOGLE_CALENDAR in availableSyncProviders
+            ) {
+                add(CalendarProvider.GOOGLE_CALENDAR)
+            }
+            if (
+                microsoftSyncCheckBox.isVisible &&
+                microsoftSyncCheckBox.isChecked &&
+                CalendarProvider.MICROSOFT_CALENDAR in availableSyncProviders
+            ) {
+                add(CalendarProvider.MICROSOFT_CALENDAR)
+            }
+        }
+    }
+
+    private fun showCalendarDetachConfirmation(
+        draft: ReminderDraft,
+        removedProviders: Set<CalendarProvider>
+    ) {
+        val providerNames = removedProviders.joinToString(separator = " y ") { it.displayName }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.calendar_sync_detach_title)
+            .setMessage(getString(R.string.calendar_sync_detach_message, providerNames))
+            .setNegativeButton(R.string.reminder_cancel_action, null)
+            .setPositiveButton(R.string.reminder_save_action) { _, _ ->
+                reminderViewModel.saveReminderDraft(draft)
+            }
+            .show()
     }
 
     private fun openCameraForReminder() {

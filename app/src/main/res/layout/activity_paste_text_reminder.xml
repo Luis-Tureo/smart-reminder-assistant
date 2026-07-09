@@ -175,6 +175,37 @@
                     android:layout_marginTop="8dp"
                     android:contentDescription="@string/reminder_recurrence_label" />
 
+                <LinearLayout
+                    android:id="@+id/containerPasteCalendarSyncOptions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/calendar_sync_targets_title"
+                        android:textColor="@color/reminder_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/checkPasteSyncGoogle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/calendar_sync_target_google"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/checkPasteSyncMicrosoft"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/calendar_sync_target_microsoft"
+                        android:visibility="gone" />
+                </LinearLayout>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnReviewPastedReminder"
                     android:layout_width="match_parent"

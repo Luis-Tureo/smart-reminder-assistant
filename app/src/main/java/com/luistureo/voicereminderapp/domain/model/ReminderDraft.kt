@@ -11,7 +11,8 @@ data class ReminderDraft(
     val time: String? = null,
     val isUrgent: Boolean = false,
     val source: ReminderSource = ReminderSource.MANUAL,
-    val recurrence: ReminderRecurrence? = null
+    val recurrence: ReminderRecurrence? = null,
+    val syncTargetProviders: Set<CalendarProvider> = emptySet()
 ) {
     fun isReadyToSave(): Boolean {
         return !text.isNullOrBlank() &&
