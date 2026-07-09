@@ -15,6 +15,7 @@
         <package android:name="com.google.android.apps.tachyon" />
         <package android:name="com.microsoft.teams" />
         <package android:name="com.microsoft.teams2" />
+        <package android:name="com.whatsapp" />
     </queries>
 
     <application
@@ -43,6 +44,21 @@
         <receiver
             android:name=".core.alarm.ReminderReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".core.loan.alarm.LoanReminderReceiver"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.loan.LoanDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
+            android:name=".presentation.loan.LoanEditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
+            android:name=".presentation.loan.LoanListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp" />
         <activity
             android:name=".presentation.camera.CameraReminderConfirmationActivity"
             android:exported="false"
