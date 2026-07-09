@@ -2,8 +2,8 @@ package com.luistureo.voicereminderapp.core.calendar.unified
 
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.Reminder
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UnifiedCalendarCardDisplayPolicyTest {
@@ -60,7 +60,7 @@ class UnifiedCalendarCardDisplayPolicyTest {
     }
 
     @Test
-    fun pendingLineAppearsOnlyForActualPendingOperationAndUsesExactText() {
+    fun pendingOperationsAreNotRenderedAsVisibleProviderLines() {
         val withoutPending = UnifiedCalendarCardDisplayPolicy.buildProviderLines(reminder())
         val withPending = UnifiedCalendarCardDisplayPolicy.buildProviderLines(
             reminder().copy(
@@ -69,7 +69,7 @@ class UnifiedCalendarCardDisplayPolicyTest {
         )
 
         assertFalse(withoutPending.any { it.startsWith("Sincronización pendiente:") })
-        assertTrue(withPending.contains("Sincronización pendiente: Microsoft Calendar"))
+        assertFalse(withPending.any { it.startsWith("Sincronización pendiente:") })
     }
 
     private fun reminder(): Reminder {

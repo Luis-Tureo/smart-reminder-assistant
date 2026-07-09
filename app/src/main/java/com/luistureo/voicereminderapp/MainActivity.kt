@@ -226,7 +226,7 @@ class MainActivity : ComponentActivity() {
         reminderAdapter = HomeReminderAdapter(
             items = emptyList(),
             onDelete = { reminder ->
-                reminderViewModel.deleteReminder(reminder)
+                showDeleteReminderConfirmation(reminder)
             },
             onUpdate = { reminder ->
                 reminderViewModel.updateReminder(reminder)
@@ -238,6 +238,52 @@ class MainActivity : ComponentActivity() {
 
         remindersRecyclerView.layoutManager = LinearLayoutManager(this)
         remindersRecyclerView.adapter = reminderAdapter
+    }
+
+    private fun showDeleteReminderConfirmation(
+        reminder: com.luistureo.voicereminderapp.domain.model.Reminder
+    ) {
+        val linkedExternalProviders = reminder.externalIdsByProvider
+            .filterKeys { it != CalendarProvider.APP }
+            .filterValues { it.isNotBlank() }
+            .keys
+        if (linkedExternalProviders.isNotEmpty()) {
+            val options = arrayOf(
+                getString(R.string.calendar_delete_local_only),
+                getString(R.string.calendar_delete_with_synced_calendars),
+                getString(R.string.reminder_cancel_action)
+            )
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.calendar_delete_title))
+                .setMessage(getString(R.string.calendar_delete_synced_message, reminder.title))
+                .setItems(options) { dialog, which ->
+                    when (which) {
+                        0 -> reminderViewModel.deleteReminder(
+                            reminder = reminder,
+                            deleteExternalCalendars = false
+                        )
+                        1 -> reminderViewModel.deleteReminder(
+                            reminder = reminder,
+                            deleteExternalCalendars = true
+                        )
+                        else -> dialog.dismiss()
+                    }
+                }
+                .show()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.calendar_delete_title))
+            .setMessage(getString(R.string.calendar_delete_message, reminder.title))
+            .setNegativeButton(R.string.reminder_cancel_action, null)
+            .setPositiveButton(R.string.delete_reminder) { _, _ ->
+                reminderViewModel.deleteReminder(
+                    reminder = reminder,
+                    deleteExternalCalendars = false
+                )
+            }
+            .show()
     }
 
     private fun setupActionButtons() {

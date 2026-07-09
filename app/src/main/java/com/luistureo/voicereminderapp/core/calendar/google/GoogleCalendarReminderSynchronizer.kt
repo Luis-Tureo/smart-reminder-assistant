@@ -169,9 +169,7 @@ class GoogleCalendarReminderSynchronizer(
         val reminders = reminderRepository.getAllRemindersIncludingHidden().toMutableList()
         val pendingReminders = reminders.filter { reminder ->
             !reminder.hiddenFromApp && (
-                    reminder.googleCalendarSyncState != GoogleCalendarSyncState.SYNCED ||
-                            reminder.googleCalendarEventId.isNullOrBlank() ||
-                            CalendarProvider.GOOGLE_CALENDAR in reminder.pendingCreateProviders ||
+                    CalendarProvider.GOOGLE_CALENDAR in reminder.pendingCreateProviders ||
                             CalendarProvider.GOOGLE_CALENDAR in reminder.pendingUpdateProviders
                     )
         }
@@ -444,30 +442,10 @@ class GoogleCalendarReminderSynchronizer(
             syncedFingerprintsByProvider = existingReminder
                 ?.syncedFingerprintsByProvider
                 .orEmpty(),
-            pendingCreateProviders = if (
-                existingReminder
-                    ?.externalIdsByProvider
-                    ?.get(CalendarProvider.MICROSOFT_CALENDAR)
-                    .isNullOrBlank()
-            ) {
-                (existingReminder?.pendingCreateProviders.orEmpty() -
-                        CalendarProvider.GOOGLE_CALENDAR) + CalendarProvider.MICROSOFT_CALENDAR
-            } else {
-                existingReminder?.pendingCreateProviders.orEmpty() -
-                        CalendarProvider.GOOGLE_CALENDAR
-            },
-            pendingUpdateProviders = if (
-                existingReminder
-                    ?.externalIdsByProvider
-                    ?.get(CalendarProvider.MICROSOFT_CALENDAR)
-                    .isNullOrBlank()
-            ) {
-                existingReminder?.pendingUpdateProviders.orEmpty() -
-                        CalendarProvider.GOOGLE_CALENDAR
-            } else {
-                (existingReminder?.pendingUpdateProviders.orEmpty() -
-                        CalendarProvider.GOOGLE_CALENDAR) + CalendarProvider.MICROSOFT_CALENDAR
-            },
+            pendingCreateProviders = existingReminder?.pendingCreateProviders.orEmpty() -
+                    CalendarProvider.GOOGLE_CALENDAR,
+            pendingUpdateProviders = existingReminder?.pendingUpdateProviders.orEmpty() -
+                    CalendarProvider.GOOGLE_CALENDAR,
             pendingDeleteProviders = existingReminder?.pendingDeleteProviders.orEmpty(),
             meetingUrl = resolvedMeetingUrl,
             meetingProvider = MeetingUrlPolicy.providerForUrl(resolvedMeetingUrl)

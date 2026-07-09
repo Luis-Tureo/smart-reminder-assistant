@@ -293,9 +293,6 @@ class MicrosoftCalendarSynchronizer(
                 "Evento de Microsoft Calendar."
             }
         }
-        val googleExternalId = existingReminder
-            ?.externalIdsByProvider
-            ?.get(CalendarProvider.GOOGLE_CALENDAR)
         if (cleanedMeetingUrl != null) {
             CalendarSyncLogger.meetingLinkDetected(CalendarProvider.MICROSOFT_CALENDAR)
         }
@@ -346,20 +343,10 @@ class MicrosoftCalendarSynchronizer(
             syncedFingerprintsByProvider = existingReminder
                 ?.syncedFingerprintsByProvider
                 .orEmpty(),
-            pendingCreateProviders = if (googleExternalId.isNullOrBlank()) {
-                (existingReminder?.pendingCreateProviders.orEmpty() -
-                        CalendarProvider.MICROSOFT_CALENDAR) + CalendarProvider.GOOGLE_CALENDAR
-            } else {
-                existingReminder?.pendingCreateProviders.orEmpty() -
-                        CalendarProvider.MICROSOFT_CALENDAR
-            },
-            pendingUpdateProviders = if (googleExternalId.isNullOrBlank()) {
-                existingReminder?.pendingUpdateProviders.orEmpty() -
-                        CalendarProvider.MICROSOFT_CALENDAR
-            } else {
-                (existingReminder?.pendingUpdateProviders.orEmpty() -
-                        CalendarProvider.MICROSOFT_CALENDAR) + CalendarProvider.GOOGLE_CALENDAR
-            },
+            pendingCreateProviders = existingReminder?.pendingCreateProviders.orEmpty() -
+                    CalendarProvider.MICROSOFT_CALENDAR,
+            pendingUpdateProviders = existingReminder?.pendingUpdateProviders.orEmpty() -
+                    CalendarProvider.MICROSOFT_CALENDAR,
             pendingDeleteProviders = existingReminder?.pendingDeleteProviders.orEmpty(),
             meetingUrl = resolvedMeetingUrl,
             meetingProvider = MeetingUrlPolicy.providerForUrl(resolvedMeetingUrl)

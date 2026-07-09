@@ -29,13 +29,13 @@ class UnifiedCalendarSyncPolicyTest {
     }
 
     @Test
-    fun pendingDeleteHidesAppointmentFromAppUntilProviderDeleteSucceeds() {
+    fun providerDetachDoesNotHideAppointmentFromApp() {
         val result = UnifiedCalendarSyncPolicy.markProviderPendingDelete(
             reminder = reminder(),
             provider = CalendarProvider.MICROSOFT_CALENDAR
         )
 
-        assertTrue(result.hiddenFromApp)
+        assertFalse(result.hiddenFromApp)
         assertTrue(CalendarProvider.MICROSOFT_CALENDAR in result.pendingDeleteProviders)
         assertEquals(
             CalendarProviderSyncState.PENDING_DELETE,
@@ -44,22 +44,16 @@ class UnifiedCalendarSyncPolicyTest {
     }
 
     @Test
-    fun appCreatedAppointmentIsPreparedForBothProviders() {
+    fun appUpsertDoesNotAddProvidersWithoutExplicitTarget() {
         val result = UnifiedCalendarSyncPolicy.prepareAppUpsert(reminder())
 
         assertEquals(CalendarProvider.APP, result.originProvider)
         assertEquals(CalendarProvider.APP, result.lastEditedSource)
-        assertEquals(
-            setOf(
-                CalendarProvider.GOOGLE_CALENDAR,
-                CalendarProvider.MICROSOFT_CALENDAR
-            ),
-            result.pendingCreateProviders
-        )
+        assertTrue(result.pendingCreateProviders.isEmpty())
     }
 
     @Test
-    fun appEditUpdatesAllLinkedProvidersAndClearsRemoteEditNote() {
+    fun appUpsertClearsRemoteEditNoteWithoutAddingLinkedProviderUpdates() {
         val result = UnifiedCalendarSyncPolicy.prepareAppUpsert(
             reminder().copy(
                 externalIdsByProvider = mapOf(
@@ -70,14 +64,23 @@ class UnifiedCalendarSyncPolicyTest {
             )
         )
 
-        assertEquals(
-            setOf(
-                CalendarProvider.GOOGLE_CALENDAR,
-                CalendarProvider.MICROSOFT_CALENDAR
-            ),
-            result.pendingUpdateProviders
-        )
+        assertTrue(result.pendingUpdateProviders.isEmpty())
         assertEquals(null, result.externalEditNote)
+    }
+
+    @Test
+    fun localOnlyDeleteHidesCardWithoutExternalPendingDeletes() {
+        val result = UnifiedCalendarSyncPolicy.prepareAppDelete(
+            reminder().copy(
+                externalIdsByProvider = mapOf(
+                    CalendarProvider.GOOGLE_CALENDAR to "g-1"
+                )
+            ),
+            deleteExternalCalendars = false
+        )
+
+        assertTrue(result.hiddenFromApp)
+        assertTrue(result.pendingDeleteProviders.isEmpty())
     }
 
     @Test
