@@ -6,13 +6,27 @@ import androidx.room.migration.Migration
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.luistureo.voicereminderapp.data.local.dao.LoanDao
 import com.luistureo.voicereminderapp.data.local.dao.ReminderDao
+import com.luistureo.voicereminderapp.data.local.entity.LoanEntity
+import com.luistureo.voicereminderapp.data.local.entity.LoanInstallmentEntity
+import com.luistureo.voicereminderapp.data.local.entity.LoanPaymentEntity
 import com.luistureo.voicereminderapp.data.local.entity.ReminderEntity
 
-@Database(entities = [ReminderEntity::class], version = 12, exportSchema = false)
+@Database(
+    entities = [
+        ReminderEntity::class,
+        LoanEntity::class,
+        LoanPaymentEntity::class,
+        LoanInstallmentEntity::class
+    ],
+    version = 13,
+    exportSchema = false
+)
 abstract class ReminderDatabase : RoomDatabase() {
 
     abstract fun reminderDao(): ReminderDao
+    abstract fun loanDao(): LoanDao
 
     companion object {
         @Volatile
@@ -31,7 +45,8 @@ abstract class ReminderDatabase : RoomDatabase() {
                         MIGRATION_8_9,
                         MIGRATION_9_10,
                         MIGRATION_10_11,
-                        MIGRATION_11_12
+                        MIGRATION_11_12,
+                        MIGRATION_12_13
                     )
                     .build()
 
@@ -104,6 +119,77 @@ abstract class ReminderDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "UPDATE reminders SET isOnlineMeeting = 1 WHERE meetingUrl IS NOT NULL AND TRIM(meetingUrl) != ''"
+                )
+            }
+        }
+
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS loan_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        type TEXT NOT NULL,
+                        personName TEXT NOT NULL,
+                        phoneOrContact TEXT,
+                        principalAmountClp INTEGER NOT NULL,
+                        loanDateEpochMillis INTEGER NOT NULL,
+                        dueDateEpochMillis INTEGER NOT NULL,
+                        reason TEXT NOT NULL,
+                        attachmentUri TEXT,
+                        paymentMode TEXT NOT NULL,
+                        installmentCount INTEGER NOT NULL,
+                        interestEnabled INTEGER NOT NULL,
+                        interestPercentage REAL NOT NULL,
+                        interestMode TEXT NOT NULL DEFAULT 'SIMPLE',
+                        interestPeriod TEXT NOT NULL DEFAULT 'MONTHLY',
+                        totalExpectedAmountClp INTEGER NOT NULL,
+                        remainingAmountClp INTEGER NOT NULL,
+                        notes TEXT,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        reminderSameDay INTEGER NOT NULL,
+                        reminderOneDayBefore INTEGER NOT NULL,
+                        reminderThreeDaysBefore INTEGER NOT NULL,
+                        customReminderAtEpochMillis INTEGER,
+                        repeatAfterDueEveryDays INTEGER
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS loan_payments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        loanId INTEGER NOT NULL,
+                        paidAmountClp INTEGER NOT NULL,
+                        paymentDateEpochMillis INTEGER NOT NULL,
+                        note TEXT,
+                        attachmentUri TEXT,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(loanId) REFERENCES loan_records(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_loan_payments_loanId ON loan_payments(loanId)"
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS loan_installments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        loanId INTEGER NOT NULL,
+                        installmentNumber INTEGER NOT NULL,
+                        dueDateEpochMillis INTEGER NOT NULL,
+                        expectedAmountClp INTEGER NOT NULL,
+                        paidAmountClp INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        FOREIGN KEY(loanId) REFERENCES loan_records(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_loan_installments_loanId ON loan_installments(loanId)"
                 )
             }
         }

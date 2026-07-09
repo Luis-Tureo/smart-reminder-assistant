@@ -3,4 +3,7 @@
     <cache-path
         name="camera_reminder_images"
         path="camera_reminder_images/" />
+    <cache-path
+        name="loan_attachments"
+        path="loan_attachments/" />
 </paths>

@@ -49,6 +49,7 @@ import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantActivity
 import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
 import com.luistureo.voicereminderapp.presentation.calendar.GoogleCalendarErrorUi
+import com.luistureo.voicereminderapp.presentation.loan.LoanListActivity
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
 import com.luistureo.voicereminderapp.presentation.ui.adapter.HomeReminderAdapter
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var assistantReminderCard: View
     private lateinit var calendarCard: View
+    private lateinit var loanCard: View
     private lateinit var manualReminderCard: View
     private lateinit var cameraReminderCard: View
     private lateinit var googleCalendarSyncButton: MaterialButton
@@ -180,6 +182,7 @@ class MainActivity : ComponentActivity() {
     private fun initViews() {
         assistantReminderCard = findViewById(R.id.cardAssistantReminder)
         calendarCard = findViewById(R.id.cardCalendar)
+        loanCard = findViewById(R.id.cardLoan)
         manualReminderCard = findViewById(R.id.cardManualReminder)
         cameraReminderCard = findViewById(R.id.cardCameraReminder)
         googleCalendarSyncButton = findViewById(R.id.btnGoogleCalendarSync)
@@ -293,6 +296,10 @@ class MainActivity : ComponentActivity() {
 
         calendarCard.setOnClickListener {
             startActivity(Intent(this, CalendarActivity::class.java))
+        }
+
+        loanCard.setOnClickListener {
+            startActivity(Intent(this, LoanListActivity::class.java))
         }
 
         manualReminderCard.setOnClickListener {

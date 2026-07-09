@@ -16,7 +16,7 @@ class ReminderDatabaseMigrationPolicyTest {
     @Test
     fun documentsOnlyKnownSafeMigrationRange() {
         assertEquals(
-            listOf(6 to 7, 7 to 8, 8 to 9, 9 to 10, 10 to 11, 11 to 12),
+            listOf(6 to 7, 7 to 8, 8 to 9, 9 to 10, 10 to 11, 11 to 12, 12 to 13),
             ReminderDatabaseMigrationPolicy.supportedMigrationRanges
         )
     }
@@ -31,6 +31,19 @@ class ReminderDatabaseMigrationPolicyTest {
         assertTrue(source.contains("ADD COLUMN microsoftCalendarEventId TEXT"))
         assertTrue(source.contains("ADD COLUMN meetingProvider TEXT"))
         assertTrue(source.contains("ADD COLUMN isOnlineMeeting INTEGER NOT NULL DEFAULT 0"))
+        assertFalse(source.contains("fallbackToDestructiveMigration"))
+    }
+
+    @Test
+    fun migrationTwelveToThirteenAddsLoanTablesWithoutDestructiveFallback() {
+        val source = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/data/local/database/ReminderDatabase.kt"
+        ).readText()
+
+        assertTrue(source.contains("Migration(12, 13)"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS loan_records"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS loan_payments"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS loan_installments"))
         assertFalse(source.contains("fallbackToDestructiveMigration"))
     }
 
