@@ -118,6 +118,11 @@ class AssistantAnimator(
                 frames = intArrayOf(R.drawable.assistant_state_speaking),
                 frameDurationMs = 220L
             )
+
+            AssistantVisualState.ERROR -> AssistantFrameSequence(
+                frames = intArrayOf(R.drawable.assistant_state_idle),
+                frameDurationMs = 820L
+            )
         }
     }
 
@@ -146,4 +151,5 @@ private val AssistantVisualState.defaultFaceState: AssistantFaceState
         AssistantVisualState.ASKING_TIME -> AssistantFaceState.SURPRISE
         AssistantVisualState.SPEAKING -> AssistantFaceState.NATURAL_SPEAKING
         AssistantVisualState.SUCCESS -> AssistantFaceState.SATISFIED
+        AssistantVisualState.ERROR -> AssistantFaceState.NEUTRAL_PAUSE
     }

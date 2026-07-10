@@ -51,6 +51,7 @@ import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
 import com.luistureo.voicereminderapp.presentation.calendar.GoogleCalendarErrorUi
 import com.luistureo.voicereminderapp.presentation.loan.LoanListActivity
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
+import com.luistureo.voicereminderapp.presentation.routine.RoutineDashboardActivity
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
 import com.luistureo.voicereminderapp.presentation.ui.adapter.HomeReminderAdapter
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var assistantReminderCard: View
     private lateinit var calendarCard: View
     private lateinit var loanCard: View
+    private lateinit var dailyRoutinesCard: View
     private lateinit var manualReminderCard: View
     private lateinit var cameraReminderCard: View
     private lateinit var googleCalendarSyncButton: MaterialButton
@@ -183,6 +185,7 @@ class MainActivity : ComponentActivity() {
         assistantReminderCard = findViewById(R.id.cardAssistantReminder)
         calendarCard = findViewById(R.id.cardCalendar)
         loanCard = findViewById(R.id.cardLoan)
+        dailyRoutinesCard = findViewById(R.id.cardDailyRoutines)
         manualReminderCard = findViewById(R.id.cardManualReminder)
         cameraReminderCard = findViewById(R.id.cardCameraReminder)
         googleCalendarSyncButton = findViewById(R.id.btnGoogleCalendarSync)
@@ -300,6 +303,10 @@ class MainActivity : ComponentActivity() {
 
         loanCard.setOnClickListener {
             startActivity(Intent(this, LoanListActivity::class.java))
+        }
+
+        dailyRoutinesCard.setOnClickListener {
+            startActivity(Intent(this, RoutineDashboardActivity::class.java))
         }
 
         manualReminderCard.setOnClickListener {

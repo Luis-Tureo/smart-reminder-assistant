@@ -12,6 +12,7 @@ import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarConflictPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.PerReminderCalendarSyncPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSuspensionPolicy
+import com.luistureo.voicereminderapp.core.calendar.unified.MeetingUrlPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarCardDisplayPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSyncSummary
@@ -66,6 +67,7 @@ class CalendarViewModel(
         val externalEditNote: String? = null,
         val isSuspended: Boolean = false,
         val syncActions: Set<CalendarProvider> = emptySet(),
+        val canEdit: Boolean = false,
         val isAllDay: Boolean = false,
         val occurrenceAtEpochMillis: Long? = null
     )
@@ -353,6 +355,7 @@ class CalendarViewModel(
                         externalEditNote = reminder.externalEditNote,
                         isSuspended = isSuspendedOccurrence,
                         syncActions = reminder.buildSyncActions(),
+                        canEdit = reminder.canOpenFromCalendarEditor(),
                         isAllDay = reminder.isAllDay,
                         occurrenceAtEpochMillis = occurrenceAt
                     )
@@ -524,6 +527,7 @@ class CalendarViewModel(
             hasNearbySchedule = hasNearbySchedule,
             isSuspended = isSuspended,
             syncActions = syncActions,
+            canEdit = canEdit,
             canDelete = CalendarActionRules.canDelete(
                 CalendarReminderDetailUiModel(
                     id = id,
@@ -539,6 +543,12 @@ class CalendarViewModel(
             ),
             canReactivate = isSuspended && localReminderId != null
         )
+    }
+
+    private fun Reminder.canOpenFromCalendarEditor(): Boolean {
+        return originProvider == CalendarProvider.APP &&
+                !isOnlineMeeting &&
+                !MeetingUrlPolicy.isSupportedMeetingUrl(meetingUrl)
     }
 
     private fun Reminder.buildSyncActions(): Set<CalendarProvider> {

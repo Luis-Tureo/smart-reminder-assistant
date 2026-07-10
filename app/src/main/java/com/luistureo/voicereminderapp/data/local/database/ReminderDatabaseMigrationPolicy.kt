@@ -8,7 +8,10 @@ object ReminderDatabaseMigrationPolicy {
         9 to 10,
         10 to 11,
         11 to 12,
-        12 to 13
+        12 to 13,
+        13 to 14,
+        14 to 15,
+        15 to 16
     )
     const val USE_DESTRUCTIVE_MIGRATION: Boolean = false
 }

@@ -26,3 +26,45 @@ firebase-token*
 .env
 .env.*
 !.env.example
+
+# OAuth credentials
+client_secret*.json
+credentials*.json
+
+# Microsoft / MSAL secrets
+auth_config*.json
+msal*.json
+
+# Certificates and private keys
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+
+# Android signing backups
+*.zip
+*.bak
+
+# Temporary release artifacts
+app-release.apk
+app-release-unsigned.apk
+*.aab
+
+# Secrets with common names
+*secret*
+*credential*
+*private*
+*token*
+
+# OAuth
+client_secret*.json
+credentials*.json
+
+# Certificates
+*.pem
+*.p12
+*.pfx
+
+# Build metadata
+**/output-metadata.json

@@ -2,6 +2,7 @@ package com.luistureo.voicereminderapp.domain.usecase
 
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderTemporalValidationPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.PerReminderCalendarSyncPolicy
 import com.luistureo.voicereminderapp.core.utils.ReminderTypeResolver
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
@@ -13,7 +14,8 @@ import com.luistureo.voicereminderapp.domain.repository.ReminderRepository
 
 class SaveReminderDraftUseCase(
     private val reminderRepository: ReminderRepository,
-    private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator()
+    private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator(),
+    private val currentTimeMillis: () -> Long = { System.currentTimeMillis() }
 ) {
     private val scheduleStateResolver = ReminderScheduleStateResolver(occurrenceCalculator)
 
@@ -28,6 +30,28 @@ class SaveReminderDraftUseCase(
 
         val scheduledAtEpochMillis = draft.buildScheduledAtEpochMillis()
             ?: error("No fue posible construir la fecha del recordatorio.")
+
+        val scheduleValidationMessage = if (draft.reminderId == 0) {
+            ReminderTemporalValidationPolicy.validateNewSchedule(
+                scheduledAtEpochMillis = scheduledAtEpochMillis,
+                nowEpochMillis = currentTimeMillis()
+            )
+        } else {
+            ReminderTemporalValidationPolicy.validateUpdateSchedule(
+                updatedReminder = Reminder(
+                    id = draft.reminderId,
+                    title = reminderTitle,
+                    detail = reminderDetail,
+                    scheduledAtEpochMillis = scheduledAtEpochMillis,
+                    isCompleted = existingReminder?.isCompleted ?: false
+                ),
+                existingReminder = existingReminder,
+                nowEpochMillis = currentTimeMillis()
+            )
+        }
+        if (scheduleValidationMessage != null) {
+            throw IllegalArgumentException(scheduleValidationMessage)
+        }
 
         val baseReminder = Reminder(
             id = draft.reminderId,

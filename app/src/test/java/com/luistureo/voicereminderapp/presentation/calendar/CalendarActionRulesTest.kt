@@ -55,6 +55,25 @@ class CalendarActionRulesTest {
     }
 
     @Test
+    fun createReminderIsUnavailableForPastCalendarDays() {
+        val today = LocalDate.of(2026, 6, 13)
+
+        assertFalse(
+            CalendarActionRules.canCreateReminderOnDate(
+                selectedDate = LocalDate.of(2026, 6, 12),
+                today = today
+            )
+        )
+        assertTrue(CalendarActionRules.canCreateReminderOnDate(selectedDate = today, today = today))
+        assertTrue(
+            CalendarActionRules.canCreateReminderOnDate(
+                selectedDate = LocalDate.of(2026, 6, 14),
+                today = today
+            )
+        )
+    }
+
+    @Test
     fun deleteIsAvailableForLocalOrExternalProviderItems() {
         assertTrue(CalendarActionRules.canDelete(detail(localId = 7, googleId = null)))
         assertTrue(CalendarActionRules.canDelete(detail(localId = null, googleId = "event-1")))

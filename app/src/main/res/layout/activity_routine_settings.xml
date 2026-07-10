@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:background="@color/routine_toolbar_background"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp">
+
+        <ImageButton
+            android:id="@+id/btnBackRoutineSettings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/routine_back"
+            android:padding="12dp"
+            android:src="@drawable/ic_calendar_back"
+            app:tint="@color/routine_toolbar_text" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/routine_settings_title"
+            android:textColor="@color/routine_toolbar_text"
+            android:textSize="21sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchRoutineEnabled"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="@string/routine_active_toggle"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/routine_preferred_name_title"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/routine_preferred_name_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputRoutinePreferredName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName|textCapWords"
+                    android:maxLength="40" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/routine_preferred_name_support"
+                android:textColor="@color/reminder_text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/routine_assistant_behavior"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/groupRoutineAssistantMode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radioRoutineAssistantDisplay"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/routine_assistant_display" />
+
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radioRoutineAssistantStep"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/routine_assistant_step" />
+
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radioRoutineAssistantSmart"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/routine_assistant_smart" />
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/routine_motivation_title"
+                android:textColor="@color/reminder_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkRoutineMotivationBubbles"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/routine_motivation_bubbles" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkRoutineAssistantVoice"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/routine_assistant_voice" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/routine_message_schedule"
+                android:textColor="@color/reminder_text_primary"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRoutineMotivationSchedule"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:minHeight="48dp"
+                android:text="@string/routine_no_message_schedule"
+                android:textAllCaps="false" />
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+                android:text="@string/routine_statistics_settings" android:textSize="17sp" android:textStyle="bold" />
+            <Spinner android:id="@+id/spinnerRoutinePreferredChart" android:layout_width="match_parent" android:layout_height="48dp"
+                android:contentDescription="@string/routine_chart_type" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutinePartialStreak"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_partial_streak" />
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputRoutinePartialThreshold"
+                android:layout_width="match_parent" android:layout_height="48dp" android:hint="@string/routine_partial_threshold"
+                android:inputType="number" />
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+                android:text="@string/routine_suggestions_settings" android:textSize="17sp" android:textStyle="bold" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutineSuggestionsEnabled"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_suggestions_enable" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnRoutineSuggestionTime" style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent" android:layout_height="48dp" android:textAllCaps="false" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutineSuggestionBubble"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_suggestion_bubble" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutineSuggestionVoice"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_suggestion_voice" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutineShowBuiltIns"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_show_built_ins" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutineShowPersonal"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_show_personal" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutineCompletedMessages"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_completed_messages" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutinePartialMessages"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_partial_messages" />
+            <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkRoutineMissedMessages"
+                android:layout_width="match_parent" android:layout_height="48dp" android:text="@string/routine_missed_messages" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveRoutineSettings"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="28dp" android:layout_marginBottom="16dp" android:minHeight="52dp"
+                android:text="@string/routine_settings_save" android:textAllCaps="false" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

@@ -25,4 +25,5 @@
     <dimen name="assistant_dialogue_padding_vertical">8dp</dimen>
     <dimen name="assistant_scene_min_height">236dp</dimen>
     <dimen name="assistant_scene_max_height">420dp</dimen>
+    <dimen name="routine_card_radius">20dp</dimen>
 </resources>

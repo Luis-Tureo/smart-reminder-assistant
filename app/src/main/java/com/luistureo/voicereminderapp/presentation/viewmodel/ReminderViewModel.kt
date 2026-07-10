@@ -14,6 +14,7 @@ import com.luistureo.voicereminderapp.core.nlp.VoiceReminderLanguageHelper
 import com.luistureo.voicereminderapp.core.nlp.VoiceReminderParser
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
+import com.luistureo.voicereminderapp.core.reminder.ReminderTemporalValidationPolicy
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.Reminder
@@ -496,10 +497,12 @@ class ReminderViewModel(
                         }
                     )
                 )
-            }.onFailure {
+            }.onFailure { exception ->
                 _events.emit(
                     ReminderUiEvent.ShowMessage(
-                        "No fue posible guardar el recordatorio."
+                        exception.message
+                            ?.takeIf { it == ReminderTemporalValidationPolicy.PAST_SCHEDULE_MESSAGE }
+                            ?: "No fue posible guardar el recordatorio."
                     )
                 )
             }
@@ -606,7 +609,13 @@ class ReminderViewModel(
                 val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(resolvedReminder)
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
-            } catch (_: Exception) {
+            } catch (exception: Exception) {
+                val message = exception.message
+                    ?.takeIf { it == ReminderTemporalValidationPolicy.PAST_SCHEDULE_MESSAGE }
+                if (message != null) {
+                    _events.emit(ReminderUiEvent.ShowMessage(message))
+                    return@launch
+                }
                 _uiState.update {
                     it.copy(
                         error = UiText.StringResource(R.string.message_update_reminder_failed)
@@ -1404,9 +1413,8 @@ class ReminderViewModel(
         val triggerTimeMillis = draft.buildScheduledAtEpochMillis()
             ?: return "La fecha u hora indicadas no son validas."
 
-        if (triggerTimeMillis <= System.currentTimeMillis()) {
-            return "La fecha y hora indicadas ya pasaron. Indica una fecha u hora futura."
-        }
+        ReminderTemporalValidationPolicy.validateNewSchedule(triggerTimeMillis)
+            ?.let { return it }
 
         return null
     }

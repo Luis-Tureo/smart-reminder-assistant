@@ -69,6 +69,7 @@ data class CalendarReminderDetailUiModel(
     val isSuspended: Boolean = false,
     val syncActions: Set<CalendarProvider> = emptySet(),
     val canDelete: Boolean = true,
+    val canEdit: Boolean = false,
     val canReactivate: Boolean = false
 )
 

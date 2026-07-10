@@ -8,25 +8,41 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.luistureo.voicereminderapp.data.local.dao.LoanDao
 import com.luistureo.voicereminderapp.data.local.dao.ReminderDao
+import com.luistureo.voicereminderapp.data.local.dao.RoutineDao
 import com.luistureo.voicereminderapp.data.local.entity.LoanEntity
 import com.luistureo.voicereminderapp.data.local.entity.LoanInstallmentEntity
 import com.luistureo.voicereminderapp.data.local.entity.LoanPaymentEntity
 import com.luistureo.voicereminderapp.data.local.entity.ReminderEntity
+import com.luistureo.voicereminderapp.data.local.entity.RoutineDailyExecutionEntity
+import com.luistureo.voicereminderapp.data.local.entity.RoutineEntity
+import com.luistureo.voicereminderapp.data.local.entity.RoutineHistoryEntity
+import com.luistureo.voicereminderapp.data.local.entity.RoutineTaskEntity
+import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateEntity
+import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateTaskEntity
+import com.luistureo.voicereminderapp.data.local.entity.RoutineSuggestionEntity
 
 @Database(
     entities = [
         ReminderEntity::class,
         LoanEntity::class,
         LoanPaymentEntity::class,
-        LoanInstallmentEntity::class
+        LoanInstallmentEntity::class,
+        RoutineEntity::class,
+        RoutineTaskEntity::class,
+        RoutineDailyExecutionEntity::class,
+        RoutineHistoryEntity::class,
+        RoutineTemplateEntity::class,
+        RoutineTemplateTaskEntity::class,
+        RoutineSuggestionEntity::class
     ],
-    version = 13,
+    version = 16,
     exportSchema = false
 )
 abstract class ReminderDatabase : RoomDatabase() {
 
     abstract fun reminderDao(): ReminderDao
     abstract fun loanDao(): LoanDao
+    abstract fun routineDao(): RoutineDao
 
     companion object {
         @Volatile
@@ -46,7 +62,10 @@ abstract class ReminderDatabase : RoomDatabase() {
                         MIGRATION_9_10,
                         MIGRATION_10_11,
                         MIGRATION_11_12,
-                        MIGRATION_12_13
+                        MIGRATION_12_13,
+                        MIGRATION_13_14,
+                        MIGRATION_14_15,
+                        MIGRATION_15_16
                     )
                     .build()
 
@@ -190,6 +209,203 @@ abstract class ReminderDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_loan_installments_loanId ON loan_installments(loanId)"
+                )
+            }
+        }
+
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS routines (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        icon TEXT NOT NULL,
+                        color INTEGER NOT NULL,
+                        enabled INTEGER NOT NULL,
+                        period TEXT NOT NULL,
+                        startTimeMinutes INTEGER,
+                        deadlineTimeMinutes INTEGER,
+                        assistantMode TEXT NOT NULL,
+                        voiceEnabled INTEGER NOT NULL,
+                        motivationBubbleEnabled INTEGER NOT NULL,
+                        motivationScheduleMinutes INTEGER,
+                        createdAtEpochMillis INTEGER NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_routines_period ON routines(period)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_routines_enabled ON routines(enabled)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS routine_tasks (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        routineId INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT,
+                        orderPriority INTEGER NOT NULL,
+                        completed INTEGER NOT NULL,
+                        completedOnEpochDay INTEGER,
+                        optionalTimeMinutes INTEGER,
+                        estimatedDurationMinutes INTEGER,
+                        notes TEXT,
+                        FOREIGN KEY(routineId) REFERENCES routines(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_routine_tasks_routineId ON routine_tasks(routineId)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_routine_tasks_routineId_orderPriority " +
+                        "ON routine_tasks(routineId, orderPriority)"
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS routine_daily_executions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        dateEpochDay INTEGER NOT NULL,
+                        routineId INTEGER NOT NULL,
+                        state TEXT NOT NULL,
+                        updatedAtEpochMillis INTEGER NOT NULL,
+                        FOREIGN KEY(routineId) REFERENCES routines(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_routine_daily_executions_routineId " +
+                        "ON routine_daily_executions(routineId)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                        "index_routine_daily_executions_routineId_dateEpochDay " +
+                        "ON routine_daily_executions(routineId, dateEpochDay)"
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS routine_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        dateEpochDay INTEGER NOT NULL,
+                        routineId INTEGER NOT NULL,
+                        completedTasks INTEGER NOT NULL,
+                        totalTasks INTEGER NOT NULL,
+                        completionPercentage REAL NOT NULL,
+                        finalState TEXT NOT NULL,
+                        FOREIGN KEY(routineId) REFERENCES routines(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_routine_history_routineId " +
+                        "ON routine_history(routineId)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_routine_history_routineId_dateEpochDay " +
+                        "ON routine_history(routineId, dateEpochDay)"
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS routine_templates (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        benefitsExplanation TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS routine_template_tasks (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        templateId INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT,
+                        orderPriority INTEGER NOT NULL,
+                        estimatedDurationMinutes INTEGER,
+                        FOREIGN KEY(templateId) REFERENCES routine_templates(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_routine_template_tasks_templateId " +
+                        "ON routine_template_tasks(templateId)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                        "index_routine_template_tasks_templateId_orderPriority " +
+                        "ON routine_template_tasks(templateId, orderPriority)"
+                )
+            }
+        }
+
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE routine_daily_executions " +
+                        "ADD COLUMN assistantGuidanceMode TEXT"
+                )
+                db.execSQL(
+                    "ALTER TABLE routine_history " +
+                        "ADD COLUMN assistantGuidanceMode TEXT"
+                )
+            }
+        }
+
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE routine_history ADD COLUMN periodAtExecution TEXT")
+                db.execSQL("ALTER TABLE routine_history ADD COLUMN routineNameAtExecution TEXT")
+                db.execSQL(
+                    "ALTER TABLE routine_history ADD COLUMN pendingTaskTitles TEXT NOT NULL DEFAULT ''"
+                )
+                db.execSQL("ALTER TABLE routine_history ADD COLUMN completedAtEpochMillis INTEGER")
+                db.execSQL(
+                    "ALTER TABLE routine_templates ADD COLUMN period TEXT NOT NULL DEFAULT 'MORNING'"
+                )
+                db.execSQL(
+                    "ALTER TABLE routine_templates ADD COLUMN estimatedTotalDurationMinutes INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL("ALTER TABLE routine_templates ADD COLUMN icon TEXT")
+                db.execSQL("ALTER TABLE routine_templates ADD COLUMN color INTEGER")
+                db.execSQL(
+                    "ALTER TABLE routine_templates ADD COLUMN category TEXT NOT NULL DEFAULT 'Organización'"
+                )
+                db.execSQL(
+                    "ALTER TABLE routine_templates ADD COLUMN editable INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE routine_templates ADD COLUMN builtIn INTEGER NOT NULL DEFAULT 1"
+                )
+                db.execSQL("ALTER TABLE routine_templates ADD COLUMN builtInKey TEXT")
+                db.execSQL(
+                    "UPDATE routine_templates SET builtInKey = 'legacy_' || id WHERE builtInKey IS NULL"
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS routine_suggestions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        routineId INTEGER NOT NULL,
+                        type TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        primaryAction TEXT NOT NULL,
+                        secondaryAction TEXT NOT NULL,
+                        createdAtEpochDay INTEGER NOT NULL,
+                        dismissedAtEpochDay INTEGER,
+                        active INTEGER NOT NULL,
+                        FOREIGN KEY(routineId) REFERENCES routines(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_routine_suggestions_routineId " +
+                        "ON routine_suggestions(routineId)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_routine_suggestions_routineId_type_createdAtEpochDay " +
+                        "ON routine_suggestions(routineId, type, createdAtEpochDay)"
                 )
             }
         }

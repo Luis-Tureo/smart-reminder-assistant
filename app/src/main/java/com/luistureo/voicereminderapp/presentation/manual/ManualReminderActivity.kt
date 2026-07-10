@@ -416,7 +416,7 @@ class ManualReminderActivity : ComponentActivity() {
             }
         }
 
-        DatePickerDialog(
+        val dialog = DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
                 selectedDate = DateTimeFormatter.formatDate(dayOfMonth, month + 1, year)
@@ -425,7 +425,16 @@ class ManualReminderActivity : ComponentActivity() {
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
+        )
+        if (currentReminderId == 0) {
+            dialog.datePicker.minDate = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        }
+        dialog.show()
     }
 
     private fun showTimePicker() {
