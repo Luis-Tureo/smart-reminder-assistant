@@ -722,6 +722,13 @@ class CalendarActivity : AppCompatActivity() {
         deleteButton.setOnClickListener {
             showDeleteConfirmation(detail)
         }
+        detailView.isClickable = detail.canEdit
+        detailView.isFocusable = detail.canEdit
+        detailView.setOnClickListener {
+            if (detail.canEdit) {
+                openReminderEditor(detail)
+            }
+        }
         val canOpenMeeting = MeetingUrlPolicy.isSupportedMeetingUrl(detail.meetingUrl)
         openMeetingButton.isVisible = canOpenMeeting
         CalendarSyncLogger.joinButtonVisibility(
@@ -852,6 +859,10 @@ class CalendarActivity : AppCompatActivity() {
     private fun renderSelectedDateSummary(state: CalendarUiState) {
         val currentFilter = activeFilter
         selectedDateActionsContainer.isVisible = currentFilter == null
+        val selectedDate = state.days.firstOrNull { it.isSelected }?.date
+        createReminderButton.isVisible = selectedDate?.let {
+            CalendarActionRules.canCreateReminderOnDate(it)
+        } ?: false
 
         if (currentFilter != null) {
             val filteredCount = state.filteredItems.count { it.style == currentFilter }
@@ -977,6 +988,16 @@ class CalendarActivity : AppCompatActivity() {
                 putExtra(ManualReminderActivity.EXTRA_DEFAULT_SOURCE, source.name)
                 putExtra(ManualReminderActivity.EXTRA_PREFILLED_DATE, formattedDate)
                 putExtra(ManualReminderActivity.EXTRA_LOCK_DATE, CalendarActionRules.shouldLockDate(formattedDate))
+            }
+        )
+    }
+
+    private fun openReminderEditor(detail: CalendarReminderDetailUiModel) {
+        val reminderId = detail.localReminderId ?: return
+        startActivity(
+            Intent(this, ManualReminderActivity::class.java).apply {
+                putExtra(ManualReminderActivity.EXTRA_REMINDER_ID, reminderId)
+                putExtra(ManualReminderActivity.EXTRA_DEFAULT_SOURCE, ReminderSource.MANUAL.name)
             }
         )
     }

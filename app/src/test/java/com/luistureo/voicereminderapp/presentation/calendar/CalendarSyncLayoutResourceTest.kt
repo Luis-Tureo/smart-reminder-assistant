@@ -192,6 +192,26 @@ class CalendarSyncLayoutResourceTest {
         )
     }
 
+    @Test
+    fun appCreatedCalendarCardsOpenManualEditorWithReminderId() {
+        val activity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                    "CalendarActivity.kt"
+        ).readText()
+        val viewModel = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                    "CalendarViewModel.kt"
+        ).readText()
+        val strings = sourceFile("app/src/main/res/values/strings.xml").readText()
+
+        assertTrue(activity.contains("detailView.isClickable = detail.canEdit"))
+        assertTrue(activity.contains("openReminderEditor(detail)"))
+        assertTrue(activity.contains("ManualReminderActivity.EXTRA_REMINDER_ID"))
+        assertTrue(viewModel.contains("originProvider == CalendarProvider.APP"))
+        assertTrue(viewModel.contains("!isOnlineMeeting"))
+        assertTrue(strings.contains("Sincronizar con:"))
+    }
+
     private fun activityCalendarLayoutFile(): File {
         return sourceFile("app/src/main/res/layout/activity_calendar.xml")
     }

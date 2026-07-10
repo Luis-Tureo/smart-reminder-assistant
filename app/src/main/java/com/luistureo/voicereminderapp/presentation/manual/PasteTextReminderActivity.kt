@@ -30,6 +30,7 @@ import com.luistureo.voicereminderapp.core.nlp.PastedReminderParseResult
 import com.luistureo.voicereminderapp.core.nlp.PastedReminderTextParser
 import com.luistureo.voicereminderapp.core.nlp.ReminderContentCleaner
 import com.luistureo.voicereminderapp.core.nlp.ReminderTextParserLogger
+import com.luistureo.voicereminderapp.core.reminder.ReminderTemporalValidationPolicy
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
@@ -249,7 +250,7 @@ class PasteTextReminderActivity : ComponentActivity() {
 
     private fun showDatePicker() {
         val base = selectedDate ?: selectedCalendarDay ?: LocalDate.now()
-        DatePickerDialog(
+        val dialog = DatePickerDialog(
             this,
             { _, year, month, day ->
                 selectedDate = LocalDate.of(year, month + 1, day)
@@ -261,7 +262,14 @@ class PasteTextReminderActivity : ComponentActivity() {
             base.year,
             base.monthValue - 1,
             base.dayOfMonth
-        ).show()
+        )
+        dialog.datePicker.minDate = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        dialog.show()
     }
 
     private fun showTimePicker() {
@@ -311,12 +319,14 @@ class PasteTextReminderActivity : ComponentActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
                 finish()
-            }.onFailure {
+            }.onFailure { exception ->
                 isSaving = false
                 saveButton.isEnabled = true
                 Toast.makeText(
                     this@PasteTextReminderActivity,
-                    R.string.paste_reminder_save_failed,
+                    exception.message
+                        ?.takeIf { it == ReminderTemporalValidationPolicy.PAST_SCHEDULE_MESSAGE }
+                        ?: getString(R.string.paste_reminder_save_failed),
                     Toast.LENGTH_SHORT
                 ).show()
             }

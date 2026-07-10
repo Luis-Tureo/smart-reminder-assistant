@@ -13,101 +13,45 @@
         android:orientation="vertical"
         android:paddingBottom="24dp">
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/headerBar"
             android:layout_width="match_parent"
-            android:layout_height="90dp"
+            android:layout_height="112dp"
             android:background="@drawable/bg_assistant_header_panel"
+            android:gravity="center"
+            android:orientation="vertical"
             android:paddingHorizontal="18dp">
 
             <TextView
                 android:id="@+id/tvHomeTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
                 android:fontFamily="sans"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:maxLines="2"
                 android:text="@string/home_screen_title"
                 android:textColor="#F6F1E8"
-                android:textSize="24sp"
+                android:textSize="26sp"
                 android:textStyle="bold" />
-        </FrameLayout>
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardAssistantReminder"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:cardBackgroundColor="@color/reminder_card_background"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="5dp"
-            app:rippleColor="@color/ripple_soft"
-            app:strokeColor="@color/reminder_card_stroke"
-            app:strokeWidth="1dp">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <TextView
+                android:id="@+id/tvHomeSubtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="18dp">
-
-                <FrameLayout
-                    android:id="@+id/assistantIconContainer"
-                    android:layout_width="62dp"
-                    android:layout_height="62dp"
-                    android:background="@drawable/bg_reminder_icon_blue"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@android:drawable/ic_btn_speak_now"
-                        app:tint="@color/reminder_icon_blue_fg" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/tvAssistantReminderTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
-                    android:text="@string/home_virtual_assistant_title"
-                    android:textColor="@color/reminder_text_primary"
-                    android:textSize="19sp"
-                    android:textStyle="bold"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/assistantIconContainer"
-                    app:layout_constraintTop_toTopOf="@id/assistantIconContainer" />
-
-                <TextView
-                    android:id="@+id/tvAssistantReminderSubtitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/home_virtual_assistant_subtitle"
-                    android:textColor="@color/reminder_text_secondary"
-                    android:textSize="15sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/assistantIconContainer"
-                    app:layout_constraintTop_toBottomOf="@id/tvAssistantReminderTitle" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/home_screen_subtitle"
+                android:textColor="#DDE5EE"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardCalendar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:clickable="true"
             android:focusable="true"
@@ -166,6 +110,206 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/calendarIconContainer"
                     app:layout_constraintTop_toBottomOf="@id/tvCalendarTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardLoan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="5dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/loanIconContainer"
+                    android:layout_width="62dp"
+                    android:layout_height="62dp"
+                    android:background="@drawable/bg_reminder_icon_amber"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@android:drawable/ic_menu_save"
+                        app:tint="@color/reminder_icon_amber_fg" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvLoanTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:text="@string/home_loan_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="19sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/loanIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/loanIconContainer" />
+
+                <TextView
+                    android:id="@+id/tvLoanSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/home_loan_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="15sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/loanIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvLoanTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDailyRoutines"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="5dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/routinesIconContainer"
+                    android:layout_width="62dp"
+                    android:layout_height="62dp"
+                    android:background="@drawable/bg_reminder_icon_amber"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_routine_morning" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvDailyRoutinesTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:text="@string/home_routines_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="19sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/routinesIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/routinesIconContainer" />
+
+                <TextView
+                    android:id="@+id/tvDailyRoutinesSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/home_routines_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="15sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/routinesIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvDailyRoutinesTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardAssistantReminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="5dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <FrameLayout
+                    android:id="@+id/assistantIconContainer"
+                    android:layout_width="62dp"
+                    android:layout_height="62dp"
+                    android:background="@drawable/bg_reminder_icon_blue"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        app:tint="@color/reminder_icon_blue_fg" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvAssistantReminderTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:text="@string/home_virtual_assistant_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="19sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/assistantIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/assistantIconContainer" />
+
+                <TextView
+                    android:id="@+id/tvAssistantReminderSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/home_virtual_assistant_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="15sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/assistantIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvAssistantReminderTitle" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -271,73 +415,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="@id/btnGoogleCalendarSync"
                     app:layout_constraintTop_toBottomOf="@id/btnGoogleCalendarSync" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardLoan"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:focusable="true"
-            app:cardBackgroundColor="@color/reminder_card_background"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="5dp"
-            app:rippleColor="@color/ripple_soft"
-            app:strokeColor="@color/reminder_card_stroke"
-            app:strokeWidth="1dp">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="18dp">
-
-                <FrameLayout
-                    android:id="@+id/loanIconContainer"
-                    android:layout_width="62dp"
-                    android:layout_height="62dp"
-                    android:background="@drawable/bg_reminder_icon_amber"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
-
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@android:drawable/ic_menu_save"
-                        app:tint="@color/reminder_icon_amber_fg" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/tvLoanTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
-                    android:text="@string/home_loan_title"
-                    android:textColor="@color/reminder_text_primary"
-                    android:textSize="19sp"
-                    android:textStyle="bold"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/loanIconContainer"
-                    app:layout_constraintTop_toTopOf="@id/loanIconContainer" />
-
-                <TextView
-                    android:id="@+id/tvLoanSubtitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/home_loan_subtitle"
-                    android:textColor="@color/reminder_text_secondary"
-                    android:textSize="15sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/loanIconContainer"
-                    app:layout_constraintTop_toBottomOf="@id/tvLoanTitle" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 

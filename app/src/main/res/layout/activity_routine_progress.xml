@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:gravity="center_vertical">
+        <ImageButton android:id="@+id/btnBackRoutineProgress" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/routine_back"
+            android:src="@drawable/ic_calendar_back" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/routine_progress_title" android:textSize="22sp" android:textStyle="bold" />
+    </LinearLayout>
+    <Spinner android:id="@+id/spinnerRoutineHistoryRange" android:layout_width="match_parent" android:layout_height="48dp"
+        android:contentDescription="@string/routine_history_range" />
+    <Spinner android:id="@+id/spinnerRoutineChartType" android:layout_width="match_parent" android:layout_height="48dp"
+        android:contentDescription="@string/routine_chart_type" />
+    <TextView android:id="@+id/tvRoutineStatisticsSummary" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingVertical="12dp" android:textColor="@color/reminder_text_primary" android:textSize="15sp" />
+    <com.luistureo.voicereminderapp.presentation.routine.RoutineChartView
+        android:id="@+id/viewRoutineChart" android:layout_width="match_parent" android:layout_height="300dp"
+        android:contentDescription="@string/routine_chart_content_description" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="@string/routine_chart_legend" android:textColor="@color/reminder_text_secondary" android:textSize="13sp" />
+</LinearLayout>

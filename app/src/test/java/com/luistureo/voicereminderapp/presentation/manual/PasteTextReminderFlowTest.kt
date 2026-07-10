@@ -58,6 +58,11 @@ class PasteTextReminderFlowTest {
         assertTrue(activity.contains("buildDraftOrShowErrors() ?: return"))
     }
 
+    @Test
+    fun pastScheduleValidationMessageIsShownWhenSaveUseCaseRejects() {
+        assertTrue(activity.contains("ReminderTemporalValidationPolicy.PAST_SCHEDULE_MESSAGE"))
+    }
+
     private fun source(relativePath: String): String = File(
         "src/main/java/com/luistureo/voicereminderapp/$relativePath"
     ).readText()

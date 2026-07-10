@@ -107,6 +107,43 @@
             </FrameLayout>
 
             <LinearLayout
+                android:id="@+id/containerAssistantRoutineControls"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_result_box"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvAssistantRoutineProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/routine_assistant_progress_initial"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAssistantRoutineCompleted"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/routine_assistant_completed_action"
+                    android:textAllCaps="false" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAssistantRoutinePartial"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/routine_assistant_partial_action"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/containerAssistantCalendarSyncOptions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

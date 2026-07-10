@@ -62,6 +62,22 @@
     <color name="recurrence_chip_selected_background">#EFE3FF</color>
     <color name="recurrence_chip_stroke">#8F95A3</color>
 
+    <!-- Rutinas del día -->
+    <color name="routine_screen_background">#F1F4F8</color>
+    <color name="routine_card_background">#FBF8F2</color>
+    <color name="routine_card_stroke">#DDD8CE</color>
+    <color name="routine_toolbar_background">#1F3147</color>
+    <color name="routine_toolbar_text">#F7F6F2</color>
+    <color name="routine_primary">#496A84</color>
+    <color name="routine_primary_soft">#DCE8F0</color>
+    <color name="routine_morning">#C98524</color>
+    <color name="routine_afternoon">#B56C2F</color>
+    <color name="routine_night">#5968A8</color>
+    <color name="routine_success_background">#E5F4EA</color>
+    <color name="routine_success_text">#27643C</color>
+    <color name="routine_disabled_background">#ECEFF2</color>
+    <color name="routine_disabled_text">#68727D</color>
+
     <!-- Calendario -->
     <color name="calendar_screen_background">#ECF1F6</color>
     <color name="calendar_toolbar_background">#1F3147</color>

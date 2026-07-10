@@ -6,5 +6,6 @@ enum class AssistantVisualState {
     THINKING,
     ASKING_TIME,
     SPEAKING,
-    SUCCESS
+    SUCCESS,
+    ERROR
 }

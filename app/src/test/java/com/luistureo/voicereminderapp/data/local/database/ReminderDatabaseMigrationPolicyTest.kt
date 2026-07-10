@@ -16,7 +16,18 @@ class ReminderDatabaseMigrationPolicyTest {
     @Test
     fun documentsOnlyKnownSafeMigrationRange() {
         assertEquals(
-            listOf(6 to 7, 7 to 8, 8 to 9, 9 to 10, 10 to 11, 11 to 12, 12 to 13),
+            listOf(
+                6 to 7,
+                7 to 8,
+                8 to 9,
+                9 to 10,
+                10 to 11,
+                11 to 12,
+                12 to 13,
+                13 to 14,
+                14 to 15,
+                15 to 16
+            ),
             ReminderDatabaseMigrationPolicy.supportedMigrationRanges
         )
     }
@@ -44,6 +55,26 @@ class ReminderDatabaseMigrationPolicyTest {
         assertTrue(source.contains("CREATE TABLE IF NOT EXISTS loan_records"))
         assertTrue(source.contains("CREATE TABLE IF NOT EXISTS loan_payments"))
         assertTrue(source.contains("CREATE TABLE IF NOT EXISTS loan_installments"))
+        assertFalse(source.contains("fallbackToDestructiveMigration"))
+    }
+
+    @Test
+    fun migrationThirteenToFourteenAddsRoutineTablesWithoutDestructiveFallback() {
+        val source = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/data/local/database/ReminderDatabase.kt"
+        ).readText()
+
+        assertTrue(source.contains("Migration(13, 14)"))
+        assertTrue(source.contains("Migration(14, 15)"))
+        assertTrue(source.contains("Migration(15, 16)"))
+        assertTrue(source.contains("assistantGuidanceMode"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS routine_suggestions"))
+        assertTrue(source.contains("pendingTaskTitles"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS routines"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS routine_tasks"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS routine_daily_executions"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS routine_history"))
+        assertTrue(source.contains("CREATE TABLE IF NOT EXISTS routine_templates"))
         assertFalse(source.contains("fallbackToDestructiveMigration"))
     }
 
