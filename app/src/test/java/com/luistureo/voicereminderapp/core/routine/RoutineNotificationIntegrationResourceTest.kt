@@ -23,6 +23,37 @@ class RoutineNotificationIntegrationResourceTest {
     }
 
     @Test
+    fun rebootReceiverRestoresReminderLoanAndRoutineSchedules() {
+        val receiver = projectFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/core/routine/RoutineRescheduleReceiver.kt"
+        ).readText()
+        val coordinator = projectFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/core/alarm/AppScheduleCoordinator.kt"
+        ).readText()
+
+        assertTrue(receiver.contains("AppScheduleCoordinator"))
+        assertTrue(coordinator.contains("ReminderScheduler"))
+        assertTrue(coordinator.contains("LoanReminderScheduler"))
+        assertTrue(coordinator.contains("RoutineScheduleCoordinator"))
+        assertTrue(coordinator.contains("ReminderAlarmRecoveryPolicy"))
+    }
+
+    @Test
+    fun loanNotificationsHidePrivateDataAndCanBeCancelled() {
+        val helper = projectFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/core/loan/notification/LoanNotificationHelper.kt"
+        ).readText()
+        val scheduler = projectFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/core/loan/alarm/LoanReminderScheduler.kt"
+        ).readText()
+
+        assertTrue(helper.contains("VISIBILITY_PRIVATE"))
+        assertTrue(helper.contains("setPublicVersion"))
+        assertTrue(helper.contains("cancelLoanReminderNotification"))
+        assertTrue(scheduler.contains("cancelLoanReminderNotification"))
+    }
+
+    @Test
     fun sharedNotificationHelperProvidesActionsAndPrivateLockScreenVersion() {
         val source = projectFile(
             "app/src/main/java/com/luistureo/voicereminderapp/core/notification/NotificationHelper.kt"

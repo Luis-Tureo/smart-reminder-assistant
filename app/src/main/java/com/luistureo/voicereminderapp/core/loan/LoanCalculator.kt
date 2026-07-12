@@ -8,12 +8,13 @@ import com.luistureo.voicereminderapp.domain.loan.model.LoanPayment
 import com.luistureo.voicereminderapp.domain.loan.model.LoanPaymentMode
 import com.luistureo.voicereminderapp.domain.loan.model.LoanSummary
 import com.luistureo.voicereminderapp.domain.loan.model.LoanType
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
-import kotlin.math.roundToLong
 
 object LoanCalculator {
     val interestPresets: List<Double> = listOf(0.0, 1.0, 2.0)
@@ -26,6 +27,10 @@ object LoanCalculator {
         monthlyInterestPercentage: Double,
         zoneId: ZoneId = ZoneId.systemDefault()
     ): Long {
+        require(principalAmountClp >= 0L) { "El monto principal no puede ser negativo." }
+        require(monthlyInterestPercentage.isFinite() && monthlyInterestPercentage >= 0.0) {
+            "El porcentaje de interes no es valido."
+        }
         if (!interestEnabled || monthlyInterestPercentage <= 0.0) {
             return principalAmountClp
         }
@@ -33,9 +38,13 @@ object LoanCalculator {
         val loanDate = toDate(loanDateEpochMillis, zoneId)
         val dueDate = toDate(dueDateEpochMillis, zoneId)
         val days = ChronoUnit.DAYS.between(loanDate, dueDate).coerceAtLeast(0L)
-        val months = days.toDouble() / 30.0
-        val interest = principalAmountClp * (monthlyInterestPercentage / 100.0) * months
-        return principalAmountClp + interest.roundToLong()
+        val interest = BigDecimal.valueOf(principalAmountClp)
+            .multiply(BigDecimal.valueOf(monthlyInterestPercentage))
+            .multiply(BigDecimal.valueOf(days))
+            .divide(BigDecimal.valueOf(3_000L), 0, RoundingMode.HALF_UP)
+        return BigDecimal.valueOf(principalAmountClp)
+            .add(interest)
+            .longValueExact()
     }
 
     fun remainingAmount(totalExpectedAmountClp: Long, payments: List<LoanPayment>): Long {
@@ -55,6 +64,9 @@ object LoanCalculator {
             interestEnabled = draft.interestEnabled,
             monthlyInterestPercentage = draft.interestPercentage
         )
+        require(payments.sumOf { it.paidAmountClp } <= totalExpected) {
+            TOTAL_BELOW_PAYMENTS_MESSAGE
+        }
         val remaining = remainingAmount(totalExpected, payments)
         val status = LoanStatusResolver.resolve(
             dueDateEpochMillis = draft.dueDateEpochMillis,
@@ -168,4 +180,7 @@ object LoanCalculator {
     private fun toDate(epochMillis: Long, zoneId: ZoneId): LocalDate {
         return Instant.ofEpochMilli(epochMillis).atZone(zoneId).toLocalDate()
     }
+
+    const val TOTAL_BELOW_PAYMENTS_MESSAGE =
+        "El total actualizado no puede ser menor que los pagos ya registrados."
 }

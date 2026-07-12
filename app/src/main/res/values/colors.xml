@@ -15,7 +15,6 @@
     <!-- Botones principales -->
     <color name="primary_blue">#3F51B5</color>
     <color name="accent_purple">#8F9BFF</color>
-    <color name="success_green">#63C98D</color>
 
     <!-- Ripple -->
     <color name="ripple_soft">#1A6EA8FE</color>
@@ -130,9 +129,5 @@
     <!-- Compatibilidad -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
-
-    <!-- Material heredados -->
-    <color name="purple_500">#6EA8FE</color>
-    <color name="teal_200">#7ED6D1</color>
 
 </resources>

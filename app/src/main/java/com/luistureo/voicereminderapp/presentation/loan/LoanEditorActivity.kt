@@ -333,7 +333,7 @@ class LoanEditorActivity : ComponentActivity() {
             installmentLayout.error = getString(R.string.loan_error_installments_required)
             hasError = true
         }
-        if (interestSwitch.isChecked && interestPercent < 0.0) {
+        if (interestSwitch.isChecked && (!interestPercent.isFinite() || interestPercent < 0.0)) {
             interestLayout.error = getString(R.string.loan_error_interest_invalid)
             hasError = true
         }

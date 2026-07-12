@@ -3,6 +3,7 @@ package com.luistureo.voicereminderapp.core.routine
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.luistureo.voicereminderapp.core.alarm.AppScheduleCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,7 +14,7 @@ class RoutineRescheduleReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                RoutineScheduleCoordinator(context.applicationContext).syncAll()
+                AppScheduleCoordinator(context.applicationContext).syncAll()
             } catch (_: Exception) {
             } finally {
                 pendingResult.finish()

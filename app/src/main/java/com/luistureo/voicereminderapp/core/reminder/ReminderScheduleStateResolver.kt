@@ -7,11 +7,14 @@ class ReminderScheduleStateResolver(
     private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator()
 ) {
 
-    fun resolveOnSave(reminder: Reminder): ReminderScheduleState {
+    fun resolveOnSave(
+        reminder: Reminder,
+        fromEpochMillis: Long = System.currentTimeMillis()
+    ): ReminderScheduleState {
         val candidateTriggerAtEpochMillis = if (reminder.isCompleted) {
             null
         } else {
-            occurrenceCalculator.resolveNextTriggerAtEpochMillis(reminder)
+            occurrenceCalculator.resolveNextTriggerAtEpochMillis(reminder, fromEpochMillis)
         }
         val nextTriggerAtEpochMillis = skipSuspendedOccurrence(
             reminder,

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
@@ -61,10 +62,10 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:maxLines="2"
-                        android:text="Ir gimnasio"
                         android:textColor="@color/reminder_text_primary"
                         android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="Ir al gimnasio" />
 
                     <TextView
                         android:id="@+id/tvReminderUrgentBadge"
@@ -88,9 +89,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:maxLines="3"
-                    android:text="Ir al gimnasio el viernes a las 14:00"
                     android:textColor="@color/reminder_text_secondary"
-                    android:textSize="15sp" />
+                    android:textSize="15sp"
+                    tools:text="Ir al gimnasio el viernes a las 14:00" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -112,16 +113,16 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="Viernes"
                         android:textColor="@color/reminder_text_secondary"
-                        android:textSize="15sp" />
+                        android:textSize="15sp"
+                        tools:text="Viernes" />
 
                     <TextView
                         android:id="@+id/tvReminderSeparator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginHorizontal="10dp"
-                        android:text="·"
+                        android:text="@string/reminder_date_time_separator"
                         android:textColor="@color/reminder_text_soft"
                         android:textSize="16sp" />
 
@@ -138,9 +139,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
-                        android:text="14:00"
                         android:textColor="@color/reminder_text_secondary"
-                        android:textSize="15sp" />
+                        android:textSize="15sp"
+                        tools:text="14:00" />
                 </LinearLayout>
 
                 <TextView
