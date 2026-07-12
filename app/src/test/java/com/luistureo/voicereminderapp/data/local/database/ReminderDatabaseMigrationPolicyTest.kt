@@ -17,6 +17,9 @@ class ReminderDatabaseMigrationPolicyTest {
     fun documentsOnlyKnownSafeMigrationRange() {
         assertEquals(
             listOf(
+                1 to 2,
+                2 to 3,
+                3 to 6,
                 6 to 7,
                 7 to 8,
                 8 to 9,
@@ -30,6 +33,20 @@ class ReminderDatabaseMigrationPolicyTest {
             ),
             ReminderDatabaseMigrationPolicy.supportedMigrationRanges
         )
+    }
+
+    @Test
+    fun legacyReminderMigrationsPreserveRowsWithoutDestructiveFallback() {
+        val source = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/data/local/database/ReminderDatabase.kt"
+        ).readText()
+
+        assertTrue(source.contains("Migration(1, 2)"))
+        assertTrue(source.contains("SELECT id, text, text, date, time, isCompleted"))
+        assertTrue(source.contains("Migration(2, 3)"))
+        assertTrue(source.contains("Migration(3, 6)"))
+        assertTrue(source.contains("scheduledAtEpochMillis"))
+        assertFalse(source.contains("fallbackToDestructiveMigration"))
     }
 
     @Test

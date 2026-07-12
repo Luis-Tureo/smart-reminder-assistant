@@ -36,7 +36,7 @@ import com.luistureo.voicereminderapp.data.local.entity.RoutineSuggestionEntity
         RoutineSuggestionEntity::class
     ],
     version = 16,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class ReminderDatabase : RoomDatabase() {
 
@@ -55,22 +55,104 @@ abstract class ReminderDatabase : RoomDatabase() {
                     ReminderDatabase::class.java,
                     "reminder_database"
                 )
-                    .addMigrations(
-                        MIGRATION_6_7,
-                        MIGRATION_7_8,
-                        MIGRATION_8_9,
-                        MIGRATION_9_10,
-                        MIGRATION_10_11,
-                        MIGRATION_11_12,
-                        MIGRATION_12_13,
-                        MIGRATION_13_14,
-                        MIGRATION_14_15,
-                        MIGRATION_15_16
-                    )
+                    .addMigrations(*ALL_MIGRATIONS)
                     .build()
 
                 instance = newInstance
                 newInstance
+            }
+        }
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE reminders_v2 (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        title TEXT NOT NULL,
+                        detail TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        time TEXT NOT NULL,
+                        isCompleted INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO reminders_v2 (id, title, detail, date, time, isCompleted)
+                    SELECT id, text, text, date, time, isCompleted FROM reminders
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE reminders")
+                db.execSQL("ALTER TABLE reminders_v2 RENAME TO reminders")
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE reminders ADD COLUMN type TEXT NOT NULL DEFAULT 'DEFAULT'"
+                )
+            }
+        }
+
+        private val MIGRATION_3_6 = object : Migration(3, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE reminders_v6 (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        title TEXT NOT NULL,
+                        detail TEXT NOT NULL,
+                        scheduledAtEpochMillis INTEGER NOT NULL,
+                        isCompleted INTEGER NOT NULL,
+                        type TEXT NOT NULL,
+                        isUrgent INTEGER NOT NULL,
+                        source TEXT NOT NULL,
+                        recurrenceUnit TEXT,
+                        recurrenceInterval INTEGER NOT NULL,
+                        recurrenceWeekdays TEXT NOT NULL,
+                        isRecurringActive INTEGER NOT NULL,
+                        nextTriggerAtEpochMillis INTEGER,
+                        lastTriggeredAtEpochMillis INTEGER,
+                        activeAlertAtEpochMillis INTEGER,
+                        activeAlertRepeatCount INTEGER NOT NULL,
+                        nextUrgentRepeatAtEpochMillis INTEGER
+                    )
+                    """.trimIndent()
+                )
+                val legacyScheduleExpression =
+                    """
+                    COALESCE(
+                        CAST(
+                            strftime(
+                                '%s',
+                                substr(date, 7, 4) || '-' ||
+                                    substr(date, 4, 2) || '-' ||
+                                    substr(date, 1, 2) || ' ' || time || ':00',
+                                'utc'
+                            ) AS INTEGER
+                        ) * 1000,
+                        0
+                    )
+                    """.trimIndent()
+                db.execSQL(
+                    """
+                    INSERT INTO reminders_v6 (
+                        id, title, detail, scheduledAtEpochMillis, isCompleted, type,
+                        isUrgent, source, recurrenceUnit, recurrenceInterval,
+                        recurrenceWeekdays, isRecurringActive, nextTriggerAtEpochMillis,
+                        lastTriggeredAtEpochMillis, activeAlertAtEpochMillis,
+                        activeAlertRepeatCount, nextUrgentRepeatAtEpochMillis
+                    )
+                    SELECT
+                        id, title, detail, $legacyScheduleExpression, isCompleted, type,
+                        0, 'MANUAL', NULL, 1, '', 0, NULL, NULL, NULL, 0, NULL
+                    FROM reminders
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE reminders")
+                db.execSQL("ALTER TABLE reminders_v6 RENAME TO reminders")
             }
         }
 
@@ -410,12 +492,20 @@ abstract class ReminderDatabase : RoomDatabase() {
             }
         }
 
-        /*
-         * TODO migraciones historicas:
-         * Solo existen migraciones verificables desde la version 6. No se debe usar migracion destructiva
-         * porque elimina recordatorios reales. Para soportar instalaciones en versiones 1 a 5 sin
-         * riesgo, recuperar/exportar los esquemas historicos o crear una migracion conservadora que
-         * inspeccione columnas existentes, copie datos a una tabla nueva y nunca borre filas de usuario.
-         */
+        internal val ALL_MIGRATIONS: Array<Migration> = arrayOf(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_6,
+            MIGRATION_6_7,
+            MIGRATION_7_8,
+            MIGRATION_8_9,
+            MIGRATION_9_10,
+            MIGRATION_10_11,
+            MIGRATION_11_12,
+            MIGRATION_12_13,
+            MIGRATION_13_14,
+            MIGRATION_14_15,
+            MIGRATION_15_16
+        )
     }
 }
