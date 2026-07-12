@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.core.net.toUri
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
@@ -49,6 +50,7 @@ class ReminderScheduler(
         val triggerAtMillis = reminder.scheduleState.nextTriggerAtEpochMillis ?: return
 
         val intent = Intent(context, ReminderReceiver::class.java).apply {
+            data = reminderIntentData(reminder.id, "primary")
             putExtra(ReminderReceiver.EXTRA_REMINDER_ID, reminder.id)
             putExtra(ReminderReceiver.EXTRA_OCCURRENCE_AT, triggerAtMillis)
         }
@@ -68,6 +70,7 @@ class ReminderScheduler(
         val occurrenceAtEpochMillis = reminder.scheduleState.activeAlertAtEpochMillis ?: return
 
         val intent = Intent(context, ReminderReceiver::class.java).apply {
+            data = reminderIntentData(reminder.id, "urgent")
             putExtra(ReminderReceiver.EXTRA_REMINDER_ID, reminder.id)
             putExtra(ReminderReceiver.EXTRA_OCCURRENCE_AT, occurrenceAtEpochMillis)
             putExtra(ReminderReceiver.EXTRA_IS_URGENT_REPEAT, true)
@@ -114,7 +117,9 @@ class ReminderScheduler(
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             reminderId,
-            Intent(context, ReminderReceiver::class.java),
+            Intent(context, ReminderReceiver::class.java).apply {
+                data = reminderIntentData(reminderId, "primary")
+            },
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         ) ?: return
 
@@ -126,7 +131,9 @@ class ReminderScheduler(
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             reminderId + URGENT_REPEAT_OFFSET,
-            Intent(context, ReminderReceiver::class.java),
+            Intent(context, ReminderReceiver::class.java).apply {
+                data = reminderIntentData(reminderId, "urgent")
+            },
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         ) ?: return
 
@@ -203,6 +210,9 @@ class ReminderScheduler(
             cancelUrgentRepeat(reminder.id)
         }
     }
+
+    private fun reminderIntentData(reminderId: Int, kind: String) =
+        "voicereminder://alarm/reminder/$reminderId/$kind".toUri()
 
     companion object {
         private const val URGENT_REPEAT_OFFSET = 100_000

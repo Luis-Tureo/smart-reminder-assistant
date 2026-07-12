@@ -36,9 +36,26 @@ class LoanNotificationHelper(
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(buildPublicNotification())
             .build()
 
         notifySafely(notificationId, notification)
+    }
+
+    fun cancelLoanReminderNotification(loanId: Int) {
+        NotificationManagerCompat.from(context).cancel(notificationId(loanId))
+    }
+
+    private fun buildPublicNotification(): Notification {
+        return NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(context.getString(com.luistureo.voicereminderapp.R.string.loan_module_title))
+            .setContentText(
+                context.getString(com.luistureo.voicereminderapp.R.string.loan_notification_private)
+            )
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
     }
 
     private fun createChannel() {
@@ -76,5 +93,8 @@ class LoanNotificationHelper(
 
     companion object {
         private const val CHANNEL_ID = "loan_reminder_channel"
+        private const val NOTIFICATION_OFFSET = 400_000
+
+        fun notificationId(loanId: Int): Int = NOTIFICATION_OFFSET + loanId
     }
 }

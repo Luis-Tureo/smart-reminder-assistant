@@ -304,6 +304,7 @@
     <string name="calendar_filter_title_completed">Completados</string>
 
     <string name="loan_module_title">Dinero prestado</string>
+    <string name="loan_notification_private">Tienes un recordatorio de pago pendiente.</string>
     <string name="loan_module_subtitle">Registro local de prestamos y devoluciones.</string>
     <string name="loan_create">Nuevo prestamo</string>
     <string name="loan_filter_title">Filtrar prestamos</string>

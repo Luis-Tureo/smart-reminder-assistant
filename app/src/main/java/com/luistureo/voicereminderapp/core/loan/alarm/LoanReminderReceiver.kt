@@ -36,7 +36,7 @@ class LoanReminderReceiver : BroadcastReceiver() {
 
                 LoanNotificationHelper(context).showLoanReminderNotification(
                     loan = loan,
-                    notificationId = NOTIFICATION_OFFSET + loanId
+                    notificationId = LoanNotificationHelper.notificationId(loanId)
                 )
 
                 if (kind == LoanReminderKind.REPEAT_AFTER_DUE) {
@@ -51,6 +51,5 @@ class LoanReminderReceiver : BroadcastReceiver() {
     companion object {
         const val EXTRA_LOAN_ID = "extra_loan_id"
         const val EXTRA_REMINDER_KIND = "extra_loan_reminder_kind"
-        private const val NOTIFICATION_OFFSET = 400_000
     }
 }
