@@ -10,6 +10,7 @@ import com.luistureo.voicereminderapp.domain.loan.model.LoanType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
@@ -45,6 +46,60 @@ class LoanCalculatorTest {
         )
 
         assertEquals(106_000L, total)
+    }
+
+    @Test
+    fun simpleInterestRoundsExactClpOnlyAtTheFinalResult() {
+        val total = LoanCalculator.calculateTotalExpectedAmount(
+            principalAmountClp = 99_999L,
+            loanDateEpochMillis = date("2026-01-01"),
+            dueDateEpochMillis = date("2026-01-16"),
+            interestEnabled = true,
+            monthlyInterestPercentage = 1.25,
+            zoneId = zoneId
+        )
+
+        assertEquals(100_624L, total)
+    }
+
+    @Test
+    fun editingCannotReduceExpectedTotalBelowRecordedPayments() {
+        val existing = LoanCalculator.buildLoan(draft())
+        val paid = LoanPayment(
+            paidAmountClp = 80_000L,
+            paymentDateEpochMillis = date("2026-02-01")
+        )
+        val reducedDraft = draft().copy(principalAmountClp = 70_000L)
+
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            LoanCalculator.buildLoan(reducedDraft, existing, listOf(paid))
+        }
+
+        assertEquals(LoanCalculator.TOTAL_BELOW_PAYMENTS_MESSAGE, error.message)
+    }
+
+    @Test
+    fun derivedStateUsesPrincipalInterestAndPaymentsInsteadOfStoredCaches() {
+        val payment = LoanPayment(
+            paidAmountClp = 20_000L,
+            paymentDateEpochMillis = date("2026-02-01")
+        )
+        val stale = LoanCalculator.buildLoan(draft()).copy(
+            totalExpectedAmountClp = 1L,
+            remainingAmountClp = 1L,
+            status = LoanStatus.PAID,
+            payments = listOf(payment)
+        )
+
+        val reconciled = LoanDerivedStatePolicy.reconcile(
+            stale,
+            today = LocalDate.of(2026, 2, 1),
+            zoneId = zoneId
+        )
+
+        assertEquals(100_000L, reconciled.totalExpectedAmountClp)
+        assertEquals(80_000L, reconciled.remainingAmountClp)
+        assertEquals(LoanStatus.PARTIALLY_PAID, reconciled.status)
     }
 
     @Test

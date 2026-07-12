@@ -110,8 +110,10 @@ class LoanViewModel(
                     _uiState.update { it.copy(selectedLoan = loan, message = "Prestamo guardado.") }
                     onSaved(loan.id)
                 }
-                .onFailure {
-                    _uiState.update { it.copy(message = "No fue posible guardar el prestamo.") }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(message = error.message ?: "No fue posible guardar el prestamo.")
+                    }
                 }
         }
     }
