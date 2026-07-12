@@ -6,6 +6,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter as JavaDateTimeFormatter
+import java.util.Locale
 
 object DateTimeFormatter {
 
@@ -15,12 +16,12 @@ object DateTimeFormatter {
 
     // Formatea la fecha en formato dd/MM/yyyy.
     fun formatDate(day: Int, month: Int, year: Int): String {
-        return String.format("%02d/%02d/%04d", day, month, year)
+        return String.format(Locale.ROOT, "%02d/%02d/%04d", day, month, year)
     }
 
     // Formatea la hora en formato HH:mm.
     fun formatTime(hour: Int, minute: Int): String {
-        return String.format("%02d:%02d", hour, minute)
+        return String.format(Locale.ROOT, "%02d:%02d", hour, minute)
     }
 
     // Convierte la fecha y hora seleccionadas a milisegundos.

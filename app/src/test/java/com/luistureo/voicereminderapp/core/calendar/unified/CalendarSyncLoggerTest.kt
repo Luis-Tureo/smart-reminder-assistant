@@ -89,4 +89,23 @@ class CalendarSyncLoggerTest {
         assertTrue(message.contains("errorCode=GOOGLE_AUTH_BAD_AUTHENTICATION"))
         assertFalse(message.contains("private@example.com"))
     }
+
+    @Test
+    fun identifiersLinksNamesAndAmountsAreAlwaysRedacted() {
+        val message = CalendarSyncLogger.buildMessage(
+            provider = CalendarProvider.GOOGLE_CALENDAR,
+            action = "privacy_check",
+            fields = mapOf(
+                "eventId" to "external-123",
+                "meetingUrl" to "https://meet.example/private",
+                "personName" to "Persona privada",
+                "loanAmount" to 90_000
+            )
+        )
+
+        assertFalse(message.contains("external-123"))
+        assertFalse(message.contains("meet.example"))
+        assertFalse(message.contains("Persona privada"))
+        assertFalse(message.contains("90000"))
+    }
 }

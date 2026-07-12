@@ -422,6 +422,7 @@ class MainActivity : ComponentActivity() {
             .setMessage(getString(R.string.exact_alarm_permission_message))
             .setNegativeButton(R.string.exact_alarm_permission_later, null)
             .setPositiveButton(R.string.exact_alarm_permission_open_settings) { _, _ ->
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return@setPositiveButton
                 runCatching {
                     startActivity(
                         Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
