@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -55,6 +56,7 @@ class ModuleSelectionActivity : ComponentActivity() {
             if (isFirstLaunch) R.string.module_selection_first_title
             else R.string.module_selection_edit_title
         )
+        ViewCompat.setAccessibilityHeading(title, true)
         subtitle.setText(R.string.module_selection_subtitle)
         back.isVisible = !isFirstLaunch
         back.setOnClickListener { finish() }

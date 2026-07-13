@@ -27,6 +27,7 @@
             android:id="@+id/ivModuleIcon"
             android:layout_width="40dp"
             android:layout_height="40dp"
+            android:contentDescription="@null"
             android:padding="7dp"
             app:tint="@color/primary_blue" />
 

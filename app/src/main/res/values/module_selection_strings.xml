@@ -33,5 +33,5 @@
     <string name="home_reselect_modules_description">Cambiar los módulos visibles en la pantalla principal</string>
     <string name="home_quick_notes_title">Notas rápidas</string>
     <string name="home_quick_notes_subtitle">Guarda ideas, pendientes y textos breves</string>
-    <string name="module_unavailable">Este módulo no está disponible en este momento.</string>
+    <string name="module_unavailable">Este módulo no está disponible actualmente.</string>
 </resources>
