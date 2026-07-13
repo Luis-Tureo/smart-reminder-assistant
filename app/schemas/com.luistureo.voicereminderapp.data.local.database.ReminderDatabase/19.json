@@ -1,0 +1,2608 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 19,
+    "identityHash": "5a6c5a92a24412bc27e21f1d30185f88",
+    "entities": [
+      {
+        "tableName": "reminders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `detail` TEXT NOT NULL, `scheduledAtEpochMillis` INTEGER NOT NULL, `isCompleted` INTEGER NOT NULL, `type` TEXT NOT NULL, `isUrgent` INTEGER NOT NULL, `source` TEXT NOT NULL, `recurrenceUnit` TEXT, `recurrenceInterval` INTEGER NOT NULL, `recurrenceWeekdays` TEXT NOT NULL, `isRecurringActive` INTEGER NOT NULL, `nextTriggerAtEpochMillis` INTEGER, `lastTriggeredAtEpochMillis` INTEGER, `activeAlertAtEpochMillis` INTEGER, `activeAlertRepeatCount` INTEGER NOT NULL, `nextUrgentRepeatAtEpochMillis` INTEGER, `googleCalendarEventId` TEXT, `googleCalendarSyncState` TEXT NOT NULL, `googleCalendarLastSyncAtEpochMillis` INTEGER, `microsoftCalendarLastSyncAtEpochMillis` INTEGER, `microsoftCalendarEventId` TEXT, `externalIdsByProvider` TEXT NOT NULL, `originProvider` TEXT NOT NULL, `syncedProviders` TEXT NOT NULL, `providerSyncStates` TEXT NOT NULL, `syncedFingerprintsByProvider` TEXT NOT NULL, `pendingCreateProviders` TEXT NOT NULL, `pendingUpdateProviders` TEXT NOT NULL, `pendingDeleteProviders` TEXT NOT NULL, `meetingUrl` TEXT, `meetingProvider` TEXT, `isOnlineMeeting` INTEGER NOT NULL, `meetingUrlsByProvider` TEXT NOT NULL, `isSuspended` INTEGER NOT NULL, `suspendedOccurrenceAtEpochMillis` INTEGER, `lastEditedSource` TEXT NOT NULL, `externalEditNote` TEXT, `isAllDay` INTEGER NOT NULL, `hiddenFromApp` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detail",
+            "columnName": "detail",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledAtEpochMillis",
+            "columnName": "scheduledAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCompleted",
+            "columnName": "isCompleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isUrgent",
+            "columnName": "isUrgent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recurrenceUnit",
+            "columnName": "recurrenceUnit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recurrenceInterval",
+            "columnName": "recurrenceInterval",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recurrenceWeekdays",
+            "columnName": "recurrenceWeekdays",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRecurringActive",
+            "columnName": "isRecurringActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextTriggerAtEpochMillis",
+            "columnName": "nextTriggerAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastTriggeredAtEpochMillis",
+            "columnName": "lastTriggeredAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "activeAlertAtEpochMillis",
+            "columnName": "activeAlertAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "activeAlertRepeatCount",
+            "columnName": "activeAlertRepeatCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextUrgentRepeatAtEpochMillis",
+            "columnName": "nextUrgentRepeatAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "googleCalendarEventId",
+            "columnName": "googleCalendarEventId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "googleCalendarSyncState",
+            "columnName": "googleCalendarSyncState",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "googleCalendarLastSyncAtEpochMillis",
+            "columnName": "googleCalendarLastSyncAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "microsoftCalendarLastSyncAtEpochMillis",
+            "columnName": "microsoftCalendarLastSyncAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "microsoftCalendarEventId",
+            "columnName": "microsoftCalendarEventId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "externalIdsByProvider",
+            "columnName": "externalIdsByProvider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originProvider",
+            "columnName": "originProvider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncedProviders",
+            "columnName": "syncedProviders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "providerSyncStates",
+            "columnName": "providerSyncStates",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncedFingerprintsByProvider",
+            "columnName": "syncedFingerprintsByProvider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendingCreateProviders",
+            "columnName": "pendingCreateProviders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendingUpdateProviders",
+            "columnName": "pendingUpdateProviders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendingDeleteProviders",
+            "columnName": "pendingDeleteProviders",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "meetingUrl",
+            "columnName": "meetingUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "meetingProvider",
+            "columnName": "meetingProvider",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isOnlineMeeting",
+            "columnName": "isOnlineMeeting",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "meetingUrlsByProvider",
+            "columnName": "meetingUrlsByProvider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSuspended",
+            "columnName": "isSuspended",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "suspendedOccurrenceAtEpochMillis",
+            "columnName": "suspendedOccurrenceAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastEditedSource",
+            "columnName": "lastEditedSource",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "externalEditNote",
+            "columnName": "externalEditNote",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isAllDay",
+            "columnName": "isAllDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hiddenFromApp",
+            "columnName": "hiddenFromApp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "loan_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `type` TEXT NOT NULL, `personName` TEXT NOT NULL, `phoneOrContact` TEXT, `principalAmountClp` INTEGER NOT NULL, `loanDateEpochMillis` INTEGER NOT NULL, `dueDateEpochMillis` INTEGER NOT NULL, `reason` TEXT NOT NULL, `attachmentUri` TEXT, `paymentMode` TEXT NOT NULL, `installmentCount` INTEGER NOT NULL, `interestEnabled` INTEGER NOT NULL, `interestPercentage` REAL NOT NULL, `interestMode` TEXT NOT NULL, `interestPeriod` TEXT NOT NULL, `totalExpectedAmountClp` INTEGER NOT NULL, `remainingAmountClp` INTEGER NOT NULL, `notes` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, `status` TEXT NOT NULL, `reminderSameDay` INTEGER NOT NULL, `reminderOneDayBefore` INTEGER NOT NULL, `reminderThreeDaysBefore` INTEGER NOT NULL, `customReminderAtEpochMillis` INTEGER, `repeatAfterDueEveryDays` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "personName",
+            "columnName": "personName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phoneOrContact",
+            "columnName": "phoneOrContact",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "principalAmountClp",
+            "columnName": "principalAmountClp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loanDateEpochMillis",
+            "columnName": "loanDateEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dueDateEpochMillis",
+            "columnName": "dueDateEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attachmentUri",
+            "columnName": "attachmentUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "paymentMode",
+            "columnName": "paymentMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installmentCount",
+            "columnName": "installmentCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interestEnabled",
+            "columnName": "interestEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interestPercentage",
+            "columnName": "interestPercentage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interestMode",
+            "columnName": "interestMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "interestPeriod",
+            "columnName": "interestPeriod",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalExpectedAmountClp",
+            "columnName": "totalExpectedAmountClp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remainingAmountClp",
+            "columnName": "remainingAmountClp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reminderSameDay",
+            "columnName": "reminderSameDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reminderOneDayBefore",
+            "columnName": "reminderOneDayBefore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reminderThreeDaysBefore",
+            "columnName": "reminderThreeDaysBefore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customReminderAtEpochMillis",
+            "columnName": "customReminderAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "repeatAfterDueEveryDays",
+            "columnName": "repeatAfterDueEveryDays",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "loan_payments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `loanId` INTEGER NOT NULL, `paidAmountClp` INTEGER NOT NULL, `paymentDateEpochMillis` INTEGER NOT NULL, `note` TEXT, `attachmentUri` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, FOREIGN KEY(`loanId`) REFERENCES `loan_records`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loanId",
+            "columnName": "loanId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidAmountClp",
+            "columnName": "paidAmountClp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentDateEpochMillis",
+            "columnName": "paymentDateEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attachmentUri",
+            "columnName": "attachmentUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_loan_payments_loanId",
+            "unique": false,
+            "columnNames": [
+              "loanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_loan_payments_loanId` ON `${TABLE_NAME}` (`loanId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "loan_records",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "loanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "loan_installments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `loanId` INTEGER NOT NULL, `installmentNumber` INTEGER NOT NULL, `dueDateEpochMillis` INTEGER NOT NULL, `expectedAmountClp` INTEGER NOT NULL, `paidAmountClp` INTEGER NOT NULL, `status` TEXT NOT NULL, FOREIGN KEY(`loanId`) REFERENCES `loan_records`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loanId",
+            "columnName": "loanId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installmentNumber",
+            "columnName": "installmentNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dueDateEpochMillis",
+            "columnName": "dueDateEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedAmountClp",
+            "columnName": "expectedAmountClp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidAmountClp",
+            "columnName": "paidAmountClp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_loan_installments_loanId",
+            "unique": false,
+            "columnNames": [
+              "loanId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_loan_installments_loanId` ON `${TABLE_NAME}` (`loanId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "loan_records",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "loanId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "routines",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `category` TEXT NOT NULL, `icon` TEXT NOT NULL, `color` INTEGER NOT NULL, `enabled` INTEGER NOT NULL, `period` TEXT NOT NULL, `startTimeMinutes` INTEGER, `deadlineTimeMinutes` INTEGER, `assistantMode` TEXT NOT NULL, `voiceEnabled` INTEGER NOT NULL, `motivationBubbleEnabled` INTEGER NOT NULL, `motivationScheduleMinutes` INTEGER, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icon",
+            "columnName": "icon",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTimeMinutes",
+            "columnName": "startTimeMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deadlineTimeMinutes",
+            "columnName": "deadlineTimeMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "assistantMode",
+            "columnName": "assistantMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voiceEnabled",
+            "columnName": "voiceEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivationBubbleEnabled",
+            "columnName": "motivationBubbleEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivationScheduleMinutes",
+            "columnName": "motivationScheduleMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_routines_period",
+            "unique": false,
+            "columnNames": [
+              "period"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routines_period` ON `${TABLE_NAME}` (`period`)"
+          },
+          {
+            "name": "index_routines_enabled",
+            "unique": false,
+            "columnNames": [
+              "enabled"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routines_enabled` ON `${TABLE_NAME}` (`enabled`)"
+          }
+        ]
+      },
+      {
+        "tableName": "routine_tasks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `routineId` INTEGER NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `orderPriority` INTEGER NOT NULL, `completed` INTEGER NOT NULL, `completedOnEpochDay` INTEGER, `optionalTimeMinutes` INTEGER, `estimatedDurationMinutes` INTEGER, `notes` TEXT, FOREIGN KEY(`routineId`) REFERENCES `routines`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routineId",
+            "columnName": "routineId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "orderPriority",
+            "columnName": "orderPriority",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completed",
+            "columnName": "completed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedOnEpochDay",
+            "columnName": "completedOnEpochDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "optionalTimeMinutes",
+            "columnName": "optionalTimeMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "estimatedDurationMinutes",
+            "columnName": "estimatedDurationMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_routine_tasks_routineId",
+            "unique": false,
+            "columnNames": [
+              "routineId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routine_tasks_routineId` ON `${TABLE_NAME}` (`routineId`)"
+          },
+          {
+            "name": "index_routine_tasks_routineId_orderPriority",
+            "unique": true,
+            "columnNames": [
+              "routineId",
+              "orderPriority"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_routine_tasks_routineId_orderPriority` ON `${TABLE_NAME}` (`routineId`, `orderPriority`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "routines",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "routineId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "routine_daily_executions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `dateEpochDay` INTEGER NOT NULL, `routineId` INTEGER NOT NULL, `state` TEXT NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, `assistantGuidanceMode` TEXT, FOREIGN KEY(`routineId`) REFERENCES `routines`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateEpochDay",
+            "columnName": "dateEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routineId",
+            "columnName": "routineId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assistantGuidanceMode",
+            "columnName": "assistantGuidanceMode",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_routine_daily_executions_routineId",
+            "unique": false,
+            "columnNames": [
+              "routineId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routine_daily_executions_routineId` ON `${TABLE_NAME}` (`routineId`)"
+          },
+          {
+            "name": "index_routine_daily_executions_routineId_dateEpochDay",
+            "unique": true,
+            "columnNames": [
+              "routineId",
+              "dateEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_routine_daily_executions_routineId_dateEpochDay` ON `${TABLE_NAME}` (`routineId`, `dateEpochDay`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "routines",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "routineId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "routine_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `dateEpochDay` INTEGER NOT NULL, `routineId` INTEGER NOT NULL, `completedTasks` INTEGER NOT NULL, `totalTasks` INTEGER NOT NULL, `completionPercentage` REAL NOT NULL, `finalState` TEXT NOT NULL, `assistantGuidanceMode` TEXT, `periodAtExecution` TEXT, `routineNameAtExecution` TEXT, `pendingTaskTitles` TEXT NOT NULL, `completedAtEpochMillis` INTEGER, FOREIGN KEY(`routineId`) REFERENCES `routines`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateEpochDay",
+            "columnName": "dateEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routineId",
+            "columnName": "routineId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedTasks",
+            "columnName": "completedTasks",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalTasks",
+            "columnName": "totalTasks",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completionPercentage",
+            "columnName": "completionPercentage",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finalState",
+            "columnName": "finalState",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assistantGuidanceMode",
+            "columnName": "assistantGuidanceMode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "periodAtExecution",
+            "columnName": "periodAtExecution",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "routineNameAtExecution",
+            "columnName": "routineNameAtExecution",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pendingTaskTitles",
+            "columnName": "pendingTaskTitles",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedAtEpochMillis",
+            "columnName": "completedAtEpochMillis",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_routine_history_routineId",
+            "unique": false,
+            "columnNames": [
+              "routineId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routine_history_routineId` ON `${TABLE_NAME}` (`routineId`)"
+          },
+          {
+            "name": "index_routine_history_routineId_dateEpochDay",
+            "unique": true,
+            "columnNames": [
+              "routineId",
+              "dateEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_routine_history_routineId_dateEpochDay` ON `${TABLE_NAME}` (`routineId`, `dateEpochDay`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "routines",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "routineId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "routine_templates",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `benefitsExplanation` TEXT NOT NULL, `period` TEXT NOT NULL, `estimatedTotalDurationMinutes` INTEGER NOT NULL, `icon` TEXT, `color` INTEGER, `category` TEXT NOT NULL, `editable` INTEGER NOT NULL, `builtIn` INTEGER NOT NULL, `builtInKey` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "benefitsExplanation",
+            "columnName": "benefitsExplanation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estimatedTotalDurationMinutes",
+            "columnName": "estimatedTotalDurationMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icon",
+            "columnName": "icon",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "editable",
+            "columnName": "editable",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "builtIn",
+            "columnName": "builtIn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "builtInKey",
+            "columnName": "builtInKey",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "routine_template_tasks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `templateId` INTEGER NOT NULL, `title` TEXT NOT NULL, `description` TEXT, `orderPriority` INTEGER NOT NULL, `estimatedDurationMinutes` INTEGER, FOREIGN KEY(`templateId`) REFERENCES `routine_templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "templateId",
+            "columnName": "templateId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "orderPriority",
+            "columnName": "orderPriority",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estimatedDurationMinutes",
+            "columnName": "estimatedDurationMinutes",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_routine_template_tasks_templateId",
+            "unique": false,
+            "columnNames": [
+              "templateId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routine_template_tasks_templateId` ON `${TABLE_NAME}` (`templateId`)"
+          },
+          {
+            "name": "index_routine_template_tasks_templateId_orderPriority",
+            "unique": true,
+            "columnNames": [
+              "templateId",
+              "orderPriority"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_routine_template_tasks_templateId_orderPriority` ON `${TABLE_NAME}` (`templateId`, `orderPriority`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "routine_templates",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "templateId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "routine_suggestions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `routineId` INTEGER NOT NULL, `type` TEXT NOT NULL, `message` TEXT NOT NULL, `primaryAction` TEXT NOT NULL, `secondaryAction` TEXT NOT NULL, `createdAtEpochDay` INTEGER NOT NULL, `dismissedAtEpochDay` INTEGER, `active` INTEGER NOT NULL, FOREIGN KEY(`routineId`) REFERENCES `routines`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routineId",
+            "columnName": "routineId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryAction",
+            "columnName": "primaryAction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "secondaryAction",
+            "columnName": "secondaryAction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochDay",
+            "columnName": "createdAtEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dismissedAtEpochDay",
+            "columnName": "dismissedAtEpochDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_routine_suggestions_routineId",
+            "unique": false,
+            "columnNames": [
+              "routineId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routine_suggestions_routineId` ON `${TABLE_NAME}` (`routineId`)"
+          },
+          {
+            "name": "index_routine_suggestions_routineId_type_createdAtEpochDay",
+            "unique": false,
+            "columnNames": [
+              "routineId",
+              "type",
+              "createdAtEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routine_suggestions_routineId_type_createdAtEpochDay` ON `${TABLE_NAME}` (`routineId`, `type`, `createdAtEpochDay`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "routines",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "routineId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_plans",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `dateEpochDay` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateEpochDay",
+            "columnName": "dateEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nutrition_plans_dateEpochDay",
+            "unique": true,
+            "columnNames": [
+              "dateEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nutrition_plans_dateEpochDay` ON `${TABLE_NAME}` (`dateEpochDay`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_meals",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `planId` INTEGER NOT NULL, `name` TEXT NOT NULL, `period` TEXT NOT NULL, `optionalTimeMinutes` INTEGER, `foodsOrDishes` TEXT, `preparationNote` TEXT, `photoUri` TEXT, `reminderType` TEXT NOT NULL, `reminderMinutesBefore` INTEGER, `customReminderAtEpochMillis` INTEGER, `status` TEXT NOT NULL, `personalNotes` TEXT, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, FOREIGN KEY(`planId`) REFERENCES `nutrition_plans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planId",
+            "columnName": "planId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "optionalTimeMinutes",
+            "columnName": "optionalTimeMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "foodsOrDishes",
+            "columnName": "foodsOrDishes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preparationNote",
+            "columnName": "preparationNote",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "photoUri",
+            "columnName": "photoUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reminderType",
+            "columnName": "reminderType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reminderMinutesBefore",
+            "columnName": "reminderMinutesBefore",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "customReminderAtEpochMillis",
+            "columnName": "customReminderAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "personalNotes",
+            "columnName": "personalNotes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nutrition_meals_planId",
+            "unique": false,
+            "columnNames": [
+              "planId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_meals_planId` ON `${TABLE_NAME}` (`planId`)"
+          },
+          {
+            "name": "index_nutrition_meals_planId_period",
+            "unique": false,
+            "columnNames": [
+              "planId",
+              "period"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_meals_planId_period` ON `${TABLE_NAME}` (`planId`, `period`)"
+          },
+          {
+            "name": "index_nutrition_meals_planId_status",
+            "unique": false,
+            "columnNames": [
+              "planId",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_meals_planId_status` ON `${TABLE_NAME}` (`planId`, `status`)"
+          },
+          {
+            "name": "index_nutrition_meals_customReminderAtEpochMillis",
+            "unique": false,
+            "columnNames": [
+              "customReminderAtEpochMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_meals_customReminderAtEpochMillis` ON `${TABLE_NAME}` (`customReminderAtEpochMillis`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "nutrition_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "planId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_hydration_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `dateEpochDay` INTEGER NOT NULL, `amountMl` INTEGER NOT NULL, `loggedAtEpochMillis` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateEpochDay",
+            "columnName": "dateEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountMl",
+            "columnName": "amountMl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loggedAtEpochMillis",
+            "columnName": "loggedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nutrition_hydration_entries_dateEpochDay",
+            "unique": false,
+            "columnNames": [
+              "dateEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_hydration_entries_dateEpochDay` ON `${TABLE_NAME}` (`dateEpochDay`)"
+          },
+          {
+            "name": "index_nutrition_hydration_entries_loggedAtEpochMillis",
+            "unique": false,
+            "columnNames": [
+              "loggedAtEpochMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_hydration_entries_loggedAtEpochMillis` ON `${TABLE_NAME}` (`loggedAtEpochMillis`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_shopping_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `normalizedName` TEXT NOT NULL, `quantityOrNote` TEXT, `category` TEXT NOT NULL, `checked` INTEGER NOT NULL, `archived` INTEGER NOT NULL, `checkedAtEpochDay` INTEGER, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedName",
+            "columnName": "normalizedName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantityOrNote",
+            "columnName": "quantityOrNote",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checked",
+            "columnName": "checked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checkedAtEpochDay",
+            "columnName": "checkedAtEpochDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nutrition_shopping_items_normalizedName_archived",
+            "unique": false,
+            "columnNames": [
+              "normalizedName",
+              "archived"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_shopping_items_normalizedName_archived` ON `${TABLE_NAME}` (`normalizedName`, `archived`)"
+          },
+          {
+            "name": "index_nutrition_shopping_items_checked_archived",
+            "unique": false,
+            "columnNames": [
+              "checked",
+              "archived"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_shopping_items_checked_archived` ON `${TABLE_NAME}` (`checked`, `archived`)"
+          },
+          {
+            "name": "index_nutrition_shopping_items_checkedAtEpochDay",
+            "unique": false,
+            "columnNames": [
+              "checkedAtEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_shopping_items_checkedAtEpochDay` ON `${TABLE_NAME}` (`checkedAtEpochDay`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_templates",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `preparationComplexity` TEXT NOT NULL, `practicalBenefits` TEXT NOT NULL, `editable` INTEGER NOT NULL, `builtIn` INTEGER NOT NULL, `builtInKey` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preparationComplexity",
+            "columnName": "preparationComplexity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "practicalBenefits",
+            "columnName": "practicalBenefits",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "editable",
+            "columnName": "editable",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "builtIn",
+            "columnName": "builtIn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "builtInKey",
+            "columnName": "builtInKey",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nutrition_templates_builtInKey",
+            "unique": true,
+            "columnNames": [
+              "builtInKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nutrition_templates_builtInKey` ON `${TABLE_NAME}` (`builtInKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_template_meals",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `templateId` INTEGER NOT NULL, `period` TEXT NOT NULL, `name` TEXT NOT NULL, `foodsOrDishes` TEXT, `preparationNote` TEXT, `orderPriority` INTEGER NOT NULL, FOREIGN KEY(`templateId`) REFERENCES `nutrition_templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "templateId",
+            "columnName": "templateId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "period",
+            "columnName": "period",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foodsOrDishes",
+            "columnName": "foodsOrDishes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preparationNote",
+            "columnName": "preparationNote",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "orderPriority",
+            "columnName": "orderPriority",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nutrition_template_meals_templateId",
+            "unique": false,
+            "columnNames": [
+              "templateId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_template_meals_templateId` ON `${TABLE_NAME}` (`templateId`)"
+          },
+          {
+            "name": "index_nutrition_template_meals_templateId_orderPriority",
+            "unique": true,
+            "columnNames": [
+              "templateId",
+              "orderPriority"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nutrition_template_meals_templateId_orderPriority` ON `${TABLE_NAME}` (`templateId`, `orderPriority`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "nutrition_templates",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "templateId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_preferences",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `dietaryStyle` TEXT NOT NULL, `dislikes` TEXT NOT NULL, `exclusions` TEXT NOT NULL, `allergiesOrIntolerances` TEXT NOT NULL, `preferredFoods` TEXT NOT NULL, `organizationalGoals` TEXT NOT NULL, `enabledMealPeriods` TEXT NOT NULL, `hydrationEnabled` INTEGER NOT NULL, `hydrationTargetMl` INTEGER NOT NULL, `hydrationContainerMl` INTEGER NOT NULL, `hydrationReminderStartMinutes` INTEGER, `hydrationReminderEndMinutes` INTEGER, `hydrationReminderIntervalMinutes` INTEGER, `remindersEnabled` INTEGER NOT NULL, `assistantVoiceEnabled` INTEGER NOT NULL, `temporaryBubbleEnabled` INTEGER NOT NULL, `preferredChartType` TEXT NOT NULL, `privacyModeEnabled` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dietaryStyle",
+            "columnName": "dietaryStyle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dislikes",
+            "columnName": "dislikes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exclusions",
+            "columnName": "exclusions",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "allergiesOrIntolerances",
+            "columnName": "allergiesOrIntolerances",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preferredFoods",
+            "columnName": "preferredFoods",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "organizationalGoals",
+            "columnName": "organizationalGoals",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabledMealPeriods",
+            "columnName": "enabledMealPeriods",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hydrationEnabled",
+            "columnName": "hydrationEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hydrationTargetMl",
+            "columnName": "hydrationTargetMl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hydrationContainerMl",
+            "columnName": "hydrationContainerMl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hydrationReminderStartMinutes",
+            "columnName": "hydrationReminderStartMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "hydrationReminderEndMinutes",
+            "columnName": "hydrationReminderEndMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "hydrationReminderIntervalMinutes",
+            "columnName": "hydrationReminderIntervalMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "remindersEnabled",
+            "columnName": "remindersEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assistantVoiceEnabled",
+            "columnName": "assistantVoiceEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temporaryBubbleEnabled",
+            "columnName": "temporaryBubbleEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preferredChartType",
+            "columnName": "preferredChartType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "privacyModeEnabled",
+            "columnName": "privacyModeEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "recovery_goals",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `historyKey` TEXT NOT NULL, `title` TEXT NOT NULL, `category` TEXT NOT NULL, `customCategory` TEXT, `startDateEpochDay` INTEGER, `targetDateEpochDay` INTEGER, `personalReason` TEXT, `motivations` TEXT, `reductionTrackingEnabled` INTEGER NOT NULL, `status` TEXT NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "historyKey",
+            "columnName": "historyKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customCategory",
+            "columnName": "customCategory",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "startDateEpochDay",
+            "columnName": "startDateEpochDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "targetDateEpochDay",
+            "columnName": "targetDateEpochDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "personalReason",
+            "columnName": "personalReason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "motivations",
+            "columnName": "motivations",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reductionTrackingEnabled",
+            "columnName": "reductionTrackingEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recovery_goals_historyKey",
+            "unique": true,
+            "columnNames": [
+              "historyKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recovery_goals_historyKey` ON `${TABLE_NAME}` (`historyKey`)"
+          },
+          {
+            "name": "index_recovery_goals_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_goals_status` ON `${TABLE_NAME}` (`status`)"
+          }
+        ]
+      },
+      {
+        "tableName": "recovery_check_ins",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goalId` INTEGER, `goalHistoryKey` TEXT NOT NULL, `dateEpochDay` INTEGER NOT NULL, `status` TEXT NOT NULL, `cravingIntensity` INTEGER, `trigger` TEXT, `helpfulAction` TEXT, `note` TEXT, `reducedFrequency` INTEGER NOT NULL, `resetsStreak` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, FOREIGN KEY(`goalId`) REFERENCES `recovery_goals`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goalId",
+            "columnName": "goalId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "goalHistoryKey",
+            "columnName": "goalHistoryKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateEpochDay",
+            "columnName": "dateEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cravingIntensity",
+            "columnName": "cravingIntensity",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "trigger",
+            "columnName": "trigger",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "helpfulAction",
+            "columnName": "helpfulAction",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reducedFrequency",
+            "columnName": "reducedFrequency",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resetsStreak",
+            "columnName": "resetsStreak",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recovery_check_ins_goalId",
+            "unique": false,
+            "columnNames": [
+              "goalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_check_ins_goalId` ON `${TABLE_NAME}` (`goalId`)"
+          },
+          {
+            "name": "index_recovery_check_ins_goalHistoryKey",
+            "unique": false,
+            "columnNames": [
+              "goalHistoryKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_check_ins_goalHistoryKey` ON `${TABLE_NAME}` (`goalHistoryKey`)"
+          },
+          {
+            "name": "index_recovery_check_ins_goalHistoryKey_dateEpochDay",
+            "unique": true,
+            "columnNames": [
+              "goalHistoryKey",
+              "dateEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recovery_check_ins_goalHistoryKey_dateEpochDay` ON `${TABLE_NAME}` (`goalHistoryKey`, `dateEpochDay`)"
+          },
+          {
+            "name": "index_recovery_check_ins_dateEpochDay",
+            "unique": false,
+            "columnNames": [
+              "dateEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_check_ins_dateEpochDay` ON `${TABLE_NAME}` (`dateEpochDay`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "recovery_goals",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "goalId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "recovery_triggers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goalId` INTEGER NOT NULL, `label` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, FOREIGN KEY(`goalId`) REFERENCES `recovery_goals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goalId",
+            "columnName": "goalId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recovery_triggers_goalId",
+            "unique": false,
+            "columnNames": [
+              "goalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_triggers_goalId` ON `${TABLE_NAME}` (`goalId`)"
+          },
+          {
+            "name": "index_recovery_triggers_goalId_label",
+            "unique": true,
+            "columnNames": [
+              "goalId",
+              "label"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recovery_triggers_goalId_label` ON `${TABLE_NAME}` (`goalId`, `label`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "recovery_goals",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "goalId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "recovery_helpful_actions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goalId` INTEGER NOT NULL, `label` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, FOREIGN KEY(`goalId`) REFERENCES `recovery_goals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goalId",
+            "columnName": "goalId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recovery_helpful_actions_goalId",
+            "unique": false,
+            "columnNames": [
+              "goalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_helpful_actions_goalId` ON `${TABLE_NAME}` (`goalId`)"
+          },
+          {
+            "name": "index_recovery_helpful_actions_goalId_label",
+            "unique": true,
+            "columnNames": [
+              "goalId",
+              "label"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recovery_helpful_actions_goalId_label` ON `${TABLE_NAME}` (`goalId`, `label`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "recovery_goals",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "goalId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "recovery_support_contacts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goalId` INTEGER NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `phone` TEXT NOT NULL, `preferredAction` TEXT NOT NULL, FOREIGN KEY(`goalId`) REFERENCES `recovery_goals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goalId",
+            "columnName": "goalId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preferredAction",
+            "columnName": "preferredAction",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recovery_support_contacts_goalId",
+            "unique": false,
+            "columnNames": [
+              "goalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_support_contacts_goalId` ON `${TABLE_NAME}` (`goalId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "recovery_goals",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "goalId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "recovery_milestones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goalId` INTEGER NOT NULL, `label` TEXT NOT NULL, `thresholdDays` INTEGER, `kind` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `achievedAtEpochMillis` INTEGER, FOREIGN KEY(`goalId`) REFERENCES `recovery_goals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goalId",
+            "columnName": "goalId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thresholdDays",
+            "columnName": "thresholdDays",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "achievedAtEpochMillis",
+            "columnName": "achievedAtEpochMillis",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recovery_milestones_goalId",
+            "unique": false,
+            "columnNames": [
+              "goalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_milestones_goalId` ON `${TABLE_NAME}` (`goalId`)"
+          },
+          {
+            "name": "index_recovery_milestones_goalId_kind_thresholdDays",
+            "unique": true,
+            "columnNames": [
+              "goalId",
+              "kind",
+              "thresholdDays"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recovery_milestones_goalId_kind_thresholdDays` ON `${TABLE_NAME}` (`goalId`, `kind`, `thresholdDays`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "recovery_goals",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "goalId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "recovery_reminders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `goalId` INTEGER NOT NULL, `type` TEXT NOT NULL, `timeMinutes` INTEGER NOT NULL, `enabled` INTEGER NOT NULL, `snoozeMinutes` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, FOREIGN KEY(`goalId`) REFERENCES `recovery_goals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goalId",
+            "columnName": "goalId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeMinutes",
+            "columnName": "timeMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "snoozeMinutes",
+            "columnName": "snoozeMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recovery_reminders_goalId",
+            "unique": false,
+            "columnNames": [
+              "goalId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_reminders_goalId` ON `${TABLE_NAME}` (`goalId`)"
+          },
+          {
+            "name": "index_recovery_reminders_goalId_type",
+            "unique": true,
+            "columnNames": [
+              "goalId",
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recovery_reminders_goalId_type` ON `${TABLE_NAME}` (`goalId`, `type`)"
+          },
+          {
+            "name": "index_recovery_reminders_enabled",
+            "unique": false,
+            "columnNames": [
+              "enabled"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recovery_reminders_enabled` ON `${TABLE_NAME}` (`enabled`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "recovery_goals",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "goalId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "quick_notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT, `content` TEXT NOT NULL, `isPinned` INTEGER NOT NULL, `colorTag` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isArchived` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPinned",
+            "columnName": "isPinned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "colorTag",
+            "columnName": "colorTag",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isArchived",
+            "columnName": "isArchived",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_quick_notes_isArchived_isPinned_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "isArchived",
+              "isPinned",
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_quick_notes_isArchived_isPinned_updatedAt` ON `${TABLE_NAME}` (`isArchived`, `isPinned`, `updatedAt`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5a6c5a92a24412bc27e21f1d30185f88')"
+    ]
+  }
+}
