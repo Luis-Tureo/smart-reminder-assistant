@@ -13,9 +13,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.luistureo.voicereminderapp.R
-import com.luistureo.voicereminderapp.core.recovery.RecoveryAssistantCoordinator
-import com.luistureo.voicereminderapp.core.recovery.RecoveryAssistantMessage
 import com.luistureo.voicereminderapp.core.recovery.RecoveryPreferenceStore
+import com.luistureo.voicereminderapp.core.wellness.WellnessAssistantCoordinator
+import com.luistureo.voicereminderapp.core.wellness.WellnessAssistantPhrase
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
 import com.luistureo.voicereminderapp.presentation.routine.RoutineDashboardActivity
 import kotlinx.coroutines.launch
@@ -24,6 +24,7 @@ class RecoverySupportActivity : ComponentActivity() {
     private lateinit var viewModel: RecoveryViewModel
     private lateinit var configuredActions: LinearLayout
     private lateinit var bubble: AssistantDialogueBubbleView
+    private lateinit var assistantCoordinator: WellnessAssistantCoordinator
     private val goalId by lazy { intent.getIntExtra(RecoveryDashboardActivity.EXTRA_GOAL_ID, 0) }
     private var rendered = false
 
@@ -40,11 +41,18 @@ class RecoverySupportActivity : ComponentActivity() {
         observe()
         viewModel.load(goalId)
         val preferences = RecoveryPreferenceStore(applicationContext)
-        if (preferences.bubbleEnabled()) {
-            bubble.showMessage(getString(R.string.recovery_assistant_tools), true, false)
-            bubble.postDelayed({ bubble.hideBubble() }, 7_000L)
-        }
-        RecoveryAssistantCoordinator(applicationContext).speak(RecoveryAssistantMessage.TOOLS)
+        assistantCoordinator = WellnessAssistantCoordinator(
+            context = this,
+            bubbleView = bubble,
+            voiceEnabled = preferences.voiceEnabled(),
+            bubbleEnabled = preferences.bubbleEnabled()
+        )
+        assistantCoordinator.present(WellnessAssistantPhrase.RECOVERY_REVIEW_SUPPORT_TOOLS)
+    }
+
+    override fun onDestroy() {
+        if (::assistantCoordinator.isInitialized) assistantCoordinator.release()
+        super.onDestroy()
     }
 
     private fun setupActions() {
@@ -104,10 +112,5 @@ class RecoverySupportActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onDestroy() {
-        bubble.stopAllEffects()
-        super.onDestroy()
     }
 }
