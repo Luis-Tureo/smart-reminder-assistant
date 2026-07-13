@@ -52,6 +52,18 @@
             android:name=".core.routine.RoutineActionReceiver"
             android:exported="false" />
         <receiver
+            android:name=".core.nutrition.NutritionAlarmReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".core.nutrition.NutritionActionReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".core.recovery.RecoveryAlarmReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".core.recovery.RecoveryActionReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".core.routine.RoutineRescheduleReceiver"
             android:exported="false">
             <intent-filter>
@@ -65,6 +77,65 @@
         <receiver
             android:name=".core.loan.alarm.LoanReminderReceiver"
             android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionStatisticsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionPreferencesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionTemplatePreviewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionTemplatesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionShoppingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionHydrationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionPlanningActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionMealEditorActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.nutrition.NutritionDashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.recovery.RecoverySettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
+        <activity
+            android:name=".presentation.recovery.RecoveryStatisticsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
+        <activity
+            android:name=".presentation.recovery.RecoveryContactsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
+        <activity
+            android:name=".presentation.recovery.RecoveryToolsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
+        <activity
+            android:name=".presentation.recovery.RecoverySupportActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
+        <activity
+            android:name=".presentation.recovery.RecoveryCheckInActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
+        <activity
+            android:name=".presentation.recovery.RecoveryGoalEditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
+        <activity
+            android:name=".presentation.recovery.RecoveryDashboardActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp.Recovery" />
         <activity
             android:name=".presentation.routine.RoutineTemplatesActivity"
             android:exported="false"

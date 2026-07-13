@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/recovery_screen_background" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:background="@color/recovery_toolbar_background" android:gravity="center_vertical" android:paddingHorizontal="8dp">
+        <ImageButton android:id="@+id/btnBackRecoveryTools" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/recovery_back" android:padding="12dp" android:src="@drawable/ic_calendar_back" app:tint="@color/recovery_toolbar_text" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/recovery_tools_title" android:textColor="@color/recovery_toolbar_text" android:textSize="21sp" android:textStyle="bold" />
+    </LinearLayout>
+    <androidx.core.widget.NestedScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/recovery_tools_triggers" android:textSize="18sp" android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/recovery_tools_trigger_hint">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputRecoveryTrigger" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLength="200" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnAddRecoveryTrigger" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/recovery_tools_add_trigger" />
+            <TextView android:id="@+id/tvRecoveryTriggersEmpty" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="12dp" android:text="@string/recovery_tools_empty_triggers" android:textColor="@color/recovery_muted" />
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerRecoveryTriggers" android:layout_width="match_parent" android:layout_height="wrap_content" android:nestedScrollingEnabled="false" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:text="@string/recovery_tools_actions" android:textSize="18sp" android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/recovery_tools_action_hint">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputRecoveryHelpfulAction" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLength="200" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnAddRecoveryHelpfulAction" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/recovery_tools_add_action" />
+            <TextView android:id="@+id/tvRecoveryActionsEmpty" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="12dp" android:text="@string/recovery_tools_empty_actions" android:textColor="@color/recovery_muted" />
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerRecoveryActions" android:layout_width="match_parent" android:layout_height="wrap_content" android:nestedScrollingEnabled="false" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:background="@color/recovery_warning_background" android:padding="12dp" android:text="@string/recovery_tools_no_guarantee" android:textColor="@color/recovery_warning_text" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

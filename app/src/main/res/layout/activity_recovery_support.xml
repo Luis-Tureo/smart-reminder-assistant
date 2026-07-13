@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/recovery_screen_background" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:background="@color/recovery_toolbar_background" android:gravity="center_vertical" android:paddingHorizontal="8dp">
+        <ImageButton android:id="@+id/btnBackRecoverySupport" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/recovery_back" android:padding="12dp" android:src="@drawable/ic_calendar_back" app:tint="@color/recovery_toolbar_text" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/recovery_support_title" android:textColor="@color/recovery_toolbar_text" android:textSize="21sp" android:textStyle="bold" />
+    </LinearLayout>
+    <androidx.core.widget.NestedScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/recovery_support_background" android:padding="14dp" android:text="@string/recovery_support_intro" android:textColor="@color/recovery_support_text" android:textSize="15sp" />
+            <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView android:id="@+id/bubbleRecoverySupport" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginTop="10dp" android:contentDescription="@string/recovery_assistant_tools" />
+            <LinearLayout android:id="@+id/containerRecoveryConfiguredActions" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnRecoveryRememberReasons" style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:minHeight="48dp" android:text="@string/recovery_support_reasons" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnRecoveryContactSupport" style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/recovery_support_contact" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnRecoveryAlternative" style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/recovery_support_alternative" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnRecoveryWait" style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/recovery_support_wait" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnRecoveryOpenRoutine" style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/recovery_support_routine" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnRecoveryRecordFeeling" style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp" android:text="@string/recovery_support_feeling" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@color/recovery_warning_background" android:padding="12dp" android:text="@string/recovery_disclaimer" android:textColor="@color/recovery_warning_text" android:textSize="13sp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>
