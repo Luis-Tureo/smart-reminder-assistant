@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+    android:background="@color/nutrition_screen_background">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:orientation="horizontal"
+        android:gravity="center_vertical" android:background="@color/nutrition_toolbar_background" android:paddingHorizontal="8dp">
+        <ImageButton android:id="@+id/btnBackNutritionStatistics" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/nutrition_back"
+            android:src="@drawable/ic_calendar_back" android:padding="12dp" app:tint="@color/nutrition_toolbar_text" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/nutrition_statistics_title" android:textColor="@color/nutrition_toolbar_text" android:textSize="22sp" android:textStyle="bold" />
+    </LinearLayout>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp"
+        android:text="@string/nutrition_statistics_intro" android:textColor="@color/reminder_text_secondary" />
+    <Spinner android:id="@+id/spinnerNutritionStatisticsRange" android:layout_width="match_parent" android:layout_height="52dp"
+        android:layout_marginHorizontal="16dp" />
+    <com.luistureo.voicereminderapp.presentation.nutrition.NutritionChartView
+        android:id="@+id/chartNutritionStatistics" android:layout_width="match_parent" android:layout_height="240dp"
+        android:layout_margin="16dp" android:background="@color/nutrition_card_background" android:padding="16dp" />
+    <TextView android:id="@+id/tvNutritionStatisticsMeals" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp" android:padding="12dp" android:textColor="@color/reminder_text_primary" android:textSize="16sp" />
+    <TextView android:id="@+id/tvNutritionStatisticsHydration" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp" android:padding="12dp" android:textColor="@color/reminder_text_primary" android:textSize="16sp" />
+    <TextView android:id="@+id/tvNutritionStatisticsShopping" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp" android:padding="12dp" android:textColor="@color/reminder_text_primary" android:textSize="16sp" />
+</LinearLayout>
+

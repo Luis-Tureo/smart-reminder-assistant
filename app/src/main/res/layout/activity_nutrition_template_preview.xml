@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+    android:background="@color/nutrition_screen_background">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:orientation="horizontal"
+        android:gravity="center_vertical" android:background="@color/nutrition_toolbar_background" android:paddingHorizontal="8dp">
+        <ImageButton android:id="@+id/btnBackNutritionTemplatePreview" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/nutrition_back"
+            android:src="@drawable/ic_calendar_back" android:padding="12dp" app:tint="@color/nutrition_toolbar_text" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/nutrition_template_preview_title" android:textColor="@color/nutrition_toolbar_text"
+            android:textSize="22sp" android:textStyle="bold" />
+    </LinearLayout>
+    <TextView android:id="@+id/tvNutritionTemplatePreviewName" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp" android:paddingTop="16dp" android:textColor="@color/reminder_text_primary"
+        android:textSize="20sp" android:textStyle="bold" />
+    <TextView android:id="@+id/tvNutritionTemplatePreviewDetail" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:padding="16dp" android:textColor="@color/reminder_text_secondary" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerNutritionTemplatePreview" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:paddingHorizontal="12dp" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/btnNutritionTemplateDate"
+        style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp" android:text="@string/nutrition_template_date" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/btnApplyNutritionTemplate"
+        android:layout_width="match_parent" android:layout_height="52dp" android:layout_margin="16dp"
+        android:text="@string/nutrition_apply_template" />
+</LinearLayout>
+
