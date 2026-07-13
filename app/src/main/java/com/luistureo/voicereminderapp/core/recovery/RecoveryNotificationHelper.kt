@@ -1,6 +1,7 @@
 package com.luistureo.voicereminderapp.core.recovery
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -88,7 +89,7 @@ class RecoveryNotificationHelper(private val context: Context) {
             .setAutoCancel(true)
             .build()
         builder.setPublicVersion(publicVersion)
-        runCatching { NotificationManagerCompat.from(context).notify(notificationId, builder.build()) }
+        notifySafely(notificationId, builder.build())
     }
 
     fun cancel(reminderId: Int) {
@@ -168,6 +169,15 @@ class RecoveryNotificationHelper(private val context: Context) {
     private fun hasPermission(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
         PackageManager.PERMISSION_GRANTED
+
+    @SuppressLint("MissingPermission")
+    private fun notifySafely(notificationId: Int, notification: android.app.Notification) {
+        if (!hasPermission()) return
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+        } catch (_: SecurityException) {
+        }
+    }
 
     companion object {
         private const val CHANNEL_ID = "personal_review_channel"
