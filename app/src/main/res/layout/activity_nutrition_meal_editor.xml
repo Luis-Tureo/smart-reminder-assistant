@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:background="@color/nutrition_screen_background" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:paddingBottom="24dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:orientation="horizontal"
+            android:gravity="center_vertical" android:background="@color/nutrition_toolbar_background" android:paddingHorizontal="8dp">
+            <ImageButton android:id="@+id/btnBackNutritionMealEditor" android:layout_width="48dp" android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/nutrition_back"
+                android:src="@drawable/ic_calendar_back" android:padding="12dp" app:tint="@color/nutrition_toolbar_text" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="@string/nutrition_meal_editor_title" android:textColor="@color/nutrition_toolbar_text"
+                android:textSize="22sp" android:textStyle="bold" />
+        </LinearLayout>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="16dp"
+            android:background="@color/nutrition_warning_background" android:padding="12dp" android:text="@string/nutrition_disclaimer"
+            android:textColor="@color/nutrition_warning_text" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp"
+            android:text="@string/nutrition_meal_period" android:textStyle="bold" />
+        <Spinner android:id="@+id/spinnerNutritionMealPeriod" android:layout_width="match_parent" android:layout_height="52dp"
+            android:layout_marginHorizontal="16dp" />
+        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp" android:hint="@string/nutrition_meal_name">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNutritionMealName"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="2" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkNutritionAdditionalOptions"
+            android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginHorizontal="16dp"
+            android:text="@string/nutrition_additional_options" />
+        <LinearLayout android:id="@+id/groupNutritionMealAdditional" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"
+                android:paddingHorizontal="12dp">
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnNutritionMealDate"
+                    style="?attr/materialButtonOutlinedStyle" android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_weight="1" android:layout_margin="4dp" android:text="@string/nutrition_meal_date" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnNutritionMealTime"
+                    style="?attr/materialButtonOutlinedStyle" android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_weight="1" android:layout_margin="4dp" android:text="@string/nutrition_no_time" />
+            </LinearLayout>
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp" android:hint="@string/nutrition_meal_foods">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNutritionMealFoods"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="4" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp" android:layout_marginTop="8dp" android:hint="@string/nutrition_meal_preparation">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNutritionMealPreparation"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="4" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp" android:text="@string/nutrition_meal_photo" android:textStyle="bold" />
+            <ImageView android:id="@+id/imgNutritionMealPhoto" android:layout_width="match_parent" android:layout_height="160dp"
+                android:layout_marginHorizontal="16dp" android:adjustViewBounds="true" android:contentDescription="@string/nutrition_meal_photo"
+                android:scaleType="centerCrop" android:visibility="gone" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"
+                android:paddingHorizontal="12dp">
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnNutritionChoosePhoto"
+                    style="?attr/materialButtonOutlinedStyle" android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_weight="1" android:layout_margin="4dp" android:text="@string/nutrition_choose_photo" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/btnNutritionRemovePhoto"
+                    style="?attr/materialButtonOutlinedStyle" android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_weight="1" android:layout_margin="4dp" android:text="@string/nutrition_remove_photo" />
+            </LinearLayout>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp" android:text="@string/nutrition_meal_reminder" android:textStyle="bold" />
+            <Spinner android:id="@+id/spinnerNutritionMealReminder" android:layout_width="match_parent" android:layout_height="52dp"
+                android:layout_marginHorizontal="16dp" />
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNutritionReminderMinutes"
+                android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginHorizontal="16dp"
+                android:hint="@string/nutrition_reminder_minutes" android:inputType="number" android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/btnNutritionCustomReminder"
+                style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="48dp"
+                android:layout_marginHorizontal="16dp" android:text="@string/nutrition_select_custom_reminder" android:visibility="gone" />
+            <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp" android:layout_marginTop="8dp" android:hint="@string/nutrition_meal_notes">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNutritionMealNotes"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="4" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnSaveNutritionMeal"
+            android:layout_width="match_parent" android:layout_height="52dp" android:layout_margin="16dp"
+            android:text="@string/nutrition_save" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnDeleteNutritionMeal"
+            style="?attr/materialButtonOutlinedStyle" android:layout_width="match_parent" android:layout_height="52dp"
+            android:layout_marginHorizontal="16dp" android:text="@string/nutrition_delete" android:visibility="gone" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
+
