@@ -31,7 +31,6 @@ data class QuickNoteEditorUiState(
 }
 
 sealed interface QuickNoteEditorEvent {
-    data object Finish : QuickNoteEditorEvent
     data object ShowValidation : QuickNoteEditorEvent
     data class Share(val title: String?, val content: String) : QuickNoteEditorEvent
 }

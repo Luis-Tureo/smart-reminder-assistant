@@ -69,13 +69,11 @@ class ModuleSelectionAdapter(
         fun bind(module: HomeModuleDefinition) {
             val context = card.context
             val moduleName = context.getString(module.nameRes)
+            val moduleDescription = context.getString(module.descriptionRes)
             val isChecked = module.id in selected
 
             icon.setImageResource(module.iconRes)
-            icon.contentDescription = context.getString(
-                R.string.module_selection_icon_description,
-                moduleName
-            )
+            icon.contentDescription = null
             name.setText(module.nameRes)
             description.setText(module.descriptionRes)
             card.isEnabled = module.isAvailable
@@ -87,7 +85,8 @@ class ModuleSelectionAdapter(
                 } else {
                     R.string.module_selection_unselected_description
                 },
-                moduleName
+                moduleName,
+                moduleDescription
             )
 
             checkBox.setOnCheckedChangeListener(null)

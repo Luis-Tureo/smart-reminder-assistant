@@ -12,10 +12,9 @@
     <string name="module_selection_back">Atrás</string>
     <string name="module_selection_back_description">Volver sin guardar cambios</string>
     <string name="module_selection_list_description">Lista de módulos disponibles</string>
-    <string name="module_selection_icon_description">Icono de %1$s</string>
-    <string name="module_selection_checkbox_description">Seleccionar módulo %1$s</string>
-    <string name="module_selection_selected_description">%1$s, seleccionado</string>
-    <string name="module_selection_unselected_description">%1$s, no seleccionado</string>
+    <string name="module_selection_checkbox_description">Módulo %1$s</string>
+    <string name="module_selection_selected_description">%1$s. %2$s. Seleccionado</string>
+    <string name="module_selection_unselected_description">%1$s. %2$s. No seleccionado</string>
 
     <string name="module_calendar_name">Calendario</string>
     <string name="module_calendar_description">Organiza recordatorios, eventos y reuniones.</string>

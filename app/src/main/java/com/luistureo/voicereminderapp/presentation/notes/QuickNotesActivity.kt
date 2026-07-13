@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import com.luistureo.voicereminderapp.R
@@ -37,12 +38,16 @@ class QuickNotesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quick_notes)
 
-        viewModel = ViewModelProvider(this)[QuickNotesViewModel::class.java]
+        viewModel = ViewModelProvider(
+            this,
+            QuickNotesViewModelFactory.from(applicationContext)
+        )[QuickNotesViewModel::class.java]
         ViewCompat.setAccessibilityHeading(findViewById(R.id.tvQuickNotesTitle), true)
         setupList()
         setupActions()
         observeState()
         observeEvents()
+        observePendingDeletion()
     }
 
     private fun setupList() {
@@ -103,7 +108,6 @@ class QuickNotesActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.events.collect { event ->
                     when (event) {
-                        is QuickNotesEvent.NoteDeleted -> showDeleteUndo(event.note)
                         QuickNotesEvent.DeleteFailed,
                         QuickNotesEvent.RestoreFailed,
                         QuickNotesEvent.UpdateFailed -> Toast.makeText(
@@ -112,6 +116,16 @@ class QuickNotesActivity : ComponentActivity() {
                             Toast.LENGTH_LONG
                         ).show()
                     }
+                }
+            }
+        }
+    }
+
+    private fun observePendingDeletion() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.pendingDeleted.collect { note ->
+                    if (note != null) showDeleteUndo(note)
                 }
             }
         }
@@ -150,7 +164,18 @@ class QuickNotesActivity : ComponentActivity() {
             Snackbar.LENGTH_LONG
         ).setAction(R.string.quick_notes_undo) {
             viewModel.restoreDeleted(note)
-        }.show()
+        }.addCallback(
+            object : BaseTransientBottomBar.BaseCallback<Snackbar>() {
+                override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                    if (
+                        event == DISMISS_EVENT_TIMEOUT ||
+                        event == DISMISS_EVENT_SWIPE
+                    ) {
+                        viewModel.dismissDeleteUndo(note.id)
+                    }
+                }
+            }
+        ).show()
     }
 
     private fun openEditor(note: QuickNote?) {

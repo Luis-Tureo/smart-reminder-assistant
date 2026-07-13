@@ -54,8 +54,6 @@
     <string name="quick_note_delete_title">Eliminar nota</string>
     <string name="quick_note_delete_confirmation">¿Deseas eliminar esta nota?</string>
     <string name="quick_note_cancel">Cancelar</string>
-    <string name="quick_note_save_status_description">Estado del guardado</string>
-
     <string-array name="quick_note_color_options">
         <item>@string/quick_note_no_color</item>
         <item>@string/quick_notes_color_yellow</item>

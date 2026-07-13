@@ -1,10 +1,8 @@
 package com.luistureo.voicereminderapp.presentation.notes
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.luistureo.voicereminderapp.data.repository.notes.QuickNoteRepositoryProvider
 import com.luistureo.voicereminderapp.domain.notes.model.QuickNote
 import com.luistureo.voicereminderapp.domain.notes.model.QuickNoteColorTag
 import com.luistureo.voicereminderapp.domain.notes.model.QuickNoteDraft
@@ -12,32 +10,34 @@ import com.luistureo.voicereminderapp.domain.notes.repository.QuickNoteRepositor
 import com.luistureo.voicereminderapp.domain.notes.validation.QuickNoteValidator
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class QuickNoteEditorViewModel @JvmOverloads constructor(
-    application: Application,
+class QuickNoteEditorViewModel(
     private val savedStateHandle: SavedStateHandle,
-    private val repository: QuickNoteRepository = QuickNoteRepositoryProvider.create(application),
+    private val repository: QuickNoteRepository,
     private val autosaveDebounceMillis: Long = AUTOSAVE_DEBOUNCE_MILLIS
-) : AndroidViewModel(application) {
+) : ViewModel() {
     private val saveMutex = Mutex()
     private val changes = Channel<Unit>(Channel.CONFLATED)
-    private val eventsFlow = MutableSharedFlow<QuickNoteEditorEvent>(extraBufferCapacity = 1)
+    private val eventsChannel = Channel<QuickNoteEditorEvent>(Channel.BUFFERED)
     private val stateFlow = MutableStateFlow(restoredState())
-    private var lastPersistedDraft: QuickNoteDraft? = null
-    private var isClosing = false
+    private val finishRequestedFlow = MutableStateFlow(
+        savedStateHandle[KEY_FINISH_REQUESTED] ?: false
+    )
+    private var lastPersistedDraft: QuickNoteDraft? = restoredPersistedDraft()
+    private var isClosing = finishRequestedFlow.value
 
     val uiState: StateFlow<QuickNoteEditorUiState> = stateFlow.asStateFlow()
-    val events: SharedFlow<QuickNoteEditorEvent> = eventsFlow.asSharedFlow()
+    val events: Flow<QuickNoteEditorEvent> = eventsChannel.receiveAsFlow()
+    val finishRequested: StateFlow<Boolean> = finishRequestedFlow.asStateFlow()
 
     private val autosaveWorker = viewModelScope.launch {
         for (ignored in changes) {
@@ -52,9 +52,17 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
     }
 
     init {
-        if (savedStateHandle.get<Boolean>(KEY_DRAFT_INITIALIZED) == true) {
+        if (isClosing) {
+            changes.close()
+            autosaveWorker.cancel()
+        } else if (savedStateHandle.get<Boolean>(KEY_DRAFT_INITIALIZED) == true) {
             stateFlow.update { it.copy(isLoaded = true) }
-            if (QuickNoteValidator.isMeaningful(stateFlow.value.toDraft())) {
+            val restoredDraft = QuickNoteValidator.normalizeOrNull(stateFlow.value.toDraft())
+            val persistedDraft = lastPersistedDraft
+            if (
+                restoredDraft != null &&
+                (persistedDraft == null || !equivalent(restoredDraft, persistedDraft))
+            ) {
                 changes.trySend(Unit)
             }
         } else {
@@ -81,10 +89,10 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
     fun requestShare() {
         val normalized = QuickNoteValidator.normalizeOrNull(stateFlow.value.toDraft())
         if (normalized == null) {
-            eventsFlow.tryEmit(QuickNoteEditorEvent.ShowValidation)
+            eventsChannel.trySend(QuickNoteEditorEvent.ShowValidation)
             return
         }
-        eventsFlow.tryEmit(
+        eventsChannel.trySend(
             QuickNoteEditorEvent.Share(
                 title = normalized.title,
                 content = normalized.content
@@ -94,13 +102,13 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
 
     fun setArchivedAndFinish(archived: Boolean) {
         if (QuickNoteValidator.normalizeOrNull(stateFlow.value.toDraft()) == null) {
-            eventsFlow.tryEmit(QuickNoteEditorEvent.ShowValidation)
+            eventsChannel.trySend(QuickNoteEditorEvent.ShowValidation)
             return
         }
 
         updateDraft { copy(isArchived = archived) }
         viewModelScope.launch {
-            if (persistLatest()) closeAndFinish()
+            persistUntilCleanAndFinish()
         }
     }
 
@@ -117,7 +125,7 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
             if (deleted) {
                 changes.close()
                 autosaveWorker.cancel()
-                eventsFlow.emit(QuickNoteEditorEvent.Finish)
+                requestFinish()
             } else {
                 isClosing = false
                 stateFlow.update { it.copy(saveState = QuickNoteSaveState.ERROR) }
@@ -145,6 +153,7 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
             } else {
                 val loaded = note.toEditorState()
                 lastPersistedDraft = loaded.toDraft()
+                persistPersistedDraft(loaded.toDraft())
                 markInitialized(loaded)
             }
         }
@@ -167,41 +176,57 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
             if (allowDiscardEmptyNew && state.id <= 0) {
                 closeAndFinish()
             } else {
-                eventsFlow.tryEmit(QuickNoteEditorEvent.ShowValidation)
+                eventsChannel.trySend(QuickNoteEditorEvent.ShowValidation)
             }
             return
         }
 
         viewModelScope.launch {
-            if (persistLatest()) closeAndFinish()
+            persistUntilCleanAndFinish()
         }
     }
 
     private suspend fun persistLatest(): Boolean = saveMutex.withLock {
         if (isClosing) return@withLock false
+        when (persistLatestLocked()) {
+            PersistResult.CLEAN -> true
+            PersistResult.DIRTY -> {
+                changes.trySend(Unit)
+                true
+            }
+            PersistResult.INVALID,
+            PersistResult.ERROR -> false
+        }
+    }
+
+    private suspend fun persistLatestLocked(): PersistResult {
         val normalized = QuickNoteValidator.normalizeOrNull(stateFlow.value.toDraft())
-            ?: return@withLock false
+            ?: return PersistResult.INVALID
 
         val previous = lastPersistedDraft
         if (previous != null && equivalent(normalized, previous)) {
             stateFlow.update { it.copy(saveState = QuickNoteSaveState.SAVED) }
-            return@withLock true
+            return PersistResult.CLEAN
         }
 
         stateFlow.update { it.copy(saveState = QuickNoteSaveState.SAVING) }
         val saved = runCatching { repository.saveNote(normalized) }.getOrNull()
         if (saved == null) {
             stateFlow.update { it.copy(saveState = QuickNoteSaveState.ERROR) }
-            return@withLock false
+            return PersistResult.ERROR
         }
 
         val persisted = saved.toDraft()
         lastPersistedDraft = persisted
+        persistPersistedDraft(persisted)
         savedStateHandle[QuickNoteEditorActivity.EXTRA_NOTE_ID] = saved.id
         stateFlow.update { current ->
             val currentWithId = current.copy(id = saved.id)
+            val latestNormalized = QuickNoteValidator.normalizeOrNull(currentWithId.toDraft())
             currentWithId.copy(
-                saveState = if (equivalent(currentWithId.toDraft(), persisted)) {
+                saveState = if (
+                    latestNormalized != null && equivalent(latestNormalized, persisted)
+                ) {
                     QuickNoteSaveState.SAVED
                 } else {
                     QuickNoteSaveState.IDLE
@@ -210,16 +235,50 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
         }
         persistStateHandle(stateFlow.value)
 
-        if (stateFlow.value.saveState == QuickNoteSaveState.IDLE) changes.trySend(Unit)
-        true
+        return if (stateFlow.value.saveState == QuickNoteSaveState.SAVED) {
+            PersistResult.CLEAN
+        } else {
+            PersistResult.DIRTY
+        }
+    }
+
+    private suspend fun persistUntilCleanAndFinish() {
+        var shouldShowValidation = false
+        saveMutex.withLock {
+            if (isClosing) return@withLock
+
+            var result: PersistResult
+            do {
+                result = persistLatestLocked()
+            } while (result == PersistResult.DIRTY && !isClosing)
+
+            when (result) {
+                PersistResult.CLEAN -> prepareToClose()
+                PersistResult.INVALID -> shouldShowValidation = true
+                PersistResult.DIRTY,
+                PersistResult.ERROR -> Unit
+            }
+        }
+
+        if (shouldShowValidation) eventsChannel.send(QuickNoteEditorEvent.ShowValidation)
     }
 
     private fun closeAndFinish() {
-        if (isClosing) return
+        prepareToClose()
+    }
+
+    private fun prepareToClose(): Boolean {
+        if (isClosing) return false
         isClosing = true
         changes.close()
         autosaveWorker.cancel()
-        eventsFlow.tryEmit(QuickNoteEditorEvent.Finish)
+        requestFinish()
+        return true
+    }
+
+    private fun requestFinish() {
+        savedStateHandle[KEY_FINISH_REQUESTED] = true
+        finishRequestedFlow.value = true
     }
 
     private fun markInitialized(state: QuickNoteEditorUiState) {
@@ -235,6 +294,29 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
         savedStateHandle[KEY_PINNED] = state.isPinned
         savedStateHandle[KEY_COLOR] = state.colorTag?.name
         savedStateHandle[KEY_ARCHIVED] = state.isArchived
+    }
+
+    private fun persistPersistedDraft(draft: QuickNoteDraft) {
+        savedStateHandle[KEY_PERSISTED_ID] = draft.id
+        savedStateHandle[KEY_PERSISTED_TITLE] = draft.title
+        savedStateHandle[KEY_PERSISTED_CONTENT] = draft.content
+        savedStateHandle[KEY_PERSISTED_PINNED] = draft.isPinned
+        savedStateHandle[KEY_PERSISTED_COLOR] = draft.colorTag?.name
+        savedStateHandle[KEY_PERSISTED_ARCHIVED] = draft.isArchived
+    }
+
+    private fun restoredPersistedDraft(): QuickNoteDraft? {
+        val id = savedStateHandle.get<Int>(KEY_PERSISTED_ID)?.takeIf { it > 0 } ?: return null
+        return QuickNoteDraft(
+            id = id,
+            title = savedStateHandle[KEY_PERSISTED_TITLE],
+            content = savedStateHandle[KEY_PERSISTED_CONTENT] ?: "",
+            isPinned = savedStateHandle[KEY_PERSISTED_PINNED] ?: false,
+            colorTag = savedStateHandle.get<String>(KEY_PERSISTED_COLOR)?.let { stored ->
+                runCatching { QuickNoteColorTag.valueOf(stored) }.getOrNull()
+            },
+            isArchived = savedStateHandle[KEY_PERSISTED_ARCHIVED] ?: false
+        )
     }
 
     private fun restoredState(): QuickNoteEditorUiState = QuickNoteEditorUiState(
@@ -285,5 +367,19 @@ class QuickNoteEditorViewModel @JvmOverloads constructor(
         private const val KEY_PINNED = "quick_note_pinned"
         private const val KEY_COLOR = "quick_note_color"
         private const val KEY_ARCHIVED = "quick_note_archived"
+        private const val KEY_PERSISTED_ID = "quick_note_persisted_id"
+        private const val KEY_PERSISTED_TITLE = "quick_note_persisted_title"
+        private const val KEY_PERSISTED_CONTENT = "quick_note_persisted_content"
+        private const val KEY_PERSISTED_PINNED = "quick_note_persisted_pinned"
+        private const val KEY_PERSISTED_COLOR = "quick_note_persisted_color"
+        private const val KEY_PERSISTED_ARCHIVED = "quick_note_persisted_archived"
+        private const val KEY_FINISH_REQUESTED = "quick_note_finish_requested"
+    }
+
+    private enum class PersistResult {
+        CLEAN,
+        DIRTY,
+        INVALID,
+        ERROR
     }
 }

@@ -1,34 +1,34 @@
 package com.luistureo.voicereminderapp.presentation.notes
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.luistureo.voicereminderapp.data.repository.notes.QuickNoteRepositoryProvider
 import com.luistureo.voicereminderapp.domain.notes.model.QuickNote
 import com.luistureo.voicereminderapp.domain.notes.model.QuickNoteFilter
 import com.luistureo.voicereminderapp.domain.notes.repository.QuickNoteRepository
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-class QuickNotesViewModel @JvmOverloads constructor(
-    application: Application,
-    private val repository: QuickNoteRepository = QuickNoteRepositoryProvider.create(application)
-) : AndroidViewModel(application) {
+class QuickNotesViewModel(
+    private val repository: QuickNoteRepository
+) : ViewModel() {
     private val query = MutableStateFlow("")
     private val filter = MutableStateFlow(QuickNoteFilter.ALL)
 
-    private val eventsFlow = MutableSharedFlow<QuickNotesEvent>(extraBufferCapacity = 1)
-    val events: SharedFlow<QuickNotesEvent> = eventsFlow.asSharedFlow()
+    private val eventsChannel = Channel<QuickNotesEvent>(Channel.BUFFERED)
+    private val pendingDeletedFlow = MutableStateFlow<QuickNote?>(null)
+    val events: Flow<QuickNotesEvent> = eventsChannel.receiveAsFlow()
+    val pendingDeleted: StateFlow<QuickNote?> = pendingDeletedFlow.asStateFlow()
 
     val uiState: StateFlow<QuickNotesUiState> = combine(query, filter) { text, selectedFilter ->
         text to selectedFilter
@@ -59,9 +59,9 @@ class QuickNotesViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             runCatching { repository.setPinned(note.id, !note.isPinned) }
                 .onSuccess { updated ->
-                    if (!updated) eventsFlow.emit(QuickNotesEvent.UpdateFailed)
+                    if (!updated) eventsChannel.send(QuickNotesEvent.UpdateFailed)
                 }
-                .onFailure { eventsFlow.emit(QuickNotesEvent.UpdateFailed) }
+                .onFailure { eventsChannel.send(QuickNotesEvent.UpdateFailed) }
         }
     }
 
@@ -69,9 +69,9 @@ class QuickNotesViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             runCatching { repository.setArchived(note.id, !note.isArchived) }
                 .onSuccess { updated ->
-                    if (!updated) eventsFlow.emit(QuickNotesEvent.UpdateFailed)
+                    if (!updated) eventsChannel.send(QuickNotesEvent.UpdateFailed)
                 }
-                .onFailure { eventsFlow.emit(QuickNotesEvent.UpdateFailed) }
+                .onFailure { eventsChannel.send(QuickNotesEvent.UpdateFailed) }
         }
     }
 
@@ -79,20 +79,34 @@ class QuickNotesViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             runCatching { repository.deleteNote(note.id) }
                 .onSuccess { deleted ->
-                    if (deleted == null) eventsFlow.emit(QuickNotesEvent.DeleteFailed)
-                    else eventsFlow.emit(QuickNotesEvent.NoteDeleted(deleted))
+                    if (deleted == null) {
+                        eventsChannel.send(QuickNotesEvent.DeleteFailed)
+                    } else {
+                        pendingDeletedFlow.value = deleted
+                    }
                 }
-                .onFailure { eventsFlow.emit(QuickNotesEvent.DeleteFailed) }
+                .onFailure { eventsChannel.send(QuickNotesEvent.DeleteFailed) }
         }
     }
 
     fun restoreDeleted(note: QuickNote) {
+        dismissDeleteUndo(note.id)
         viewModelScope.launch {
             runCatching { repository.restoreDeletedNote(note) }
                 .onSuccess { restored ->
-                    if (!restored) eventsFlow.emit(QuickNotesEvent.RestoreFailed)
+                    if (!restored) {
+                        pendingDeletedFlow.value = note
+                        eventsChannel.send(QuickNotesEvent.RestoreFailed)
+                    }
                 }
-                .onFailure { eventsFlow.emit(QuickNotesEvent.RestoreFailed) }
+                .onFailure {
+                    pendingDeletedFlow.value = note
+                    eventsChannel.send(QuickNotesEvent.RestoreFailed)
+                }
         }
+    }
+
+    fun dismissDeleteUndo(noteId: Int) {
+        if (pendingDeletedFlow.value?.id == noteId) pendingDeletedFlow.value = null
     }
 }

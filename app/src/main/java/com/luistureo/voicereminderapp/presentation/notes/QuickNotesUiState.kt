@@ -11,7 +11,6 @@ data class QuickNotesUiState(
 )
 
 sealed interface QuickNotesEvent {
-    data class NoteDeleted(val note: QuickNote) : QuickNotesEvent
     data object DeleteFailed : QuickNotesEvent
     data object RestoreFailed : QuickNotesEvent
     data object UpdateFailed : QuickNotesEvent

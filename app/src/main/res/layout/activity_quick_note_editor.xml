@@ -51,7 +51,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:accessibilityLiveRegion="polite"
-            android:contentDescription="@string/quick_note_save_status_description"
             android:gravity="end"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"

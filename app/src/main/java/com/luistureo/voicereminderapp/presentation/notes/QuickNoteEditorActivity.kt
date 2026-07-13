@@ -16,7 +16,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.SavedStateViewModelFactory
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -52,13 +51,18 @@ class QuickNoteEditorActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quick_note_editor)
 
-        val factory = SavedStateViewModelFactory(application, this, intent.extras)
+        val factory = QuickNoteEditorViewModelFactory.from(
+            context = applicationContext,
+            owner = this,
+            defaultArgs = intent.extras
+        )
         viewModel = ViewModelProvider(this, factory)[QuickNoteEditorViewModel::class.java]
         initViews()
         setupInputs()
         setupActions()
         observeState()
         observeEvents()
+        observeFinishRequest()
 
         optionsContainer.isVisible = savedInstanceState?.getBoolean(STATE_OPTIONS_OPEN) == true
         installBackHandler()
@@ -141,13 +145,22 @@ class QuickNoteEditorActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.events.collect { event ->
                     when (event) {
-                        QuickNoteEditorEvent.Finish -> finish()
                         QuickNoteEditorEvent.ShowValidation -> showValidation()
                         is QuickNoteEditorEvent.Share -> openShareSheet(
                             event.title,
                             event.content
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun observeFinishRequest() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.finishRequested.collect { requested ->
+                    if (requested) finish()
                 }
             }
         }
