@@ -204,6 +204,10 @@
             android:exported="false"
             android:theme="@style/Theme.VoiceReminderApp" />
         <activity
+            android:name=".presentation.modules.ModuleSelectionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
             android:name="com.microsoft.identity.client.BrowserTabActivity"
             android:exported="true">
             <intent-filter>

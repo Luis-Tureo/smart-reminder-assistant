@@ -35,6 +35,7 @@ import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReconne
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
+import com.luistureo.voicereminderapp.core.modules.ModuleSelectionStore
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
@@ -51,6 +52,7 @@ import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
 import com.luistureo.voicereminderapp.presentation.calendar.GoogleCalendarErrorUi
 import com.luistureo.voicereminderapp.presentation.loan.LoanListActivity
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
+import com.luistureo.voicereminderapp.presentation.modules.ModuleSelectionActivity
 import com.luistureo.voicereminderapp.presentation.nutrition.NutritionDashboardActivity
 import com.luistureo.voicereminderapp.presentation.recovery.RecoveryDashboardActivity
 import com.luistureo.voicereminderapp.presentation.routine.RoutineDashboardActivity
@@ -163,6 +165,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val moduleSelectionStore = ModuleSelectionStore(applicationContext)
+        if (
+            !moduleSelectionStore.isSelectionCompleted() ||
+            moduleSelectionStore.selectedModuleIds().isEmpty()
+        ) {
+            startActivity(ModuleSelectionActivity.firstLaunchIntent(this))
+            finish()
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+            return
+        }
         setContentView(R.layout.activity_main)
         initViews()
         setupViewModel()
