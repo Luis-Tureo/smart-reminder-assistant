@@ -1,7 +1,7 @@
 package com.luistureo.voicereminderapp.core.modules
 
-import android.app.Activity
 import androidx.annotation.DrawableRes
+import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import com.luistureo.voicereminderapp.R
 
@@ -10,6 +10,7 @@ data class HomeModuleDefinition(
     @param:StringRes val nameRes: Int,
     @param:StringRes val descriptionRes: Int,
     @param:DrawableRes val iconRes: Int,
+    @param:IdRes val homeCardId: Int,
     val destinationClassName: String,
     val displayOrder: Int,
     val isAvailable: Boolean = true
@@ -29,6 +30,7 @@ object HomeModuleRegistry {
             nameRes = R.string.module_calendar_name,
             descriptionRes = R.string.module_calendar_description,
             iconRes = R.drawable.ic_reminder_calendar,
+            homeCardId = R.id.cardCalendar,
             destinationClassName =
                 "com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity",
             displayOrder = 0
@@ -38,6 +40,7 @@ object HomeModuleRegistry {
             nameRes = R.string.module_loans_name,
             descriptionRes = R.string.module_loans_description,
             iconRes = android.R.drawable.ic_menu_save,
+            homeCardId = R.id.cardLoan,
             destinationClassName =
                 "com.luistureo.voicereminderapp.presentation.loan.LoanListActivity",
             displayOrder = 1
@@ -47,6 +50,7 @@ object HomeModuleRegistry {
             nameRes = R.string.module_routines_name,
             descriptionRes = R.string.module_routines_description,
             iconRes = R.drawable.ic_routine_morning,
+            homeCardId = R.id.cardDailyRoutines,
             destinationClassName =
                 "com.luistureo.voicereminderapp.presentation.routine.RoutineDashboardActivity",
             displayOrder = 2
@@ -56,6 +60,7 @@ object HomeModuleRegistry {
             nameRes = R.string.module_nutrition_name,
             descriptionRes = R.string.module_nutrition_description,
             iconRes = android.R.drawable.ic_menu_agenda,
+            homeCardId = R.id.cardNutrition,
             destinationClassName =
                 "com.luistureo.voicereminderapp.presentation.nutrition.NutritionDashboardActivity",
             displayOrder = 3
@@ -65,6 +70,7 @@ object HomeModuleRegistry {
             nameRes = R.string.module_recovery_name,
             descriptionRes = R.string.module_recovery_description,
             iconRes = android.R.drawable.ic_menu_compass,
+            homeCardId = R.id.cardRecovery,
             destinationClassName =
                 "com.luistureo.voicereminderapp.presentation.recovery.RecoveryDashboardActivity",
             displayOrder = 4
@@ -74,6 +80,7 @@ object HomeModuleRegistry {
             nameRes = R.string.module_quick_notes_name,
             descriptionRes = R.string.module_quick_notes_description,
             iconRes = R.drawable.ic_reminder_note,
+            homeCardId = R.id.cardQuickNotes,
             destinationClassName =
                 "com.luistureo.voicereminderapp.presentation.notes.QuickNotesActivity",
             displayOrder = 5

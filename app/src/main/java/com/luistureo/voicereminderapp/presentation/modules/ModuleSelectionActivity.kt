@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -96,7 +95,6 @@ class ModuleSelectionActivity : ComponentActivity() {
         val selected = adapter.selectedIds()
         if (selected.isEmpty()) {
             validationMessage.isVisible = true
-            ViewCompat.announceForAccessibility(validationMessage, validationMessage.text)
             Toast.makeText(
                 this,
                 R.string.module_selection_required,
