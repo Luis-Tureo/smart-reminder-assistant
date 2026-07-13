@@ -204,6 +204,21 @@
             android:exported="false"
             android:theme="@style/Theme.VoiceReminderApp" />
         <activity
+            android:name=".presentation.modules.ModuleSelectionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
+            android:name=".presentation.notes.QuickNoteEditorActivity"
+            android:exported="false"
+            android:parentActivityName=".presentation.notes.QuickNotesActivity"
+            android:theme="@style/Theme.VoiceReminderApp"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".presentation.notes.QuickNotesActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.VoiceReminderApp" />
+        <activity
             android:name="com.microsoft.identity.client.BrowserTabActivity"
             android:exported="true">
             <intent-filter>

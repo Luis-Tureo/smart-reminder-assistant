@@ -46,6 +46,17 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReselectModules"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="@string/home_reselect_modules_description"
+            android:text="@string/home_reselect_modules" />
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardCalendar"
             android:layout_width="match_parent"
@@ -377,6 +388,73 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/recoveryIconContainer"
                     app:layout_constraintTop_toBottomOf="@id/tvRecoveryTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardQuickNotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:clickable="true"
+            android:contentDescription="@string/home_quick_notes_title"
+            android:focusable="true"
+            app:cardBackgroundColor="@color/reminder_card_background"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/reminder_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="14dp">
+
+                <FrameLayout
+                    android:id="@+id/quickNotesIconContainer"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:background="@drawable/bg_reminder_icon_blue"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_reminder_note"
+                        app:tint="@color/reminder_icon_blue_fg" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvQuickNotesTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="@string/home_quick_notes_title"
+                    android:textColor="@color/reminder_text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/quickNotesIconContainer"
+                    app:layout_constraintTop_toTopOf="@id/quickNotesIconContainer" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="5dp"
+                    android:text="@string/home_quick_notes_subtitle"
+                    android:textColor="@color/reminder_text_secondary"
+                    android:textSize="14sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/quickNotesIconContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvQuickNotesTitle" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 

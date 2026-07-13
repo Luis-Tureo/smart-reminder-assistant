@@ -35,6 +35,8 @@ import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReconne
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
+import com.luistureo.voicereminderapp.core.modules.HomeModuleRegistry
+import com.luistureo.voicereminderapp.core.modules.ModuleSelectionStore
 import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
@@ -51,6 +53,7 @@ import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
 import com.luistureo.voicereminderapp.presentation.calendar.GoogleCalendarErrorUi
 import com.luistureo.voicereminderapp.presentation.loan.LoanListActivity
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
+import com.luistureo.voicereminderapp.presentation.modules.ModuleSelectionActivity
 import com.luistureo.voicereminderapp.presentation.nutrition.NutritionDashboardActivity
 import com.luistureo.voicereminderapp.presentation.recovery.RecoveryDashboardActivity
 import com.luistureo.voicereminderapp.presentation.routine.RoutineDashboardActivity
@@ -68,6 +71,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var dailyRoutinesCard: View
     private lateinit var nutritionCard: View
     private lateinit var recoveryCard: View
+    private lateinit var quickNotesCard: View
     private lateinit var manualReminderCard: View
     private lateinit var cameraReminderCard: View
     private lateinit var googleCalendarSyncButton: MaterialButton
@@ -76,6 +80,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var remindersRecyclerView: RecyclerView
     private lateinit var homeEmptyStateContainer: View
     private lateinit var homeEmptyStateButton: MaterialButton
+    private lateinit var reselectModulesButton: MaterialButton
 
     private lateinit var reminderAdapter: HomeReminderAdapter
     private lateinit var reminderViewModel: ReminderViewModel
@@ -85,6 +90,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var googleCalendarSynchronizer: GoogleCalendarReminderSynchronizer
     private lateinit var unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
     private lateinit var reminderRepository: ReminderRepositoryImpl
+    private lateinit var moduleSelectionStore: ModuleSelectionStore
     private var googleRecoveryAttempted = false
     private var googleActivationRequested = false
 
@@ -96,6 +102,13 @@ class MainActivity : ComponentActivity() {
                     getString(R.string.notification_permission_denied),
                     Toast.LENGTH_SHORT
                 ).show()
+            }
+        }
+
+    private val moduleSelectionLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK && ::calendarCard.isInitialized) {
+                applyHomeModuleVisibility()
             }
         }
 
@@ -163,8 +176,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        moduleSelectionStore = ModuleSelectionStore(applicationContext)
+        if (
+            !moduleSelectionStore.isSelectionCompleted() ||
+            moduleSelectionStore.selectedModuleIds().isEmpty()
+        ) {
+            startActivity(ModuleSelectionActivity.firstLaunchIntent(this))
+            finish()
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+            return
+        }
         setContentView(R.layout.activity_main)
         initViews()
+        applyHomeModuleVisibility()
         setupViewModel()
         setupCore()
         setupRecyclerView()
@@ -183,6 +208,9 @@ class MainActivity : ComponentActivity() {
         if (::googleCalendarAuthManager.isInitialized) {
             refreshGoogleCalendarStatus()
         }
+        if (::calendarCard.isInitialized) {
+            applyHomeModuleVisibility()
+        }
     }
 
     private fun initViews() {
@@ -192,6 +220,7 @@ class MainActivity : ComponentActivity() {
         dailyRoutinesCard = findViewById(R.id.cardDailyRoutines)
         nutritionCard = findViewById(R.id.cardNutrition)
         recoveryCard = findViewById(R.id.cardRecovery)
+        quickNotesCard = findViewById(R.id.cardQuickNotes)
         manualReminderCard = findViewById(R.id.cardManualReminder)
         cameraReminderCard = findViewById(R.id.cardCameraReminder)
         googleCalendarSyncButton = findViewById(R.id.btnGoogleCalendarSync)
@@ -200,6 +229,7 @@ class MainActivity : ComponentActivity() {
         remindersRecyclerView = findViewById(R.id.recyclerReminders)
         homeEmptyStateContainer = findViewById(R.id.homeEmptyStateCard)
         homeEmptyStateButton = findViewById(R.id.btnHomeEmptyStateCreateReminder)
+        reselectModulesButton = findViewById(R.id.btnReselectModules)
     }
 
     private fun setupViewModel() {
@@ -323,6 +353,14 @@ class MainActivity : ComponentActivity() {
             startActivity(Intent(this, RecoveryDashboardActivity::class.java))
         }
 
+        quickNotesCard.setOnClickListener {
+            openRegisteredModule(HomeModuleRegistry.QUICK_NOTES)
+        }
+
+        reselectModulesButton.setOnClickListener {
+            moduleSelectionLauncher.launch(ModuleSelectionActivity.editIntent(this))
+        }
+
         manualReminderCard.setOnClickListener {
             openManualReminderScreen(null, ReminderSource.MANUAL)
         }
@@ -353,6 +391,29 @@ class MainActivity : ComponentActivity() {
 
         refreshNextDaySummaryTimeButtonLabel()
         refreshGoogleCalendarStatus()
+    }
+
+    private fun applyHomeModuleVisibility() {
+        val selected = moduleSelectionStore.selectedModuleIds()
+        HomeModuleRegistry.modules.forEach { module ->
+            findViewById<View>(module.homeCardId).isVisible = module.id in selected
+        }
+    }
+
+    private fun openRegisteredModule(moduleId: String) {
+        val module = HomeModuleRegistry.modules.firstOrNull {
+            it.id == moduleId && it.isAvailable
+        }
+        if (module == null) {
+            Toast.makeText(this, R.string.module_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        runCatching {
+            startActivity(Intent().setClassName(this, module.destinationClassName))
+        }.onFailure {
+            Toast.makeText(this, R.string.module_unavailable, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun openManualReminderScreen(

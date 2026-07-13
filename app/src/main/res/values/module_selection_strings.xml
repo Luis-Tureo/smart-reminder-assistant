@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="module_selection_first_title">Personaliza Mi día</string>
+    <string name="module_selection_edit_title">Seleccionar módulos</string>
+    <string name="module_selection_subtitle">Selecciona los módulos que quieres ver en tu pantalla principal.</string>
+    <string name="module_selection_select_all">Seleccionar todos</string>
+    <string name="module_selection_clear">Quitar selección</string>
+    <string name="module_selection_load_app">Cargar mi aplicación</string>
+    <string name="module_selection_save">Guardar selección</string>
+    <string name="module_selection_required">Selecciona al menos un módulo para continuar.</string>
+    <string name="module_selection_save_failed">No se pudo guardar la selección. Intenta nuevamente.</string>
+    <string name="module_selection_back">Atrás</string>
+    <string name="module_selection_back_description">Volver sin guardar cambios</string>
+    <string name="module_selection_list_description">Lista de módulos disponibles</string>
+    <string name="module_selection_checkbox_description">Módulo %1$s</string>
+    <string name="module_selection_selected_description">%1$s. %2$s. Seleccionado</string>
+    <string name="module_selection_unselected_description">%1$s. %2$s. No seleccionado</string>
+
+    <string name="module_calendar_name">Calendario</string>
+    <string name="module_calendar_description">Organiza recordatorios, eventos y reuniones.</string>
+    <string name="module_loans_name">Dinero prestado</string>
+    <string name="module_loans_description">Registra dinero prestado, deudas y pagos.</string>
+    <string name="module_routines_name">Rutinas del día</string>
+    <string name="module_routines_description">Organiza tus actividades de mañana, tarde y noche.</string>
+    <string name="module_nutrition_name">Alimentación saludable</string>
+    <string name="module_nutrition_description">Planifica comidas, hidratación y compras.</string>
+    <string name="module_recovery_name">Dejar adicciones</string>
+    <string name="module_recovery_description">Lleva un seguimiento personal y accede a herramientas de apoyo.</string>
+    <string name="module_quick_notes_name">Notas rápidas</string>
+    <string name="module_quick_notes_description">Guarda ideas, pendientes y textos breves.</string>
+    <string name="home_reselect_modules">Volver a seleccionar módulos</string>
+    <string name="home_reselect_modules_description">Cambiar los módulos visibles en la pantalla principal</string>
+    <string name="home_quick_notes_title">Notas rápidas</string>
+    <string name="home_quick_notes_subtitle">Guarda ideas, pendientes y textos breves</string>
+    <string name="module_unavailable">Este módulo no está disponible actualmente.</string>
+</resources>
