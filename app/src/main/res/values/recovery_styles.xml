@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.VoiceReminderApp.Recovery" parent="Theme.VoiceReminderApp">
-        <item name="android:windowBackground">@color/recovery_screen_background</item>
-        <item name="android:navigationBarColor">@color/recovery_screen_background</item>
-        <item name="colorPrimary">@color/recovery_primary</item>
-    </style>
-</resources>

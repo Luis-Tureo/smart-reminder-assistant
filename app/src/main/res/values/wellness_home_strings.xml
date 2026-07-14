@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="home_nutrition_title">Alimentación saludable</string>
-    <string name="home_nutrition_subtitle">Organiza comidas, hidratación y compras.</string>
-    <string name="home_recovery_title">Dejar adicciones</string>
-    <string name="home_recovery_subtitle">Seguimiento y apoyo personal</string>
-</resources>

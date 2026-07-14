@@ -103,10 +103,6 @@ android {
             excludes += "META-INF/LICENSE.txt"
         }
     }
-
-    sourceSets {
-        getByName("androidTest").assets.directories.add("$projectDir/schemas")
-    }
 }
 
 ksp {
@@ -142,5 +138,4 @@ dependencies {
     testImplementation("org.json:json:20240303")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation("androidx.room:room-testing:2.8.4")
 }
