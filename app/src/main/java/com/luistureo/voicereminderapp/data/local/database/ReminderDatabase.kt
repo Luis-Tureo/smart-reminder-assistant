@@ -10,7 +10,6 @@ import com.luistureo.voicereminderapp.data.local.dao.LoanDao
 import com.luistureo.voicereminderapp.data.local.dao.NutritionDao
 import com.luistureo.voicereminderapp.data.local.dao.ReminderDao
 import com.luistureo.voicereminderapp.data.local.dao.RoutineDao
-import com.luistureo.voicereminderapp.data.local.dao.notes.QuickNoteDao
 import com.luistureo.voicereminderapp.data.local.dao.recovery.RecoveryDao
 import com.luistureo.voicereminderapp.data.local.entity.HydrationEntryEntity
 import com.luistureo.voicereminderapp.data.local.entity.LoanEntity
@@ -30,7 +29,6 @@ import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateEntity
 import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateTaskEntity
 import com.luistureo.voicereminderapp.data.local.entity.RoutineSuggestionEntity
 import com.luistureo.voicereminderapp.data.local.entity.ShoppingItemEntity
-import com.luistureo.voicereminderapp.data.local.entity.notes.QuickNoteEntity
 import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryCheckInEntity
 import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryGoalEntity
 import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryHelpfulActionEntity
@@ -65,10 +63,9 @@ import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryTrigger
         RecoveryHelpfulActionEntity::class,
         RecoverySupportContactEntity::class,
         RecoveryMilestoneEntity::class,
-        RecoveryReminderEntity::class,
-        QuickNoteEntity::class
+        RecoveryReminderEntity::class
     ],
-    version = 19,
+    version = 18,
     exportSchema = true
 )
 abstract class ReminderDatabase : RoomDatabase() {
@@ -78,7 +75,6 @@ abstract class ReminderDatabase : RoomDatabase() {
     abstract fun routineDao(): RoutineDao
     abstract fun nutritionDao(): NutritionDao
     abstract fun recoveryDao(): RecoveryDao
-    abstract fun quickNoteDao(): QuickNoteDao
 
     companion object {
         @Volatile
@@ -867,29 +863,6 @@ abstract class ReminderDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_18_19 = object : Migration(18, 19) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS quick_notes (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        title TEXT,
-                        content TEXT NOT NULL,
-                        isPinned INTEGER NOT NULL,
-                        colorTag TEXT,
-                        createdAt INTEGER NOT NULL,
-                        updatedAt INTEGER NOT NULL,
-                        isArchived INTEGER NOT NULL
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_quick_notes_isArchived_isPinned_updatedAt " +
-                        "ON quick_notes(isArchived, isPinned, updatedAt)"
-                )
-            }
-        }
-
         internal val ALL_MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -905,8 +878,7 @@ abstract class ReminderDatabase : RoomDatabase() {
             MIGRATION_14_15,
             MIGRATION_15_16,
             MIGRATION_16_17,
-            MIGRATION_17_18,
-            MIGRATION_18_19
+            MIGRATION_17_18
         )
     }
 }

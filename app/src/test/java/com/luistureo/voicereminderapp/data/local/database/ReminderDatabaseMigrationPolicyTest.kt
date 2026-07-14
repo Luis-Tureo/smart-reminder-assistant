@@ -31,8 +31,7 @@ class ReminderDatabaseMigrationPolicyTest {
                 14 to 15,
                 15 to 16,
                 16 to 17,
-                17 to 18,
-                18 to 19
+                17 to 18
             ),
             ReminderDatabaseMigrationPolicy.supportedMigrationRanges
         )
