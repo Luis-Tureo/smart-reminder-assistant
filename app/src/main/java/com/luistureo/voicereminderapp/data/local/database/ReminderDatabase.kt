@@ -7,19 +7,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.luistureo.voicereminderapp.data.local.dao.LoanDao
-import com.luistureo.voicereminderapp.data.local.dao.NutritionDao
 import com.luistureo.voicereminderapp.data.local.dao.ReminderDao
 import com.luistureo.voicereminderapp.data.local.dao.RoutineDao
-import com.luistureo.voicereminderapp.data.local.dao.recovery.RecoveryDao
-import com.luistureo.voicereminderapp.data.local.entity.HydrationEntryEntity
 import com.luistureo.voicereminderapp.data.local.entity.LoanEntity
 import com.luistureo.voicereminderapp.data.local.entity.LoanInstallmentEntity
 import com.luistureo.voicereminderapp.data.local.entity.LoanPaymentEntity
-import com.luistureo.voicereminderapp.data.local.entity.NutritionMealEntity
-import com.luistureo.voicereminderapp.data.local.entity.NutritionPlanEntity
-import com.luistureo.voicereminderapp.data.local.entity.NutritionPreferenceEntity
-import com.luistureo.voicereminderapp.data.local.entity.NutritionTemplateEntity
-import com.luistureo.voicereminderapp.data.local.entity.NutritionTemplateMealEntity
 import com.luistureo.voicereminderapp.data.local.entity.ReminderEntity
 import com.luistureo.voicereminderapp.data.local.entity.RoutineDailyExecutionEntity
 import com.luistureo.voicereminderapp.data.local.entity.RoutineEntity
@@ -28,14 +20,6 @@ import com.luistureo.voicereminderapp.data.local.entity.RoutineTaskEntity
 import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateEntity
 import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateTaskEntity
 import com.luistureo.voicereminderapp.data.local.entity.RoutineSuggestionEntity
-import com.luistureo.voicereminderapp.data.local.entity.ShoppingItemEntity
-import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryCheckInEntity
-import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryGoalEntity
-import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryHelpfulActionEntity
-import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryMilestoneEntity
-import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryReminderEntity
-import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoverySupportContactEntity
-import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryTriggerEntity
 
 @Database(
     entities = [
@@ -49,23 +33,9 @@ import com.luistureo.voicereminderapp.data.local.entity.recovery.RecoveryTrigger
         RoutineHistoryEntity::class,
         RoutineTemplateEntity::class,
         RoutineTemplateTaskEntity::class,
-        RoutineSuggestionEntity::class,
-        NutritionPlanEntity::class,
-        NutritionMealEntity::class,
-        HydrationEntryEntity::class,
-        ShoppingItemEntity::class,
-        NutritionTemplateEntity::class,
-        NutritionTemplateMealEntity::class,
-        NutritionPreferenceEntity::class,
-        RecoveryGoalEntity::class,
-        RecoveryCheckInEntity::class,
-        RecoveryTriggerEntity::class,
-        RecoveryHelpfulActionEntity::class,
-        RecoverySupportContactEntity::class,
-        RecoveryMilestoneEntity::class,
-        RecoveryReminderEntity::class
+        RoutineSuggestionEntity::class
     ],
-    version = 18,
+    version = 16,
     exportSchema = true
 )
 abstract class ReminderDatabase : RoomDatabase() {
@@ -73,8 +43,6 @@ abstract class ReminderDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun loanDao(): LoanDao
     abstract fun routineDao(): RoutineDao
-    abstract fun nutritionDao(): NutritionDao
-    abstract fun recoveryDao(): RecoveryDao
 
     companion object {
         @Volatile
@@ -524,345 +492,6 @@ abstract class ReminderDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_16_17 = object : Migration(16, 17) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS nutrition_plans (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        dateEpochDay INTEGER NOT NULL,
-                        createdAtEpochMillis INTEGER NOT NULL,
-                        updatedAtEpochMillis INTEGER NOT NULL
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_nutrition_plans_dateEpochDay " +
-                        "ON nutrition_plans(dateEpochDay)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS nutrition_meals (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        planId INTEGER NOT NULL,
-                        name TEXT NOT NULL,
-                        period TEXT NOT NULL,
-                        optionalTimeMinutes INTEGER,
-                        foodsOrDishes TEXT,
-                        preparationNote TEXT,
-                        photoUri TEXT,
-                        reminderType TEXT NOT NULL,
-                        reminderMinutesBefore INTEGER,
-                        customReminderAtEpochMillis INTEGER,
-                        status TEXT NOT NULL,
-                        personalNotes TEXT,
-                        createdAtEpochMillis INTEGER NOT NULL,
-                        updatedAtEpochMillis INTEGER NOT NULL,
-                        FOREIGN KEY(planId) REFERENCES nutrition_plans(id) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_meals_planId ON nutrition_meals(planId)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_meals_planId_period " +
-                        "ON nutrition_meals(planId, period)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_meals_planId_status " +
-                        "ON nutrition_meals(planId, status)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_meals_customReminderAtEpochMillis " +
-                        "ON nutrition_meals(customReminderAtEpochMillis)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS nutrition_hydration_entries (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        dateEpochDay INTEGER NOT NULL,
-                        amountMl INTEGER NOT NULL,
-                        loggedAtEpochMillis INTEGER NOT NULL
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_hydration_entries_dateEpochDay " +
-                        "ON nutrition_hydration_entries(dateEpochDay)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_hydration_entries_loggedAtEpochMillis " +
-                        "ON nutrition_hydration_entries(loggedAtEpochMillis)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS nutrition_shopping_items (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        name TEXT NOT NULL,
-                        normalizedName TEXT NOT NULL,
-                        quantityOrNote TEXT,
-                        category TEXT NOT NULL,
-                        checked INTEGER NOT NULL,
-                        archived INTEGER NOT NULL,
-                        checkedAtEpochDay INTEGER,
-                        createdAtEpochMillis INTEGER NOT NULL,
-                        updatedAtEpochMillis INTEGER NOT NULL
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_shopping_items_normalizedName_archived " +
-                        "ON nutrition_shopping_items(normalizedName, archived)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_shopping_items_checked_archived " +
-                        "ON nutrition_shopping_items(checked, archived)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_shopping_items_checkedAtEpochDay " +
-                        "ON nutrition_shopping_items(checkedAtEpochDay)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS nutrition_templates (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        name TEXT NOT NULL,
-                        description TEXT NOT NULL,
-                        preparationComplexity TEXT NOT NULL,
-                        practicalBenefits TEXT NOT NULL,
-                        editable INTEGER NOT NULL,
-                        builtIn INTEGER NOT NULL,
-                        builtInKey TEXT
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_nutrition_templates_builtInKey " +
-                        "ON nutrition_templates(builtInKey)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS nutrition_template_meals (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        templateId INTEGER NOT NULL,
-                        period TEXT NOT NULL,
-                        name TEXT NOT NULL,
-                        foodsOrDishes TEXT,
-                        preparationNote TEXT,
-                        orderPriority INTEGER NOT NULL,
-                        FOREIGN KEY(templateId) REFERENCES nutrition_templates(id) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_nutrition_template_meals_templateId " +
-                        "ON nutrition_template_meals(templateId)"
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_nutrition_template_meals_templateId_orderPriority " +
-                        "ON nutrition_template_meals(templateId, orderPriority)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS nutrition_preferences (
-                        id INTEGER NOT NULL,
-                        dietaryStyle TEXT NOT NULL,
-                        dislikes TEXT NOT NULL,
-                        exclusions TEXT NOT NULL,
-                        allergiesOrIntolerances TEXT NOT NULL,
-                        preferredFoods TEXT NOT NULL,
-                        organizationalGoals TEXT NOT NULL,
-                        enabledMealPeriods TEXT NOT NULL,
-                        hydrationEnabled INTEGER NOT NULL,
-                        hydrationTargetMl INTEGER NOT NULL,
-                        hydrationContainerMl INTEGER NOT NULL,
-                        hydrationReminderStartMinutes INTEGER,
-                        hydrationReminderEndMinutes INTEGER,
-                        hydrationReminderIntervalMinutes INTEGER,
-                        remindersEnabled INTEGER NOT NULL,
-                        assistantVoiceEnabled INTEGER NOT NULL,
-                        temporaryBubbleEnabled INTEGER NOT NULL,
-                        preferredChartType TEXT NOT NULL,
-                        privacyModeEnabled INTEGER NOT NULL,
-                        updatedAtEpochMillis INTEGER NOT NULL,
-                        PRIMARY KEY(id)
-                    )
-                    """.trimIndent()
-                )
-            }
-        }
-
-        private val MIGRATION_17_18 = object : Migration(17, 18) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS recovery_goals (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        historyKey TEXT NOT NULL,
-                        title TEXT NOT NULL,
-                        category TEXT NOT NULL,
-                        customCategory TEXT,
-                        startDateEpochDay INTEGER,
-                        targetDateEpochDay INTEGER,
-                        personalReason TEXT,
-                        motivations TEXT,
-                        reductionTrackingEnabled INTEGER NOT NULL,
-                        status TEXT NOT NULL,
-                        createdAtEpochMillis INTEGER NOT NULL,
-                        updatedAtEpochMillis INTEGER NOT NULL
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_recovery_goals_historyKey " +
-                        "ON recovery_goals(historyKey)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_goals_status ON recovery_goals(status)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS recovery_check_ins (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        goalId INTEGER,
-                        goalHistoryKey TEXT NOT NULL,
-                        dateEpochDay INTEGER NOT NULL,
-                        status TEXT NOT NULL,
-                        cravingIntensity INTEGER,
-                        `trigger` TEXT,
-                        helpfulAction TEXT,
-                        note TEXT,
-                        reducedFrequency INTEGER NOT NULL,
-                        resetsStreak INTEGER NOT NULL,
-                        createdAtEpochMillis INTEGER NOT NULL,
-                        updatedAtEpochMillis INTEGER NOT NULL,
-                        FOREIGN KEY(goalId) REFERENCES recovery_goals(id) ON UPDATE NO ACTION ON DELETE SET NULL
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_check_ins_goalId ON recovery_check_ins(goalId)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_check_ins_goalHistoryKey " +
-                        "ON recovery_check_ins(goalHistoryKey)"
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_recovery_check_ins_goalHistoryKey_dateEpochDay " +
-                        "ON recovery_check_ins(goalHistoryKey, dateEpochDay)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_check_ins_dateEpochDay " +
-                        "ON recovery_check_ins(dateEpochDay)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS recovery_triggers (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        goalId INTEGER NOT NULL,
-                        label TEXT NOT NULL,
-                        enabled INTEGER NOT NULL,
-                        sortOrder INTEGER NOT NULL,
-                        FOREIGN KEY(goalId) REFERENCES recovery_goals(id) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_triggers_goalId ON recovery_triggers(goalId)"
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_recovery_triggers_goalId_label " +
-                        "ON recovery_triggers(goalId, label)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS recovery_helpful_actions (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        goalId INTEGER NOT NULL,
-                        label TEXT NOT NULL,
-                        enabled INTEGER NOT NULL,
-                        sortOrder INTEGER NOT NULL,
-                        FOREIGN KEY(goalId) REFERENCES recovery_goals(id) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_helpful_actions_goalId " +
-                        "ON recovery_helpful_actions(goalId)"
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_recovery_helpful_actions_goalId_label " +
-                        "ON recovery_helpful_actions(goalId, label)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS recovery_support_contacts (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        goalId INTEGER NOT NULL,
-                        name TEXT NOT NULL,
-                        description TEXT,
-                        phone TEXT NOT NULL,
-                        preferredAction TEXT NOT NULL,
-                        FOREIGN KEY(goalId) REFERENCES recovery_goals(id) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_support_contacts_goalId " +
-                        "ON recovery_support_contacts(goalId)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS recovery_milestones (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        goalId INTEGER NOT NULL,
-                        label TEXT NOT NULL,
-                        thresholdDays INTEGER,
-                        kind TEXT NOT NULL,
-                        enabled INTEGER NOT NULL,
-                        achievedAtEpochMillis INTEGER,
-                        FOREIGN KEY(goalId) REFERENCES recovery_goals(id) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_milestones_goalId " +
-                        "ON recovery_milestones(goalId)"
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_recovery_milestones_goalId_kind_thresholdDays " +
-                        "ON recovery_milestones(goalId, kind, thresholdDays)"
-                )
-                db.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS recovery_reminders (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        goalId INTEGER NOT NULL,
-                        type TEXT NOT NULL,
-                        timeMinutes INTEGER NOT NULL,
-                        enabled INTEGER NOT NULL,
-                        snoozeMinutes INTEGER NOT NULL,
-                        updatedAtEpochMillis INTEGER NOT NULL,
-                        FOREIGN KEY(goalId) REFERENCES recovery_goals(id) ON UPDATE NO ACTION ON DELETE CASCADE
-                    )
-                    """.trimIndent()
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_reminders_goalId " +
-                        "ON recovery_reminders(goalId)"
-                )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_recovery_reminders_goalId_type " +
-                        "ON recovery_reminders(goalId, type)"
-                )
-                db.execSQL(
-                    "CREATE INDEX IF NOT EXISTS index_recovery_reminders_enabled " +
-                        "ON recovery_reminders(enabled)"
-                )
-            }
-        }
-
         internal val ALL_MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -876,9 +505,7 @@ abstract class ReminderDatabase : RoomDatabase() {
             MIGRATION_12_13,
             MIGRATION_13_14,
             MIGRATION_14_15,
-            MIGRATION_15_16,
-            MIGRATION_16_17,
-            MIGRATION_17_18
+            MIGRATION_15_16
         )
     }
 }

@@ -6,7 +6,4 @@
     <cache-path
         name="loan_attachments"
         path="loan_attachments/" />
-    <files-path
-        name="nutrition_photos"
-        path="nutrition_photos/" />
 </paths>

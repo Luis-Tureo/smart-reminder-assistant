@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
-    android:layout_height="wrap_content" android:orientation="vertical" android:padding="8dp">
-    <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkNutritionShoppingItem"
-        android:layout_width="match_parent" android:layout_height="48dp" />
-    <TextView android:id="@+id/tvNutritionShoppingDetail" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:paddingStart="48dp" android:textColor="@color/reminder_text_secondary" android:textSize="13sp" />
-</LinearLayout>
-
