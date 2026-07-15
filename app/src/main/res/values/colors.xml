@@ -6,7 +6,6 @@
 
     <!-- Tarjetas -->
     <color name="card_background">#FFFFFF</color>
-    <color name="card_stroke">#D8E3F0</color>
 
     <!-- Textos -->
     <color name="text_primary">#1C2430</color>
@@ -54,28 +53,11 @@
     <color name="reminder_icon_blue_fg">#4261AF</color>
     <color name="reminder_icon_amber_bg">#FFD990</color>
     <color name="reminder_icon_amber_fg">#896114</color>
-    <color name="reminder_icon_birthday_bg">#FFE2F0</color>
     <color name="reminder_icon_birthday_fg">#B33D70</color>
     <color name="reminder_done_unchecked">#D4D9E6</color>
     <color name="recurrence_chip_background">#F8FAFF</color>
     <color name="recurrence_chip_selected_background">#EFE3FF</color>
     <color name="recurrence_chip_stroke">#8F95A3</color>
-
-    <!-- Rutinas del día -->
-    <color name="routine_screen_background">#F1F4F8</color>
-    <color name="routine_card_background">#FBF8F2</color>
-    <color name="routine_card_stroke">#DDD8CE</color>
-    <color name="routine_toolbar_background">#1F3147</color>
-    <color name="routine_toolbar_text">#F7F6F2</color>
-    <color name="routine_primary">#496A84</color>
-    <color name="routine_primary_soft">#DCE8F0</color>
-    <color name="routine_morning">#C98524</color>
-    <color name="routine_afternoon">#B56C2F</color>
-    <color name="routine_night">#5968A8</color>
-    <color name="routine_success_background">#E5F4EA</color>
-    <color name="routine_success_text">#27643C</color>
-    <color name="routine_disabled_background">#ECEFF2</color>
-    <color name="routine_disabled_text">#68727D</color>
 
     <!-- Calendario -->
     <color name="calendar_screen_background">#ECF1F6</color>
@@ -87,9 +69,7 @@
     <color name="calendar_title_text">#1F2E40</color>
     <color name="calendar_body_text">#5E6B7A</color>
     <color name="calendar_caption_text">#7E8A99</color>
-    <color name="calendar_selector_background">#F2F6FA</color>
     <color name="calendar_selector_stroke">#C9D7E2</color>
-    <color name="calendar_selector_icon">#536476</color>
     <color name="calendar_navigation_icon">#304357</color>
     <color name="calendar_navigation_background">#EEF3F8</color>
     <color name="calendar_legend_background">#F7F3EC</color>
@@ -108,7 +88,6 @@
     <color name="calendar_day_selected_stroke">#203047</color>
     <color name="calendar_day_holiday_background">#FFF4EE</color>
     <color name="calendar_day_holiday_stroke">#E9B8A6</color>
-    <color name="calendar_holiday_text">#B35A3F</color>
     <color name="calendar_indicator_reminder_background">#DDE9FF</color>
     <color name="calendar_indicator_reminder_text">#325D9F</color>
     <color name="calendar_indicator_birthday_background">#FFE2F0</color>

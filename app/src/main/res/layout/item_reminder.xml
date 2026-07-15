@@ -6,6 +6,8 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
     android:layout_marginVertical="8dp"
+    android:clickable="true"
+    android:focusable="true"
     app:cardBackgroundColor="@color/reminder_card_background"
     app:cardCornerRadius="28dp"
     app:cardElevation="5dp"
@@ -23,6 +25,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:baselineAligned="false"
             android:gravity="top"
             android:orientation="horizontal">
 
@@ -76,7 +79,7 @@
                         android:includeFontPadding="false"
                         android:paddingHorizontal="12dp"
                         android:paddingVertical="5dp"
-                        android:text="@string/home_urgent_badge"
+                        android:text="@string/calendar_upcoming_urgent_badge"
                         android:textColor="@color/white"
                         android:textSize="11sp"
                         android:textStyle="bold"
@@ -176,7 +179,7 @@
                 android:background="@android:color/transparent"
                 android:button="@drawable/selector_reminder_done"
                 android:gravity="center_vertical"
-                android:minHeight="0dp"
+                android:minHeight="48dp"
                 android:padding="0dp"
                 android:text="@string/done_label"
                 android:textColor="@color/reminder_text_primary"
@@ -190,11 +193,11 @@
 
             <ImageButton
                 android:id="@+id/btnDelete"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="@android:color/transparent"
                 android:contentDescription="@string/delete_reminder"
-                android:padding="4dp"
+                android:padding="11dp"
                 android:src="@drawable/ic_reminder_delete"
                 app:tint="@color/reminder_delete_tint" />
         </LinearLayout>

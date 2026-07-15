@@ -29,7 +29,6 @@ import com.luistureo.voicereminderapp.presentation.assistant.AssistantConversati
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantConversationPolicy
 import com.luistureo.voicereminderapp.presentation.assistant.AssistantPhrases
 import com.luistureo.voicereminderapp.presentation.common.UiText
-import com.luistureo.voicereminderapp.presentation.state.HomeReminderListItem
 import com.luistureo.voicereminderapp.presentation.state.AssistantUiState
 import com.luistureo.voicereminderapp.presentation.state.ReminderFormState
 import com.luistureo.voicereminderapp.presentation.state.ReminderFormDraftMergePolicy
@@ -45,7 +44,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Calendar
 
@@ -438,13 +436,11 @@ class ReminderViewModel(
 
             try {
                 val reminders = getRemindersUseCase()
-                val homeTimelineItems = buildHomeTimelineItems(reminders)
                 reminderScheduler.syncReminderSchedules(reminders)
 
                 _uiState.update {
                     it.copy(
                         reminders = reminders,
-                        homeTimelineItems = homeTimelineItems,
                         isLoading = false,
                         error = null,
                         formState = _formState.value
@@ -705,43 +701,6 @@ class ReminderViewModel(
             recurrence = recurrence,
             syncTargetProviders = PerReminderCalendarSyncPolicy.selectedTargets(this)
         )
-    }
-
-    private fun buildHomeTimelineItems(reminders: List<Reminder>): List<HomeReminderListItem> {
-        val today = LocalDate.now(zoneId)
-        val tomorrow = today.plusDays(1)
-
-        return listOf(
-            today to "Hoy",
-            tomorrow to "Mañana"
-        ).flatMap { (date, label) ->
-            val dayReminders = reminders.mapNotNull { reminder ->
-                val occurrenceAtEpochMillis =
-                    occurrenceCalculator.resolveOccurrenceAtEpochMillis(reminder, date)
-                        ?: return@mapNotNull null
-
-                HomeReminderListItem.ReminderRow(
-                    reminder = reminder,
-                    occurrenceAtEpochMillis = occurrenceAtEpochMillis
-                )
-            }.sortedWith(
-                compareByDescending<HomeReminderListItem.ReminderRow> { it.reminder.isUrgent }
-                    .thenBy { it.occurrenceAtEpochMillis }
-            )
-
-            if (dayReminders.isEmpty()) {
-                emptyList()
-            } else {
-                listOf(
-                    HomeReminderListItem.DayHeader(
-                        title = label,
-                        subtitle = DateTimeFormatter.formatDateFromEpoch(
-                            date.atStartOfDay(zoneId).toInstant().toEpochMilli()
-                        )
-                    )
-                ) + dayReminders
-            }
-        }
     }
 
     private fun guideVoiceConversation(state: VoiceReminderState) {

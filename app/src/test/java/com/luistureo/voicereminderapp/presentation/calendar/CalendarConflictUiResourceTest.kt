@@ -81,11 +81,11 @@ class CalendarConflictUiResourceTest {
     }
 
     @Test
-    fun notificationRecommendationLivesOnHomeAndNotInsideCalendarFlow() {
+    fun obsoleteDuplicateRecommendationIsAbsentFromHomeAndCalendar() {
         val homeLayout = sourceFile("app/src/main/res/layout/activity_main.xml").readText()
         val calendarLayout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
 
-        assertTrue(homeLayout.contains("calendar_duplicate_alert_recommendation"))
+        assertFalse(homeLayout.contains("calendar_duplicate_alert_recommendation"))
         assertFalse(calendarLayout.contains("calendar_duplicate_alert_recommendation"))
     }
 

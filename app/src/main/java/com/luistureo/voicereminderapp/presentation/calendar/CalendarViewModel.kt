@@ -17,6 +17,7 @@ import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarCardD
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSyncSummary
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter as ReminderDateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.Reminder
@@ -24,6 +25,7 @@ import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
+import com.luistureo.voicereminderapp.presentation.state.UpcomingReminderListItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,6 +84,7 @@ class CalendarViewModel(
         month.getDisplayName(TextStyle.FULL_STANDALONE, locale).toUiTitleCase()
     }
     private val occurrenceCalculator = ReminderOccurrenceCalculator()
+    private val scheduleStateResolver = ReminderScheduleStateResolver(occurrenceCalculator)
 
     private var visibleMonth: YearMonth = YearMonth.now()
     private var selectedDate: LocalDate = today
@@ -196,17 +199,7 @@ class CalendarViewModel(
                     cachedReminders.firstOrNull { it.googleCalendarEventId == eventId }
                 }
 
-                if (reminder != null) {
-                    val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(
-                        reminder = reminder,
-                        deleteExternalCalendars = deleteExternalCalendars
-                    )
-                    if (deletionResult.pendingDeleteProviders.isEmpty()) {
-                        deleteReminderUseCase(deletionResult)
-                    }
-                    reminderScheduler.cancelReminder(reminder.id)
-                    reminderScheduler.scheduleNextDaySummary()
-                }
+                if (reminder != null) deleteReminderData(reminder, deleteExternalCalendars)
             }.onSuccess {
                 reloadCalendar()
             }.onFailure {
@@ -215,6 +208,62 @@ class CalendarViewModel(
                 )
             }
         }
+    }
+
+    fun deleteUpcomingReminder(
+        reminder: Reminder,
+        deleteExternalCalendars: Boolean
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                deleteReminderData(reminder, deleteExternalCalendars)
+            }.onSuccess {
+                reloadCalendar()
+            }.onFailure {
+                publishState(errorMessage = "No fue posible eliminar el recordatorio.")
+            }
+        }
+    }
+
+    fun updateUpcomingReminder(reminder: Reminder) {
+        viewModelScope.launch {
+            runCatching {
+                val resolvedBaseReminder = reminder.copy(
+                    scheduleState = scheduleStateResolver.resolveOnSave(reminder)
+                )
+                val resolvedReminder = PerReminderCalendarSyncPolicy.applyTargets(
+                    reminder = resolvedBaseReminder,
+                    targetProviders = PerReminderCalendarSyncPolicy.selectedTargets(reminder),
+                    markExistingForUpdate = true
+                )
+                updateReminderUseCase(resolvedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(resolvedReminder)
+                reminderScheduler.syncReminderSchedule(syncedReminder)
+            }.onSuccess {
+                reloadCalendar()
+            }.onFailure { exception ->
+                publishState(
+                    errorMessage = exception.message
+                        ?.takeIf { it.isNotBlank() }
+                        ?: "No fue posible actualizar el recordatorio."
+                )
+            }
+        }
+    }
+
+    private suspend fun deleteReminderData(
+        reminder: Reminder,
+        deleteExternalCalendars: Boolean
+    ) {
+        val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(
+            reminder = reminder,
+            deleteExternalCalendars = deleteExternalCalendars
+        )
+        if (deletionResult.pendingDeleteProviders.isEmpty()) {
+            deleteReminderUseCase(deletionResult)
+        }
+        reminderScheduler.cancelReminder(reminder.id)
+        reminderScheduler.scheduleNextDaySummary()
     }
 
     fun syncCalendarItemWithProvider(
@@ -410,6 +459,7 @@ class CalendarViewModel(
                 selectedDateReminders = selectedDateEntries.map { entry ->
                     entry.toDetailUiModel(hasNearbySchedule = entry.id in selectedDuplicateItemIds)
                 },
+                upcomingReminderItems = buildUpcomingReminderItems(cachedReminders),
                 filteredItems = buildFilteredItems(
                     entries = calendarEntries,
                     holidaysByDate = holidaysByDate,
@@ -682,6 +732,43 @@ class CalendarViewModel(
                 "$holidayCount ${pluralize(holidayCount, "feriado")}"
 
             else -> "Sin actividad para la fecha seleccionada"
+        }
+    }
+
+    private fun buildUpcomingReminderItems(
+        reminders: List<Reminder>
+    ): List<UpcomingReminderListItem> {
+        val currentDate = LocalDate.now(zoneId)
+        return listOf(
+            currentDate to "Hoy",
+            currentDate.plusDays(1) to "Mañana"
+        ).flatMap { (date, label) ->
+            val dayReminders = reminders.mapNotNull { reminder ->
+                val occurrenceAtEpochMillis =
+                    occurrenceCalculator.resolveOccurrenceAtEpochMillis(reminder, date)
+                        ?: return@mapNotNull null
+                UpcomingReminderListItem.ReminderRow(
+                    reminder = reminder,
+                    occurrenceAtEpochMillis = occurrenceAtEpochMillis
+                )
+            }.sortedWith(
+                compareByDescending<UpcomingReminderListItem.ReminderRow> {
+                    it.reminder.isUrgent
+                }.thenBy { it.occurrenceAtEpochMillis }
+            )
+
+            if (dayReminders.isEmpty()) {
+                emptyList()
+            } else {
+                listOf(
+                    UpcomingReminderListItem.DayHeader(
+                        title = label,
+                        subtitle = ReminderDateTimeFormatter.formatDateFromEpoch(
+                            date.atStartOfDay(zoneId).toInstant().toEpochMilli()
+                        )
+                    )
+                ) + dayReminders
+            }
         }
     }
 

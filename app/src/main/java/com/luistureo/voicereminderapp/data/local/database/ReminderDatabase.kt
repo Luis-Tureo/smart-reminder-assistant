@@ -6,43 +6,19 @@ import androidx.room.migration.Migration
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.luistureo.voicereminderapp.data.local.dao.LoanDao
 import com.luistureo.voicereminderapp.data.local.dao.ReminderDao
-import com.luistureo.voicereminderapp.data.local.dao.RoutineDao
-import com.luistureo.voicereminderapp.data.local.entity.LoanEntity
-import com.luistureo.voicereminderapp.data.local.entity.LoanInstallmentEntity
-import com.luistureo.voicereminderapp.data.local.entity.LoanPaymentEntity
 import com.luistureo.voicereminderapp.data.local.entity.ReminderEntity
-import com.luistureo.voicereminderapp.data.local.entity.RoutineDailyExecutionEntity
-import com.luistureo.voicereminderapp.data.local.entity.RoutineEntity
-import com.luistureo.voicereminderapp.data.local.entity.RoutineHistoryEntity
-import com.luistureo.voicereminderapp.data.local.entity.RoutineTaskEntity
-import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateEntity
-import com.luistureo.voicereminderapp.data.local.entity.RoutineTemplateTaskEntity
-import com.luistureo.voicereminderapp.data.local.entity.RoutineSuggestionEntity
 
 @Database(
     entities = [
-        ReminderEntity::class,
-        LoanEntity::class,
-        LoanPaymentEntity::class,
-        LoanInstallmentEntity::class,
-        RoutineEntity::class,
-        RoutineTaskEntity::class,
-        RoutineDailyExecutionEntity::class,
-        RoutineHistoryEntity::class,
-        RoutineTemplateEntity::class,
-        RoutineTemplateTaskEntity::class,
-        RoutineSuggestionEntity::class
+        ReminderEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 abstract class ReminderDatabase : RoomDatabase() {
 
     abstract fun reminderDao(): ReminderDao
-    abstract fun loanDao(): LoanDao
-    abstract fun routineDao(): RoutineDao
 
     companion object {
         @Volatile
@@ -492,6 +468,21 @@ abstract class ReminderDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS routine_suggestions")
+                db.execSQL("DROP TABLE IF EXISTS routine_template_tasks")
+                db.execSQL("DROP TABLE IF EXISTS routine_templates")
+                db.execSQL("DROP TABLE IF EXISTS routine_history")
+                db.execSQL("DROP TABLE IF EXISTS routine_daily_executions")
+                db.execSQL("DROP TABLE IF EXISTS routine_tasks")
+                db.execSQL("DROP TABLE IF EXISTS routines")
+                db.execSQL("DROP TABLE IF EXISTS loan_payments")
+                db.execSQL("DROP TABLE IF EXISTS loan_installments")
+                db.execSQL("DROP TABLE IF EXISTS loan_records")
+            }
+        }
+
         internal val ALL_MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -505,7 +496,8 @@ abstract class ReminderDatabase : RoomDatabase() {
             MIGRATION_12_13,
             MIGRATION_13_14,
             MIGRATION_14_15,
-            MIGRATION_15_16
+            MIGRATION_15_16,
+            MIGRATION_16_17
         )
     }
 }

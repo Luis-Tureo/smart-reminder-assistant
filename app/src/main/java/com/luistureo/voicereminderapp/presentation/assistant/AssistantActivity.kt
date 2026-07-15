@@ -1,6 +1,7 @@
 package com.luistureo.voicereminderapp.presentation.assistant
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
@@ -17,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
+import com.luistureo.voicereminderapp.MainActivity
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarReminderSynchronizer
@@ -25,7 +27,6 @@ import com.luistureo.voicereminderapp.core.calendar.microsoft.MicrosoftCalendarA
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.speech.SpeechRecognizerManager
 import com.luistureo.voicereminderapp.core.speech.VoiceAssistantSpeaker
-import com.luistureo.voicereminderapp.core.routine.RoutinePreferenceStore
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
@@ -41,7 +42,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import com.luistureo.voicereminderapp.domain.routine.model.Routine
 
 class AssistantActivity : ComponentActivity() {
 
@@ -55,10 +55,6 @@ class AssistantActivity : ComponentActivity() {
     private lateinit var syncOptionsContainer: View
     private lateinit var googleSyncCheckBox: MaterialCheckBox
     private lateinit var microsoftSyncCheckBox: MaterialCheckBox
-    private lateinit var routineControlsContainer: View
-    private lateinit var routineProgressView: TextView
-    private lateinit var routineCompletedButton: MaterialButton
-    private lateinit var routinePartialButton: MaterialButton
 
     private lateinit var assistantAnimator: AssistantAnimator
     private lateinit var reminderViewModel: ReminderViewModel
@@ -66,7 +62,6 @@ class AssistantActivity : ComponentActivity() {
     private lateinit var voiceAssistantSpeaker: VoiceAssistantSpeaker
     private lateinit var googleCalendarAuthManager: GoogleCalendarAuthManager
     private lateinit var microsoftCalendarAuthController: MicrosoftCalendarAuthController
-    private lateinit var routineSessionViewModel: AssistantRoutineSessionViewModel
 
     private var currentAssistantVisualState: AssistantVisualState = AssistantVisualState.IDLE
     private var hasPendingSuccessState: Boolean = false
@@ -74,9 +69,6 @@ class AssistantActivity : ComponentActivity() {
     private val assistantSpeechQueue = ArrayDeque<String>()
     private var isAssistantSpeechQueueActive: Boolean = false
     private var availableSyncProviders: Set<CalendarProvider> = emptySet()
-    private var isRoutineSession = false
-    private var activeRoutine: Routine? = null
-    private val routineVoiceController = AssistantRoutineVoiceController()
 
     private val voiceAudioPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -94,28 +86,30 @@ class AssistantActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        isRoutineSession = intent.getIntExtra(EXTRA_ROUTINE_ID, 0) > 0
+        if (isLegacyRemovedModuleIntent()) {
+            startActivity(
+                Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                }
+            )
+            finish()
+            return
+        }
         setContentView(R.layout.activity_assistant)
 
         initViews()
         setupAssistant()
         setupSpeech()
         setupListeners()
-        if (isRoutineSession) {
-            setupRoutineSession()
-            observeRoutineSession()
-            routineSessionViewModel.start(
-                routineId = intent.getIntExtra(EXTRA_ROUTINE_ID, 0),
-                dateEpochDay = intent.getLongExtra(EXTRA_ROUTINE_DATE_EPOCH_DAY, Long.MIN_VALUE),
-                notificationId = intent.getIntExtra(EXTRA_ROUTINE_NOTIFICATION_ID, 0)
-            )
-        } else {
-            setupViewModel()
-            refreshCalendarSyncOptions()
-            observeAssistantState()
-            observeEvents()
-        }
+        setupViewModel()
+        refreshCalendarSyncOptions()
+        observeAssistantState()
+        observeEvents()
     }
+
+    private fun isLegacyRemovedModuleIntent(): Boolean =
+        intent.hasExtra(LEGACY_ROUTINE_ID_EXTRA) ||
+            intent.data?.toString()?.startsWith(LEGACY_ROUTINE_URI_PREFIX) == true
 
     override fun onStart() {
         super.onStart()
@@ -152,10 +146,6 @@ class AssistantActivity : ComponentActivity() {
         syncOptionsContainer = findViewById(R.id.containerAssistantCalendarSyncOptions)
         googleSyncCheckBox = findViewById(R.id.checkAssistantSyncGoogle)
         microsoftSyncCheckBox = findViewById(R.id.checkAssistantSyncMicrosoft)
-        routineControlsContainer = findViewById(R.id.containerAssistantRoutineControls)
-        routineProgressView = findViewById(R.id.tvAssistantRoutineProgress)
-        routineCompletedButton = findViewById(R.id.btnAssistantRoutineCompleted)
-        routinePartialButton = findViewById(R.id.btnAssistantRoutinePartial)
     }
 
     private fun setupAssistant() {
@@ -254,22 +244,11 @@ class AssistantActivity : ComponentActivity() {
                 checkAudioPermissionAndStart()
             }
         }
-        if (isRoutineSession) {
-            routineCompletedButton.setOnClickListener {
-                renderAssistantState(AssistantVisualState.THINKING)
-                routineSessionViewModel.confirmCurrentTask()
-            }
-            routinePartialButton.setOnClickListener {
-                renderAssistantState(AssistantVisualState.THINKING)
-                routineSessionViewModel.finishPartial()
-            }
-        } else {
-            googleSyncCheckBox.setOnCheckedChangeListener { _, _ ->
-                reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
-            }
-            microsoftSyncCheckBox.setOnCheckedChangeListener { _, _ ->
-                reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
-            }
+        googleSyncCheckBox.setOnCheckedChangeListener { _, _ ->
+            reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
+        }
+        microsoftSyncCheckBox.setOnCheckedChangeListener { _, _ ->
+            reminderViewModel.setAssistantSyncTargetProviders(selectedSyncTargetProviders())
         }
 
     }
@@ -409,26 +388,7 @@ class AssistantActivity : ComponentActivity() {
     }
 
     private fun startRequestedVoiceFlow() {
-        if (isRoutineSession) startRoutineVoiceConfirmation() else startAssistantConversation()
-    }
-
-    private fun startRoutineVoiceConfirmation() {
-        val routine = activeRoutine ?: return
-        if (!routine.voiceEnabled) {
-            Toast.makeText(this, getString(R.string.routine_voice_disabled), Toast.LENGTH_SHORT).show()
-            return
-        }
-        renderAssistantState(AssistantVisualState.LISTENING)
-        if (routine.motivationBubbleEnabled) {
-            assistantDialogueBubble.showMessage(
-                text = getString(R.string.routine_voice_confirmation_hint),
-                animateText = false,
-                playTypingSound = false
-            )
-        } else {
-            assistantDialogueBubble.hideBubble()
-        }
-        speechManager.startRecognition()
+        startAssistantConversation()
     }
 
     private fun startAssistantConversation() {
@@ -479,21 +439,6 @@ class AssistantActivity : ComponentActivity() {
         }
 
         recognizedTextView.text = recognizedText
-        if (isRoutineSession) {
-            speechManager.cancelRecognition()
-            renderAssistantState(AssistantVisualState.THINKING)
-            if (RoutineVoiceConfirmationPolicy.confirmsCompletion(recognizedText)) {
-                routineSessionViewModel.confirmCurrentTask()
-            } else {
-                renderAssistantState(AssistantVisualState.ERROR)
-                Toast.makeText(
-                    this,
-                    getString(R.string.routine_voice_confirmation_not_recognized),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            return
-        }
         assistantDialogueBubble.showMessage(
             text = getString(R.string.assistant_thinking_dialogue),
             animateText = false,
@@ -574,10 +519,6 @@ class AssistantActivity : ComponentActivity() {
     }
 
     private fun handleAssistantReplyQueueFinished() {
-        if (isRoutineSession) {
-            renderAssistantState(AssistantVisualState.IDLE)
-            return
-        }
         if (hasPendingSuccessState) {
             showSuccessAndReturnToIdle()
             return
@@ -594,95 +535,6 @@ class AssistantActivity : ComponentActivity() {
         assistantResetJob?.cancel()
         currentAssistantVisualState = state
         assistantAnimator.render(state)
-    }
-
-    private fun setupRoutineSession() {
-        routineControlsContainer.isVisible = true
-        syncOptionsContainer.isVisible = false
-        routineSessionViewModel = ViewModelProvider(
-            this,
-            AssistantRoutineSessionViewModelFactory(applicationContext)
-        )[AssistantRoutineSessionViewModel::class.java]
-    }
-
-    private fun observeRoutineSession() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                routineSessionViewModel.events.collect { event ->
-                    when (event) {
-                        is AssistantRoutineSessionEvent.Started -> {
-                            activeRoutine = event.routine
-                            updateRoutineProgress(event.completedTasks, event.totalTasks)
-                            renderAssistantState(AssistantVisualState.LISTENING)
-                            routineVoiceController.start(
-                                event.routine,
-                                event.nextTask,
-                                RoutinePreferenceStore(applicationContext).getPreferredName()
-                            )?.let(::deliverRoutineTurn)
-                        }
-                        is AssistantRoutineSessionEvent.TaskAdvanced -> {
-                            activeRoutine = event.routine
-                            updateRoutineProgress(event.completedTasks, event.totalTasks)
-                            deliverRoutineTurn(routineVoiceController.taskCompleted(event.nextTask))
-                        }
-                        is AssistantRoutineSessionEvent.Finished -> {
-                            activeRoutine = event.routine
-                            updateRoutineProgress(event.completedTasks, event.totalTasks)
-                            routineCompletedButton.isEnabled = false
-                            routinePartialButton.isEnabled = false
-                            deliverRoutineTurn(
-                                routineVoiceController.summary(
-                                    event.routine,
-                                    event.state,
-                                    event.completedTasks,
-                                    event.totalTasks,
-                                    RoutinePreferenceStore(applicationContext).getPreferredName()
-                                )
-                            )
-                        }
-                        is AssistantRoutineSessionEvent.Error -> {
-                            renderAssistantState(AssistantVisualState.ERROR)
-                            Toast.makeText(
-                                this@AssistantActivity,
-                                event.message,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun deliverRoutineTurn(turn: AssistantRoutineVoiceTurn) {
-        val routine = activeRoutine ?: return
-        val output = AssistantRoutineOutputPolicy.resolve(routine)
-        assistantReplyView.text = turn.message
-        if (output.bubbleEnabled) {
-            assistantDialogueBubble.showMessage(
-                text = turn.bubbleMessage,
-                animateText = true,
-                playTypingSound = true
-            )
-        } else {
-            assistantDialogueBubble.hideBubble()
-        }
-        if (output.voiceEnabled) {
-            renderAssistantState(AssistantVisualState.SPEAKING)
-            voiceAssistantSpeaker.speakText(turn.message) {
-                runOnUiThread { renderAssistantState(turn.finalVisualState) }
-            }
-        } else {
-            renderAssistantState(turn.finalVisualState)
-        }
-    }
-
-    private fun updateRoutineProgress(completedTasks: Int, totalTasks: Int) {
-        routineProgressView.text = getString(
-            R.string.routine_assistant_progress,
-            completedTasks,
-            totalTasks
-        )
     }
 
     private fun showSuccessAndReturnToIdle() {
@@ -768,8 +620,7 @@ class AssistantActivity : ComponentActivity() {
 
     companion object {
         private const val MAX_DIALOGUE_CHUNK_LENGTH = 52
-        const val EXTRA_ROUTINE_ID = "extra_assistant_routine_id"
-        const val EXTRA_ROUTINE_DATE_EPOCH_DAY = "extra_assistant_routine_date_epoch_day"
-        const val EXTRA_ROUTINE_NOTIFICATION_ID = "extra_assistant_routine_notification_id"
+        private const val LEGACY_ROUTINE_ID_EXTRA = "extra_assistant_routine_id"
+        private const val LEGACY_ROUTINE_URI_PREFIX = "voicereminder://routine/"
     }
 }

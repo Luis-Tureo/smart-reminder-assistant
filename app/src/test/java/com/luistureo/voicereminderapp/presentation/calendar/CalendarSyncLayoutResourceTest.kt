@@ -64,19 +64,17 @@ class CalendarSyncLayoutResourceTest {
     }
 
     @Test
-    fun providerButtonsHaveEqualFixedDimensions() {
+    fun providerButtonsUseFullWidthAccessibleTouchTargets() {
         val layout = activityCalendarLayoutFile().readText()
         val google = layout.substringAfter("@+id/btnCalendarGoogleSync")
-            .substringBefore("<Space")
+            .substringBefore("/>")
         val microsoft = layout.substringAfter("@+id/btnCalendarMicrosoftSync")
-            .substringBefore("</LinearLayout>")
+            .substringBefore("/>")
 
-        assertTrue(google.contains("android:layout_width=\"0dp\""))
-        assertTrue(microsoft.contains("android:layout_width=\"0dp\""))
-        assertTrue(google.contains("android:layout_height=\"48dp\""))
-        assertTrue(microsoft.contains("android:layout_height=\"48dp\""))
-        assertTrue(google.contains("android:layout_weight=\"1\""))
-        assertTrue(microsoft.contains("android:layout_weight=\"1\""))
+        assertTrue(google.contains("android:layout_width=\"match_parent\""))
+        assertTrue(microsoft.contains("android:layout_width=\"match_parent\""))
+        assertTrue(google.contains("android:minHeight=\"48dp\""))
+        assertTrue(microsoft.contains("android:minHeight=\"48dp\""))
         assertTrue(google.contains("android:textColor=\"@color/calendar_title_text\""))
         assertTrue(microsoft.contains("android:textColor=\"@color/calendar_title_text\""))
         assertTrue(google.contains("app:strokeColor=\"@color/calendar_title_text\""))
@@ -84,16 +82,17 @@ class CalendarSyncLayoutResourceTest {
     }
 
     @Test
-    fun disconnectActionsRemainRedAndVisuallySeparated() {
+    fun disconnectActionsRemainRedStackedAndVisuallySeparated() {
         val layout = activityCalendarLayoutFile().readText()
         val disconnect = layout.substringAfter(
             "@+id/containerCalendarDisconnectActions"
         ).substringBefore("</com.google.android.material.card.MaterialCardView>")
 
-        assertTrue(disconnect.contains("android:layout_marginTop=\"12dp\""))
-        assertTrue(disconnect.contains("android:layout_height=\"1dp\""))
+        assertTrue(disconnect.contains("android:layout_marginTop=\"10dp\""))
+        assertTrue(disconnect.contains("android:orientation=\"vertical\""))
         assertTrue(disconnect.contains("@+id/btnCalendarGoogleDisconnect"))
         assertTrue(disconnect.contains("@+id/btnCalendarMicrosoftDisconnect"))
+        assertTrue(disconnect.contains("android:minHeight=\"48dp\""))
         assertTrue(disconnect.contains("android:textColor=\"@color/reminder_delete_red\""))
         assertTrue(disconnect.contains("app:strokeColor=\"@color/reminder_delete_red\""))
     }

@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="main_calendar_button_top_spacing">16dp</dimen>
-    <dimen name="main_calendar_button_bottom_spacing">10dp</dimen>
-    <dimen name="calendar_controls_row_side_spacing">10dp</dimen>
-    <dimen name="calendar_controls_inner_spacing">12dp</dimen>
-    <dimen name="calendar_controls_button_to_selector_spacing">10dp</dimen>
-    <dimen name="calendar_controls_selector_spacing">8dp</dimen>
-    <dimen name="calendar_selector_height">46dp</dimen>
-    <dimen name="calendar_year_selector_width">64dp</dimen>
-    <dimen name="calendar_controls_to_grid_section_spacing">24dp</dimen>
-    <dimen name="calendar_grid_section_top_padding">4dp</dimen>
+    <dimen name="calendar_selector_height">48dp</dimen>
+    <dimen name="calendar_year_selector_width">88dp</dimen>
     <dimen name="calendar_weekdays_to_grid_spacing">12dp</dimen>
     <dimen name="calendar_day_spacing_horizontal">2dp</dimen>
     <dimen name="calendar_day_spacing_vertical">3dp</dimen>
@@ -25,5 +17,4 @@
     <dimen name="assistant_dialogue_padding_vertical">8dp</dimen>
     <dimen name="assistant_scene_min_height">236dp</dimen>
     <dimen name="assistant_scene_max_height">420dp</dimen>
-    <dimen name="routine_card_radius">20dp</dimen>
 </resources>
