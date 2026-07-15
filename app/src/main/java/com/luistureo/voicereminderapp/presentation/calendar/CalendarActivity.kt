@@ -1,7 +1,6 @@
 package com.luistureo.voicereminderapp.presentation.calendar
 
 import android.os.Bundle
-import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.ActivityNotFoundException
 import android.graphics.Paint
@@ -28,8 +27,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
@@ -53,12 +50,9 @@ import com.luistureo.voicereminderapp.core.calendar.unified.MeetingUrlPolicy
 import com.luistureo.voicereminderapp.core.calendar.unified.MeetingOpenCoordinator
 import com.luistureo.voicereminderapp.core.calendar.unified.MeetingContentSanitizer
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
-import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
-import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.data.local.database.ReminderDatabase
 import com.luistureo.voicereminderapp.data.repository.ReminderRepositoryImpl
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
-import com.luistureo.voicereminderapp.domain.model.Reminder
 import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
@@ -66,7 +60,6 @@ import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
 import com.luistureo.voicereminderapp.presentation.manual.PasteTextReminderActivity
-import com.luistureo.voicereminderapp.presentation.ui.adapter.UpcomingReminderAdapter
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -103,11 +96,6 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var detailContainer: LinearLayout
     private lateinit var selectedDateActionsContainer: LinearLayout
     private lateinit var createReminderButton: MaterialButton
-    private lateinit var nextDaySummaryTimeView: TextView
-    private lateinit var nextDaySummaryTimeButton: MaterialButton
-    private lateinit var upcomingRemindersView: RecyclerView
-    private lateinit var upcomingEmptyStateView: View
-    private lateinit var upcomingEmptyStateButton: MaterialButton
     private lateinit var legendFilterCards: Map<CalendarIndicatorStyle, MaterialCardView>
     private lateinit var legendFilterDots: Map<CalendarIndicatorStyle, View>
     private lateinit var legendFilterLabels: Map<CalendarIndicatorStyle, TextView>
@@ -120,8 +108,6 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var microsoftCalendarAuthController: MicrosoftCalendarAuthController
     private lateinit var calendarAutoSyncStateStore: CalendarAutoSyncStateStore
     private lateinit var reminderScheduler: ReminderScheduler
-    private lateinit var summaryPreferenceStore: NextDaySummaryPreferenceStore
-    private lateinit var upcomingReminderAdapter: UpcomingReminderAdapter
 
     private var activeFilter: CalendarIndicatorStyle? = null
     private var lastErrorMessage: String? = null
@@ -208,7 +194,6 @@ class CalendarActivity : AppCompatActivity() {
         initViews()
         setupToolbar()
         setupViewModel()
-        setupUpcomingReminders()
         setupControls()
         observeState()
     }
@@ -216,7 +201,6 @@ class CalendarActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         calendarViewModel.reloadCalendar()
-        refreshNextDaySummaryTime()
         refreshGoogleCalendarStatus()
         if (::unifiedCalendarSynchronizer.isInitialized) {
             microsoftCalendarAuthController.refreshConnectionState { isConnected ->
@@ -259,11 +243,6 @@ class CalendarActivity : AppCompatActivity() {
         detailContainer = findViewById(R.id.containerDayDetails)
         selectedDateActionsContainer = findViewById(R.id.containerSelectedDateActions)
         createReminderButton = findViewById(R.id.btnCalendarCreateReminder)
-        nextDaySummaryTimeView = findViewById(R.id.tvCalendarNextDaySummaryTime)
-        nextDaySummaryTimeButton = findViewById(R.id.btnCalendarNextDaySummaryTime)
-        upcomingRemindersView = findViewById(R.id.recyclerCalendarUpcomingReminders)
-        upcomingEmptyStateView = findViewById(R.id.calendarReminderEmptyStateCard)
-        upcomingEmptyStateButton = findViewById(R.id.btnCalendarEmptyStateCreateReminder)
         legendShowAllButton = findViewById(R.id.btnCalendarLegendShowAll)
         legendFilterCards = mapOf(
             CalendarIndicatorStyle.REMINDER to findViewById(R.id.cardCalendarFilterReminder),
@@ -285,7 +264,6 @@ class CalendarActivity : AppCompatActivity() {
         )
         listOf(
             selectedDateTitleView,
-            findViewById<TextView>(R.id.tvCalendarRemindersHeading),
             findViewById<TextView>(R.id.tvCalendarConnectionsHeading),
             findViewById<TextView>(R.id.tvCalendarFiltersHeading)
         ).forEach { heading ->
@@ -319,7 +297,6 @@ class CalendarActivity : AppCompatActivity() {
         microsoftCalendarAuthController = MicrosoftCalendarAuthProvider.get(applicationContext)
         calendarAutoSyncStateStore = CalendarAutoSyncStateStore(applicationContext)
         reminderScheduler = ReminderScheduler(applicationContext)
-        summaryPreferenceStore = NextDaySummaryPreferenceStore(applicationContext)
         val factory = CalendarViewModelFactory(
             getRemindersUseCase = GetRemindersUseCase(repository),
             deleteReminderUseCase = DeleteReminderUseCase(repository),
@@ -330,17 +307,6 @@ class CalendarActivity : AppCompatActivity() {
         )
 
         calendarViewModel = ViewModelProvider(this, factory)[CalendarViewModel::class.java]
-    }
-
-    private fun setupUpcomingReminders() {
-        upcomingReminderAdapter = UpcomingReminderAdapter(
-            items = emptyList(),
-            onDelete = ::showDeleteConfirmation,
-            onUpdate = calendarViewModel::updateUpcomingReminder,
-            onEdit = { reminder -> openReminderEditor(reminder.id) }
-        )
-        upcomingRemindersView.layoutManager = LinearLayoutManager(this)
-        upcomingRemindersView.adapter = upcomingReminderAdapter
     }
 
     private fun setupControls() {
@@ -389,14 +355,6 @@ class CalendarActivity : AppCompatActivity() {
         createReminderButton.setOnClickListener {
             showCreateReminderChoice()
         }
-        nextDaySummaryTimeButton.setOnClickListener {
-            showNextDaySummaryTimePicker()
-        }
-        upcomingEmptyStateButton.setOnClickListener {
-            showCreateReminderChoice()
-        }
-
-        refreshNextDaySummaryTime()
         refreshGoogleCalendarStatus()
     }
 
@@ -429,10 +387,6 @@ class CalendarActivity : AppCompatActivity() {
             activeFilter == null && state.selectedHolidays.isNotEmpty()
         holidaySummaryView.text = state.selectedHolidays.joinToString(separator = " - ")
         renderLegendFilters()
-        upcomingReminderAdapter.updateData(state.upcomingReminderItems)
-        val hasUpcomingReminders = state.upcomingReminderItems.isNotEmpty()
-        upcomingRemindersView.isVisible = hasUpcomingReminders
-        upcomingEmptyStateView.isVisible = !hasUpcomingReminders
 
         calendarGridCard.isVisible = CalendarActionRules.shouldShowMonthGrid(activeFilter)
         renderCalendarDays(state.days)
@@ -542,12 +496,12 @@ class CalendarActivity : AppCompatActivity() {
         val shouldShowSummary = day.isCurrentMonth
         val visibleIndicators = day.indicators
 
-        val numberColorRes = if (day.isSelected) {
-            R.color.calendar_toolbar_text
-        } else if (!day.isCurrentMonth) {
-            R.color.calendar_outside_month_text
-        } else {
-            R.color.calendar_title_text
+        val numberColorRes = when {
+            day.isSelected -> R.color.calendar_toolbar_text
+            day.isSunday && !day.isCurrentMonth -> R.color.calendar_sunday_outside_text
+            day.isSunday -> R.color.calendar_sunday_text
+            !day.isCurrentMonth -> R.color.calendar_outside_month_text
+            else -> R.color.calendar_title_text
         }
 
         numberView.text = day.dayNumber
@@ -557,6 +511,7 @@ class CalendarActivity : AppCompatActivity() {
         val accessibilityDetails = buildList {
             if (day.isSelected) add(getString(R.string.calendar_day_selected))
             if (day.isToday) add(getString(R.string.calendar_day_today))
+            if (day.isSunday) add(getString(R.string.calendar_day_sunday))
             day.holidayLabel?.takeIf { it.isNotBlank() }?.let(::add)
             day.indicators.forEach { indicator ->
                 add(
@@ -613,6 +568,8 @@ class CalendarActivity : AppCompatActivity() {
         }
 
         val strokeColorRes = when {
+            day.isSunday && !day.isCurrentMonth -> R.color.calendar_sunday_outside_outline
+            day.isSunday -> R.color.calendar_sunday_outline
             !day.isCurrentMonth -> R.color.calendar_day_outside_stroke
             day.isSelected -> R.color.calendar_day_selected_stroke
             day.isToday -> R.color.calendar_day_today_stroke
@@ -623,7 +580,13 @@ class CalendarActivity : AppCompatActivity() {
 
         cardView.setCardBackgroundColor(ContextCompat.getColor(this, backgroundColorRes))
         cardView.strokeColor = ContextCompat.getColor(this, strokeColorRes)
-        cardView.strokeWidth = resources.getDimensionPixelSize(R.dimen.calendar_day_stroke)
+        cardView.strokeWidth = resources.getDimensionPixelSize(
+            if (day.isSunday) {
+                R.dimen.calendar_sunday_stroke
+            } else {
+                R.dimen.calendar_day_stroke
+            }
+        )
         cardView.radius = if (day.isSelected) 14f else 12f
 
         indicatorViews.forEachIndexed { index, indicatorView ->
@@ -778,8 +741,8 @@ class CalendarActivity : AppCompatActivity() {
         val timeView = detailView.findViewById<TextView>(R.id.tvCalendarDetailTime)
         val typeView = detailView.findViewById<TextView>(R.id.tvCalendarDetailType)
         val completedView = detailView.findViewById<TextView>(R.id.tvCalendarDetailCompleted)
-        val nearbyScheduleView =
-            detailView.findViewById<TextView>(R.id.tvCalendarDetailNearbySchedule)
+        val scheduleConflictView =
+            detailView.findViewById<TextView>(R.id.tvCalendarDetailScheduleConflict)
         val deleteButton = detailView.findViewById<ImageButton>(R.id.btnCalendarDetailDelete)
         val openMeetingButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarOpenMeeting)
         val reactivateButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarReactivate)
@@ -821,7 +784,7 @@ class CalendarActivity : AppCompatActivity() {
         typeView.setTextColor(ContextCompat.getColor(this, typeStyle.textColorResId))
 
         completedView.isVisible = detail.isCompleted && forcedStyle != CalendarIndicatorStyle.COMPLETED
-        nearbyScheduleView.isVisible = detail.hasNearbySchedule
+        scheduleConflictView.isVisible = detail.hasScheduleConflict
         if (detail.isCompleted) {
             completedView.setBackgroundResource(CalendarIndicatorStyle.COMPLETED.backgroundResId)
             completedView.setTextColor(
@@ -1162,18 +1125,6 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
-    private fun showDeleteConfirmation(reminder: Reminder) {
-        showDeleteConfirmation(
-            title = reminder.title,
-            providerExternalIds = reminder.externalIdsByProvider
-        ) { deleteExternalCalendars ->
-            calendarViewModel.deleteUpcomingReminder(
-                reminder = reminder,
-                deleteExternalCalendars = deleteExternalCalendars
-            )
-        }
-    }
-
     private fun showDeleteConfirmation(
         title: String,
         providerExternalIds: Map<CalendarProvider, String>,
@@ -1211,42 +1162,6 @@ class CalendarActivity : AppCompatActivity() {
                 onDelete(false)
             }
             .show()
-    }
-
-    private fun showNextDaySummaryTimePicker() {
-        val summaryTime = summaryPreferenceStore.getSummaryTime()
-        TimePickerDialog(
-            this,
-            { _, hourOfDay, minute ->
-                summaryPreferenceStore.setSummaryTime(hourOfDay, minute)
-                reminderScheduler.scheduleNextDaySummary()
-                refreshNextDaySummaryTime()
-                val formattedTime = DateTimeFormatter.formatTime(hourOfDay, minute)
-                Toast.makeText(
-                    this,
-                    getString(R.string.calendar_next_day_summary_time_saved, formattedTime),
-                    Toast.LENGTH_SHORT
-                ).show()
-            },
-            summaryTime.hour,
-            summaryTime.minute,
-            true
-        ).show()
-    }
-
-    private fun refreshNextDaySummaryTime() {
-        if (!::summaryPreferenceStore.isInitialized) return
-        val summaryTime = summaryPreferenceStore.getSummaryTime()
-        val formattedTime = DateTimeFormatter.formatTime(summaryTime.hour, summaryTime.minute)
-        nextDaySummaryTimeView.text = getString(
-            R.string.calendar_next_day_summary_current_time,
-            formattedTime
-        )
-        nextDaySummaryTimeButton.contentDescription = buildString {
-            append(getString(R.string.calendar_next_day_summary_change_time))
-            append(". ")
-            append(nextDaySummaryTimeView.text)
-        }
     }
 
     private fun refreshGoogleCalendarStatus() {

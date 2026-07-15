@@ -39,16 +39,16 @@ class CalendarConflictUiResourceTest {
     }
 
     @Test
-    fun nearbyItemsShowSubtleBadgeAndCalendarRemainsUsable() {
+    fun scheduleConflictsShowSubtleBadgeAndCalendarRemainsUsable() {
         val activity = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
                     "CalendarActivity.kt"
         ).readText()
         val detailLayout = sourceFile("app/src/main/res/layout/item_calendar_detail.xml").readText()
 
-        assertTrue(detailLayout.contains("@+id/tvCalendarDetailNearbySchedule"))
-        assertTrue(detailLayout.contains("calendar_duplicate_nearby_badge"))
-        assertTrue(activity.contains("nearbyScheduleView.isVisible = detail.hasNearbySchedule"))
+        assertTrue(detailLayout.contains("@+id/tvCalendarDetailScheduleConflict"))
+        assertTrue(detailLayout.contains("calendar_schedule_conflict_badge"))
+        assertTrue(activity.contains("scheduleConflictView.isVisible = detail.hasScheduleConflict"))
         assertTrue(activity.contains("cardView.setOnClickListener"))
     }
 

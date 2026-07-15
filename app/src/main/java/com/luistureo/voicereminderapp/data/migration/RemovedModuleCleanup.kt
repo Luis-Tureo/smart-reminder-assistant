@@ -6,19 +6,24 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
-import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 
 object RemovedModuleCleanup {
     private const val cleanupPreferences = "removed_module_cleanup"
-    private const val cleanupCompletedKey = "cleanup_v17_completed"
+    private const val cleanupCompletedKey = "cleanup_v18_completed"
     private const val databaseName = "reminder_database"
     private const val routinePreferences = "routine_assistant_preferences"
+    private const val nextDaySummaryPreferences = "next_day_summary_preferences"
     private const val loanReceiverClass =
         "com.luistureo.voicereminderapp.core.loan.alarm.LoanReminderReceiver"
     private const val routineReceiverClass =
         "com.luistureo.voicereminderapp.core.routine.RoutineAlarmReceiver"
+    private const val nextDaySummaryReceiverClass =
+        "com.luistureo.voicereminderapp.core.alarm.NextDaySummaryReceiver"
+    internal const val NEXT_DAY_SUMMARY_REQUEST_CODE = 9_001
 
     private val loanAlarmKinds = listOf(
         "SAME_DAY",
@@ -42,16 +47,17 @@ object RemovedModuleCleanup {
         val cleanupState = appContext.getSharedPreferences(cleanupPreferences, Context.MODE_PRIVATE)
         if (cleanupState.getBoolean(cleanupCompletedKey, false)) return
 
-        val moduleIds = runCatching { readStoredModuleIds(appContext) }.getOrNull() ?: return
+        val moduleIds = runCatching { readStoredModuleIds(appContext) }.getOrDefault(ModuleIds())
         cancelLoanArtifacts(appContext, moduleIds.loanIds)
         cancelRoutineArtifacts(appContext, moduleIds.routineIds)
+        cancelNextDaySummaryArtifacts(appContext)
         appContext.getSharedPreferences(routinePreferences, Context.MODE_PRIVATE)
-            .edit()
-            .clear()
-            .apply()
+            .edit { clear() }
+        appContext.getSharedPreferences(nextDaySummaryPreferences, Context.MODE_PRIVATE)
+            .edit { clear() }
         appContext.cacheDir.resolve("loan_attachments").deleteRecursively()
         deleteNotificationChannels(appContext)
-        cleanupState.edit().putBoolean(cleanupCompletedKey, true).apply()
+        cleanupState.edit { putBoolean(cleanupCompletedKey, true) }
     }
 
     internal fun loanAlarmRequestCode(loanId: Int, kindOrdinal: Int): Int =
@@ -71,7 +77,7 @@ object RemovedModuleCleanup {
             loanAlarmKinds.forEachIndexed { ordinal, kind ->
                 val intent = Intent().apply {
                     setClassName(context.packageName, loanReceiverClass)
-                    data = Uri.parse("voicereminder://alarm/loan/$loanId/$kind")
+                    data = "voicereminder://alarm/loan/$loanId/$kind".toUri()
                 }
                 cancelBroadcast(
                     context,
@@ -90,7 +96,7 @@ object RemovedModuleCleanup {
             routineAlarmTypes.forEachIndexed { ordinal, type ->
                 val intent = Intent().apply {
                     setClassName(context.packageName, routineReceiverClass)
-                    data = Uri.parse("voicereminder://routine/alarm/$routineId/$type")
+                    data = "voicereminder://routine/alarm/$routineId/$type".toUri()
                 }
                 cancelBroadcast(
                     context,
@@ -105,6 +111,15 @@ object RemovedModuleCleanup {
                 )
             }
         }
+    }
+
+    private fun cancelNextDaySummaryArtifacts(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent().apply {
+            setClassName(context.packageName, nextDaySummaryReceiverClass)
+        }
+        cancelBroadcast(context, alarmManager, NEXT_DAY_SUMMARY_REQUEST_CODE, intent)
+        NotificationManagerCompat.from(context).cancel(NEXT_DAY_SUMMARY_REQUEST_CODE)
     }
 
     private fun cancelBroadcast(
@@ -129,6 +144,7 @@ object RemovedModuleCleanup {
         manager.deleteNotificationChannel("loan_reminder_channel")
         manager.deleteNotificationChannel("daily_routine_channel")
         manager.deleteNotificationChannel("daily_routine_motivation_channel")
+        manager.deleteNotificationChannel("next_day_summary_channel")
     }
 
     private fun readStoredModuleIds(context: Context): ModuleIds {

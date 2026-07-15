@@ -21,40 +21,18 @@
     <!-- Cajas informativas -->
     <color name="info_box_background">#EEF4FB</color>
     <color name="result_box_background">#EAF2FF</color>
-    <color name="assistant_screen_background">#EEF3FB</color>
-    <color name="assistant_body">#1C2430</color>
-    <color name="assistant_shadow">#1A1C2430</color>
-    <color name="assistant_eye_default">#F8FAFF</color>
-    <color name="assistant_eye_success">#E9FFF0</color>
-    <color name="assistant_chip_background">#E4EBF5</color>
-    <color name="assistant_accent_idle">#6EA8FE</color>
-    <color name="assistant_accent_listening">#4FC3B3</color>
-    <color name="assistant_accent_thinking">#F4B860</color>
-    <color name="assistant_accent_speaking">#8F9BFF</color>
-    <color name="assistant_accent_success">#63C98D</color>
-    <color name="assistant_glow_idle">#336EA8FE</color>
-    <color name="assistant_glow_listening">#334FC3B3</color>
-    <color name="assistant_glow_thinking">#33F4B860</color>
-    <color name="assistant_glow_speaking">#338F9BFF</color>
-    <color name="assistant_glow_success">#3363C98D</color>
 
     <!-- Recordatorios -->
     <color name="reminder_card_background">#FBF8F2</color>
     <color name="reminder_card_stroke">#EEE7DC</color>
     <color name="reminder_text_primary">#222738</color>
     <color name="reminder_text_secondary">#5E6275</color>
-    <color name="reminder_text_soft">#8C93A5</color>
     <color name="reminder_accent">#6A83BD</color>
     <color name="reminder_delete_tint">#A4ABBA</color>
     <color name="reminder_delete_red">#B42318</color>
     <color name="reminder_delete_background">#FFE4E1</color>
-    <color name="reminder_divider">#E8E1D7</color>
     <color name="reminder_icon_blue_bg">#D9E4FF</color>
     <color name="reminder_icon_blue_fg">#4261AF</color>
-    <color name="reminder_icon_amber_bg">#FFD990</color>
-    <color name="reminder_icon_amber_fg">#896114</color>
-    <color name="reminder_icon_birthday_fg">#B33D70</color>
-    <color name="reminder_done_unchecked">#D4D9E6</color>
     <color name="recurrence_chip_background">#F8FAFF</color>
     <color name="recurrence_chip_selected_background">#EFE3FF</color>
     <color name="recurrence_chip_stroke">#8F95A3</color>
@@ -86,6 +64,10 @@
     <color name="calendar_day_today_stroke">#7CB89F</color>
     <color name="calendar_day_selected_background">#203047</color>
     <color name="calendar_day_selected_stroke">#203047</color>
+    <color name="calendar_sunday_text">#A33F46</color>
+    <color name="calendar_sunday_outline">#C96B72</color>
+    <color name="calendar_sunday_outside_text">#B98287</color>
+    <color name="calendar_sunday_outside_outline">#D5A1A5</color>
     <color name="calendar_day_holiday_background">#FFF4EE</color>
     <color name="calendar_day_holiday_stroke">#E9B8A6</color>
     <color name="calendar_indicator_reminder_background">#DDE9FF</color>
@@ -107,6 +89,4 @@
 
     <!-- Compatibilidad -->
     <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-
 </resources>

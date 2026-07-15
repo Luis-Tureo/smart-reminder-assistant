@@ -54,7 +54,7 @@ class ReminderViewModel(
     private val getReminderByIdUseCase: GetReminderByIdUseCase,
     private val deleteReminderUseCase: DeleteReminderUseCase,
     private val updateReminderUseCase: UpdateReminderUseCase,
-    private val unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
+    private val unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer?
 ) : ViewModel() {
 
     private data class ParsedVoiceInput(
@@ -119,7 +119,6 @@ class ReminderViewModel(
     private var hasSavedInCurrentSession: Boolean = false
     private var pendingAssistantAmbiguousTime: PendingAmbiguousTime? = null
     private var pendingVoiceAmbiguousTime: PendingAmbiguousTime? = null
-    private var assistantSyncTargetProviders: Set<CalendarProvider> = emptySet()
 
     init {
         loadReminders()
@@ -159,10 +158,6 @@ class ReminderViewModel(
                 )
             )
         }
-    }
-
-    fun setAssistantSyncTargetProviders(providers: Set<CalendarProvider>) {
-        assistantSyncTargetProviders = PerReminderCalendarSyncPolicy.sanitizeTargets(providers)
     }
 
     fun processAssistantMessage(message: String) {
@@ -479,7 +474,9 @@ class ReminderViewModel(
 
             runCatching {
                 val savedReminder = saveReminderDraftUseCase(draft)
-                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(savedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer
+                    ?.syncSavedReminder(savedReminder)
+                    ?: savedReminder
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
             }.onSuccess {
@@ -569,15 +566,14 @@ class ReminderViewModel(
     ) {
         viewModelScope.launch {
             try {
-                val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(
+                val deletionResult = unifiedCalendarSynchronizer?.deleteReminderEvent(
                     reminder = reminder,
                     deleteExternalCalendars = deleteExternalCalendars
-                )
+                ) ?: reminder
                 if (deletionResult.pendingDeleteProviders.isEmpty()) {
                     deleteReminderUseCase(deletionResult)
                 }
                 reminderScheduler.cancelReminder(reminder.id)
-                reminderScheduler.scheduleNextDaySummary()
                 loadReminders()
             } catch (_: Exception) {
                 _uiState.update {
@@ -602,7 +598,9 @@ class ReminderViewModel(
                 )
 
                 updateReminderUseCase(resolvedReminder)
-                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(resolvedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer
+                    ?.syncSavedReminder(resolvedReminder)
+                    ?: resolvedReminder
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
             } catch (exception: Exception) {
@@ -645,18 +643,16 @@ class ReminderViewModel(
                 draft.copy(
                     source = ReminderSource.VOICE,
                     recurrence = null,
-                    syncTargetProviders = assistantSyncTargetProviders
+                    syncTargetProviders = emptySet()
                 )
             )
-            val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(savedReminder)
-            reminderScheduler.syncReminderSchedule(syncedReminder)
+            reminderScheduler.syncReminderSchedule(savedReminder)
             loadReminders()
         }.onSuccess {
             AssistantConversationLogger.log("Assistant save flow completed")
             hasSavedInCurrentSession = true
             pendingDraft = null
             pendingAssistantAmbiguousTime = null
-            assistantSyncTargetProviders = emptySet()
 
             val successReply = AssistantPhrases.SAVE_SUCCESS
 
@@ -828,7 +824,7 @@ class ReminderViewModel(
             time = DateTimeFormatter.formatTime(reminderHour, reminderMinute),
             isUrgent = state.isUrgent,
             source = ReminderSource.VOICE,
-            syncTargetProviders = assistantSyncTargetProviders
+            syncTargetProviders = emptySet()
         )
 
         viewModelScope.launch {
@@ -840,7 +836,9 @@ class ReminderViewModel(
 
             runCatching {
                 val savedReminder = saveReminderDraftUseCase(draft)
-                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(savedReminder)
+                val syncedReminder = unifiedCalendarSynchronizer
+                    ?.syncSavedReminder(savedReminder)
+                    ?: savedReminder
                 reminderScheduler.syncReminderSchedule(syncedReminder)
                 loadReminders()
             }.onSuccess {
@@ -976,8 +974,7 @@ class ReminderViewModel(
             time = localDraft?.time ?: currentDraft?.time,
             isUrgent = (localDraft?.isUrgent == true) || (currentDraft?.isUrgent == true),
             source = ReminderSource.VOICE,
-            recurrence = null,
-            syncTargetProviders = currentDraft?.syncTargetProviders.orEmpty()
+            recurrence = null
         )
     }
 
@@ -1012,8 +1009,7 @@ class ReminderViewModel(
                 date = currentDraft?.date,
                 time = resolvedPendingAmbiguousTime,
                 isUrgent = isUrgent || (currentDraft?.isUrgent == true),
-                source = ReminderSource.VOICE,
-                syncTargetProviders = currentDraft?.syncTargetProviders.orEmpty()
+                source = ReminderSource.VOICE
             ).takeIf { hasAnyDraftData(it) }
         }
 
@@ -1048,8 +1044,7 @@ class ReminderViewModel(
                 DateTimeFormatter.formatTime(it.hour, it.minute)
             } ?: currentDraft?.time,
             isUrgent = isUrgent || (currentDraft?.isUrgent == true),
-            source = ReminderSource.VOICE,
-            syncTargetProviders = currentDraft?.syncTargetProviders.orEmpty()
+            source = ReminderSource.VOICE
         )
 
         return mergedDraft.takeIf { hasAnyDraftData(it) }

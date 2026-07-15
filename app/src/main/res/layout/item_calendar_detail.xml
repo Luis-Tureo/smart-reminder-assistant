@@ -97,14 +97,14 @@
             android:visibility="gone" />
 
         <TextView
-            android:id="@+id/tvCalendarDetailNearbySchedule"
+            android:id="@+id/tvCalendarDetailScheduleConflict"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:background="@drawable/bg_calendar_nearby_schedule_badge"
+            android:background="@drawable/bg_calendar_schedule_conflict_badge"
             android:paddingHorizontal="9dp"
             android:paddingVertical="4dp"
-            android:text="@string/calendar_duplicate_nearby_badge"
+            android:text="@string/calendar_schedule_conflict_badge"
             android:textColor="@color/calendar_duplicate_warning_text"
             android:textSize="11sp"
             android:textStyle="bold"

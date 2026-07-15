@@ -6,6 +6,7 @@
     <dimen name="calendar_day_spacing_horizontal">2dp</dimen>
     <dimen name="calendar_day_spacing_vertical">3dp</dimen>
     <dimen name="calendar_day_stroke">1dp</dimen>
+    <dimen name="calendar_sunday_stroke">2dp</dimen>
     <dimen name="calendar_filter_stroke_selected">2dp</dimen>
     <dimen name="calendar_filter_stroke_unselected">1dp</dimen>
     <dimen name="calendar_detail_action_spacing">8dp</dimen>

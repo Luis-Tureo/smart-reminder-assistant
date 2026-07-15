@@ -2,7 +2,6 @@ package com.luistureo.voicereminderapp.presentation.calendar
 
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.ReminderType
-import com.luistureo.voicereminderapp.presentation.state.UpcomingReminderListItem
 import java.time.LocalDate
 
 data class CalendarUiState(
@@ -18,7 +17,6 @@ data class CalendarUiState(
     val selectedDateSummary: String = "",
     val selectedHolidays: List<String> = emptyList(),
     val selectedDateReminders: List<CalendarReminderDetailUiModel> = emptyList(),
-    val upcomingReminderItems: List<UpcomingReminderListItem> = emptyList(),
     val filteredItems: List<CalendarFilteredListItemUiModel> = emptyList(),
     val emptyStateMessage: String = "",
     val showDeleteSyncSuccess: Boolean = false,
@@ -37,6 +35,7 @@ data class CalendarDayUiModel(
     val isCurrentMonth: Boolean,
     val isToday: Boolean,
     val isSelected: Boolean,
+    val isSunday: Boolean,
     val holidayLabel: String? = null,
     val indicators: List<CalendarIndicatorUiModel> = emptyList(),
     val summaryCountLabel: String? = null
@@ -67,7 +66,7 @@ data class CalendarReminderDetailUiModel(
     val providerLines: List<String> = emptyList(),
     val meetingUrl: String? = null,
     val externalEditNote: String? = null,
-    val hasNearbySchedule: Boolean = false,
+    val hasScheduleConflict: Boolean = false,
     val isSuspended: Boolean = false,
     val syncActions: Set<CalendarProvider> = emptySet(),
     val canDelete: Boolean = true,

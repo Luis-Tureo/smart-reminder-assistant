@@ -6,16 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.net.toUri
-import com.luistureo.voicereminderapp.core.preference.NextDaySummaryPreferenceStore
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
 import com.luistureo.voicereminderapp.core.calendar.unified.CalendarSyncLogger
 import com.luistureo.voicereminderapp.domain.model.Reminder
 
 class ReminderScheduler(
     private val context: Context,
-    private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator(),
-    private val summaryPreferenceStore: NextDaySummaryPreferenceStore =
-        NextDaySummaryPreferenceStore(context.applicationContext)
+    private val occurrenceCalculator: ReminderOccurrenceCalculator = ReminderOccurrenceCalculator()
 ) {
 
     private val alarmManager: AlarmManager
@@ -23,7 +20,7 @@ class ReminderScheduler(
 
     private var syncedReminderIds: Set<Int> = emptySet()
 
-    // Sincroniza alarmas principales, repeticiones urgentes y el resumen global.
+    // Sincroniza alarmas principales y repeticiones urgentes.
     fun syncReminderSchedules(reminders: List<Reminder>) {
         val currentIds = reminders.map { it.id }.toSet()
 
@@ -37,13 +34,11 @@ class ReminderScheduler(
         }
 
         syncedReminderIds = currentIds
-        scheduleNextDaySummary()
     }
 
     fun syncReminderSchedule(reminder: Reminder) {
         syncPrimaryAlarm(reminder)
         syncUrgentAlarm(reminder)
-        scheduleNextDaySummary()
     }
 
     fun scheduleReminder(reminder: Reminder) {
@@ -89,24 +84,6 @@ class ReminderScheduler(
     fun cancelReminder(reminderId: Int) {
         cancelPrimaryReminder(reminderId)
         cancelUrgentRepeat(reminderId)
-    }
-
-    fun scheduleNextDaySummary() {
-        val summaryTime = summaryPreferenceStore.getSummaryTime()
-        val triggerAtMillis = occurrenceCalculator.resolveNextGlobalSummaryTrigger(
-            summaryHour = summaryTime.hour,
-            summaryMinute = summaryTime.minute
-        )
-        val intent = Intent(context, NextDaySummaryReceiver::class.java)
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            NextDaySummaryReceiver.REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        scheduleAlarmSafely(triggerAtMillis, pendingIntent)
     }
 
     fun canScheduleExactAlarms(): Boolean {

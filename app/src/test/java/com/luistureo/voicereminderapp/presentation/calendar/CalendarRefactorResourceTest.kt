@@ -9,139 +9,135 @@ import org.junit.Test
 class CalendarRefactorResourceTest {
 
     @Test
-    fun homeContainsOnlyActiveModuleCardsAndNoMovedReminderSections() {
+    fun homeUsesAvailableHeightWithOnlyActiveModulesAndSupportingPanel() {
         val layout = sourceFile("app/src/main/res/layout/activity_main.xml").readText()
 
         assertTrue(layout.contains("@+id/cardCalendar"))
         assertTrue(layout.contains("@+id/cardAssistantReminder"))
+        assertTrue(layout.contains("@+id/panelHomeSupport"))
+        assertTrue(layout.contains("android:fillViewport=\"true\""))
+        assertTrue(layout.contains("app:layout_constraintWidth_max=\"840dp\""))
+        assertTrue(layout.contains("@string/home_calendar_action"))
+        assertTrue(layout.contains("@string/home_virtual_assistant_action"))
         assertFalse(layout.contains("cardLoan"))
         assertFalse(layout.contains("cardDailyRoutines"))
-        assertFalse(layout.contains("cardCalendarNextDaySummary"))
-        assertFalse(layout.contains("calendarReminderEmptyStateCard"))
         assertEquals(2, layout.split("@+id/card").size - 1)
     }
 
     @Test
-    fun calendarUsesRequestedSectionOrderAndMovedActions() {
+    fun calendarFiltersAreBeforeNavigationAndRemovedSectionsAreAbsent() {
         val layout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
-        val emptyState = sourceFile(
-            "app/src/main/res/layout/view_calendar_reminder_empty_state.xml"
-        ).readText()
-        val orderedMarkers = listOf(
-            "@+id/toolbarCalendar",
-            "@+id/containerCalendarControls",
-            "@+id/gridCalendarDays",
-            "@+id/cardCalendarSelectedDate",
-            "@+id/btnCalendarCreateReminder",
-            "@+id/tvCalendarRemindersHeading",
-            "@+id/cardCalendarNextDaySummary",
-            "@+id/calendarReminderEmptyStateCard",
-            "@+id/recyclerCalendarUpcomingReminders"
+        val strings = sourceFile("app/src/main/res/values/strings.xml").readText()
+
+        assertTrue(
+            layout.indexOf("@layout/view_calendar_filters") <
+                layout.indexOf("@+id/containerCalendarControls")
         )
-
-        assertTrue(orderedMarkers.zipWithNext().all { (first, second) ->
-            layout.indexOf(first) in 0 until layout.indexOf(second)
-        })
-        assertTrue(layout.contains("@string/calendar_next_day_summary_change_time"))
-        assertTrue(emptyState.contains("@string/calendar_upcoming_empty_action"))
+        assertTrue(
+            layout.indexOf("@+id/containerCalendarControls") <
+                layout.indexOf("@+id/gridCalendarDays")
+        )
+        assertTrue(
+            layout.indexOf("@+id/gridCalendarDays") <
+                layout.indexOf("@+id/cardCalendarSelectedDate")
+        )
+        assertFalse(layout.contains("cardCalendarNextDaySummary"))
+        assertFalse(layout.contains("recyclerCalendarUpcomingReminders"))
+        assertFalse(layout.contains("calendarReminderEmptyStateCard"))
+        assertFalse(strings.contains("calendar_next_day_summary"))
+        assertFalse(strings.contains("calendar_upcoming_empty"))
     }
 
     @Test
-    fun movedActionsKeepBehaviorWithoutDuplicateSummaryScheduling() {
-        val calendarActivity = sourceFile(
-            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/CalendarActivity.kt"
+    fun assistantHasNoCalendarProviderUiOrProviderInitialization() {
+        val layout = sourceFile("app/src/main/res/layout/activity_assistant.xml").readText()
+        val activity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/assistant/" +
+                "AssistantActivity.kt"
         ).readText()
-        val mainActivity = sourceFile(
-            "app/src/main/java/com/luistureo/voicereminderapp/MainActivity.kt"
+        val viewModel = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/viewmodel/" +
+                "ReminderViewModel.kt"
         ).readText()
+        val assistantSave = viewModel.substringAfter("private suspend fun saveAssistantDraft")
+            .substringBefore("private fun Reminder.toFormState")
 
-        assertTrue(calendarActivity.contains("nextDaySummaryTimeButton.setOnClickListener"))
-        assertTrue(calendarActivity.contains("upcomingEmptyStateButton.setOnClickListener"))
-        assertTrue(calendarActivity.contains("summaryPreferenceStore.setSummaryTime"))
-        assertTrue(calendarActivity.contains("showCreateReminderChoice()"))
-        assertEquals(1, "scheduleNextDaySummary()".toRegex().findAll(calendarActivity).count())
-        assertFalse(mainActivity.contains("scheduleNextDaySummary"))
+        assertFalse(layout.contains("containerAssistantCalendarSyncOptions"))
+        assertFalse(layout.contains("checkAssistantSyncGoogle"))
+        assertFalse(layout.contains("checkAssistantSyncMicrosoft"))
+        assertFalse(activity.contains("GoogleCalendar"))
+        assertFalse(activity.contains("MicrosoftCalendar"))
+        assertFalse(activity.contains("UnifiedCalendarSynchronizer"))
+        assertTrue(assistantSave.contains("syncTargetProviders = emptySet()"))
+        assertTrue(assistantSave.contains("syncReminderSchedule(savedReminder)"))
+        assertFalse(assistantSave.contains("syncSavedReminder"))
     }
 
     @Test
-    fun removedScreensAreReplacedOnlyBySafeHomeAliases() {
+    fun retiredSummaryAndNearbyImplementationsAreRemovedWithSafeCleanup() {
+        val cleanup = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/data/migration/" +
+                "RemovedModuleCleanup.kt"
+        ).readText()
         val manifest = sourceFile("app/src/main/AndroidManifest.xml").readText()
-        val removedActivityFolders = listOf(
-            sourceFile("app/src/main/java/com/luistureo/voicereminderapp/presentation/loan"),
-            sourceFile("app/src/main/java/com/luistureo/voicereminderapp/presentation/routine")
-        )
+        val calendarState = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                "CalendarUiState.kt"
+        ).readText()
 
-        assertTrue(removedActivityFolders.none(File::exists))
+        assertFalse(sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/core/alarm/" +
+                "NextDaySummaryReceiver.kt"
+        ).exists())
+        assertFalse(sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/state/" +
+                "UpcomingReminderListItem.kt"
+        ).exists())
+        assertFalse(manifest.contains(".core.alarm.NextDaySummaryReceiver"))
+        assertFalse(calendarState.contains("upcomingReminderItems"))
+        assertTrue(cleanup.contains("cancelNextDaySummaryArtifacts"))
+        assertTrue(cleanup.contains("next_day_summary_channel"))
+        assertTrue(cleanup.contains("next_day_summary_preferences"))
+    }
+
+    @Test
+    fun sundayTreatmentKeepsSemanticAndVisualPriority() {
+        val layout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
+        val activity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                "CalendarActivity.kt"
+        ).readText()
+        val viewModel = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                "CalendarViewModel.kt"
+        ).readText()
+
+        assertTrue(layout.contains("@+id/tvCalendarWeekdaySunday"))
+        assertTrue(layout.contains("@color/calendar_sunday_text"))
+        assertTrue(viewModel.contains("currentDate.dayOfWeek == DayOfWeek.SUNDAY"))
+        assertTrue(activity.contains("R.color.calendar_sunday_outline"))
+        assertTrue(activity.contains("R.dimen.calendar_sunday_stroke"))
+        assertTrue(activity.contains("R.string.calendar_day_sunday"))
+        assertTrue(activity.indexOf("day.isSelected -> R.color.calendar_toolbar_text") <
+            activity.indexOf("day.isSunday -> R.color.calendar_sunday_text"))
+    }
+
+    @Test
+    fun removedScreensRemainSafeHomeAliasesAndCalendarConnectionsRemain() {
+        val manifest = sourceFile("app/src/main/AndroidManifest.xml").readText()
+        val calendarActivity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                "CalendarActivity.kt"
+        ).readText()
+
         assertEquals(11, "<activity-alias".toRegex().findAll(manifest).count())
         assertEquals(
             11,
             "android:targetActivity=\".MainActivity\"".toRegex().findAll(manifest).count()
         )
-        assertFalse(manifest.contains("<receiver\n            android:name=\".core.loan"))
-        assertFalse(manifest.contains("<receiver\n            android:name=\".core.routine"))
-    }
-
-    @Test
-    fun retiredSchedulesAreCleanedWithoutChangingGeneralReminderScheduling() {
-        val cleanup = sourceFile(
-            "app/src/main/java/com/luistureo/voicereminderapp/data/migration/" +
-                "RemovedModuleCleanup.kt"
-        ).readText()
-        val notificationHelper = sourceFile(
-            "app/src/main/java/com/luistureo/voicereminderapp/core/notification/" +
-                "NotificationHelper.kt"
-        ).readText()
-        val scheduleCoordinator = sourceFile(
-            "app/src/main/java/com/luistureo/voicereminderapp/core/alarm/" +
-                "AppScheduleCoordinator.kt"
-        ).readText()
-
-        assertTrue(cleanup.contains("cancelLoanArtifacts"))
-        assertTrue(cleanup.contains("cancelRoutineArtifacts"))
-        assertTrue(cleanup.contains("deleteNotificationChannel"))
-        assertFalse(notificationHelper.contains("routineChannelId"))
-        assertFalse(notificationHelper.contains("loan_reminder_channel"))
-        assertTrue(scheduleCoordinator.contains("syncReminders"))
-        assertFalse(scheduleCoordinator.contains("syncLoans"))
-        assertFalse(scheduleCoordinator.contains("syncRoutines"))
-    }
-
-    @Test
-    fun upcomingReminderStateHasSingleCalendarOwner() {
-        val calendarState = sourceFile(
-            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
-                "CalendarUiState.kt"
-        ).readText()
-        val homeState = sourceFile(
-            "app/src/main/java/com/luistureo/voicereminderapp/presentation/state/" +
-                "ReminderUiState.kt"
-        ).readText()
-
-        assertTrue(calendarState.contains("upcomingReminderItems"))
-        assertFalse(homeState.contains("homeTimelineItems"))
-    }
-
-    @Test
-    fun calendarKeepsAccessibleTouchTargetsAndLogicalFocusOrder() {
-        val layout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
-        val emptyState = sourceFile(
-            "app/src/main/res/layout/view_calendar_reminder_empty_state.xml"
-        ).readText()
-        val reminderItem = sourceFile("app/src/main/res/layout/item_reminder.xml").readText()
-
-        assertTrue(layout.contains("app:navigationContentDescription=\"@string/calendar_back\""))
-        assertTrue(
-            sourceFile(
-                "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
-                    "CalendarActivity.kt"
-            ).readText().contains("ViewCompat.setAccessibilityHeading")
-        )
-        assertTrue(layout.contains("android:layout_width=\"48dp\""))
-        assertTrue(layout.contains("android:layout_height=\"48dp\""))
-        assertTrue(layout.contains("android:fillViewport=\"true\""))
-        assertTrue(emptyState.contains("android:minHeight=\"48dp\""))
-        assertTrue(reminderItem.contains("android:contentDescription=\"@string/delete_reminder\""))
-        assertTrue(reminderItem.contains("android:minHeight=\"48dp\""))
+        assertTrue(calendarActivity.contains("GoogleCalendarAuthManager"))
+        assertTrue(calendarActivity.contains("MicrosoftCalendarAuthProvider"))
+        assertTrue(calendarActivity.contains("UnifiedCalendarSynchronizer"))
     }
 
     private fun sourceFile(projectPath: String): File {

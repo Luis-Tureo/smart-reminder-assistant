@@ -11,11 +11,7 @@ import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import com.luistureo.voicereminderapp.core.alarm.NextDaySummaryReceiver
 import com.luistureo.voicereminderapp.domain.model.Reminder
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 class NotificationHelper(
     private val context: Context
@@ -23,7 +19,6 @@ class NotificationHelper(
 
     private val reminderChannelId = "reminder_channel"
     private val urgentChannelId = "urgent_reminder_channel"
-    private val nextDaySummaryChannelId = "next_day_summary_channel"
 
     fun showReminderNotification(
         reminder: Reminder,
@@ -72,42 +67,6 @@ class NotificationHelper(
         notifySafely(notificationId, notification)
     }
 
-    fun showNextDaySummaryNotification(
-        targetDate: LocalDate,
-        reminders: List<Reminder>
-    ) {
-        createNotificationChannels()
-        if (!hasNotificationPermission()) return
-
-        val locale = Locale.forLanguageTag("es-CL")
-        val formatter = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", locale)
-        val title = "Resumen de ma\u00F1ana"
-        val body = buildString {
-            append("Tienes ")
-            append(reminders.size)
-            append(if (reminders.size == 1) " recordatorio" else " recordatorios")
-            append(" para ")
-            append(targetDate.format(formatter))
-            append(". ")
-            append(
-                reminders.take(3).joinToString(separator = " \u2022 ") { reminder ->
-                    reminder.title
-                }
-            )
-        }
-        val notification = NotificationCompat.Builder(context, nextDaySummaryChannelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setAutoCancel(true)
-            .build()
-
-        notifySafely(NextDaySummaryReceiver.REQUEST_CODE, notification)
-    }
-
     private fun buildReminderNotificationMessage(
         detail: String,
         date: String,
@@ -134,7 +93,7 @@ class NotificationHelper(
         }
     }
 
-    // Registra canales separados para normal, urgente y resumen.
+    // Registra canales separados para recordatorios normales y urgentes.
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -168,17 +127,7 @@ class NotificationHelper(
                     .build()
             )
         }
-        val nextDaySummaryChannel = NotificationChannel(
-            nextDaySummaryChannelId,
-            "Next Day Summary Notifications",
-            NotificationManager.IMPORTANCE_DEFAULT
-        ).apply {
-            description = "Channel for next-day summary notifications"
-            enableVibration(false)
-            setSound(null, null)
-        }
         manager.createNotificationChannel(reminderChannel)
         manager.createNotificationChannel(urgentChannel)
-        manager.createNotificationChannel(nextDaySummaryChannel)
     }
 }

@@ -158,7 +158,7 @@ class CalendarSyncLayoutResourceTest {
         val layout = sourceFile("app/src/main/res/layout/item_calendar_detail.xml").readText()
         val optionalIds = listOf(
             "tvCalendarDetailDescription",
-            "tvCalendarDetailNearbySchedule",
+            "tvCalendarDetailScheduleConflict",
             "tvCalendarDetailProvider",
             "tvCalendarDetailExternalNote",
             "containerCalendarDetailActions",

@@ -25,7 +25,6 @@ import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
-import com.luistureo.voicereminderapp.presentation.state.UpcomingReminderListItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -210,47 +209,6 @@ class CalendarViewModel(
         }
     }
 
-    fun deleteUpcomingReminder(
-        reminder: Reminder,
-        deleteExternalCalendars: Boolean
-    ) {
-        viewModelScope.launch {
-            runCatching {
-                deleteReminderData(reminder, deleteExternalCalendars)
-            }.onSuccess {
-                reloadCalendar()
-            }.onFailure {
-                publishState(errorMessage = "No fue posible eliminar el recordatorio.")
-            }
-        }
-    }
-
-    fun updateUpcomingReminder(reminder: Reminder) {
-        viewModelScope.launch {
-            runCatching {
-                val resolvedBaseReminder = reminder.copy(
-                    scheduleState = scheduleStateResolver.resolveOnSave(reminder)
-                )
-                val resolvedReminder = PerReminderCalendarSyncPolicy.applyTargets(
-                    reminder = resolvedBaseReminder,
-                    targetProviders = PerReminderCalendarSyncPolicy.selectedTargets(reminder),
-                    markExistingForUpdate = true
-                )
-                updateReminderUseCase(resolvedReminder)
-                val syncedReminder = unifiedCalendarSynchronizer.syncSavedReminder(resolvedReminder)
-                reminderScheduler.syncReminderSchedule(syncedReminder)
-            }.onSuccess {
-                reloadCalendar()
-            }.onFailure { exception ->
-                publishState(
-                    errorMessage = exception.message
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "No fue posible actualizar el recordatorio."
-                )
-            }
-        }
-    }
-
     private suspend fun deleteReminderData(
         reminder: Reminder,
         deleteExternalCalendars: Boolean
@@ -263,7 +221,6 @@ class CalendarViewModel(
             deleteReminderUseCase(deletionResult)
         }
         reminderScheduler.cancelReminder(reminder.id)
-        reminderScheduler.scheduleNextDaySummary()
     }
 
     fun syncCalendarItemWithProvider(
@@ -457,9 +414,8 @@ class CalendarViewModel(
                 ),
                 selectedHolidays = selectedDateHolidays.map { holiday -> holiday.name },
                 selectedDateReminders = selectedDateEntries.map { entry ->
-                    entry.toDetailUiModel(hasNearbySchedule = entry.id in selectedDuplicateItemIds)
+                    entry.toDetailUiModel(hasScheduleConflict = entry.id in selectedDuplicateItemIds)
                 },
-                upcomingReminderItems = buildUpcomingReminderItems(cachedReminders),
                 filteredItems = buildFilteredItems(
                     entries = calendarEntries,
                     holidaysByDate = holidaysByDate,
@@ -535,7 +491,7 @@ class CalendarViewModel(
                 date = entry.date,
                 dateTitle = entry.date.format(selectedDateFormatter).toUiTitleCase(),
                 detail = entry.toDetailUiModel(
-                    hasNearbySchedule = entry.id in duplicateItemIds
+                    hasScheduleConflict = entry.id in duplicateItemIds
                 ),
                 style = entry.toIndicatorStyle()
             )
@@ -559,7 +515,7 @@ class CalendarViewModel(
     }
 
     private fun CalendarEntry.toDetailUiModel(
-        hasNearbySchedule: Boolean = false
+        hasScheduleConflict: Boolean = false
     ): CalendarReminderDetailUiModel {
         return CalendarReminderDetailUiModel(
             id = id,
@@ -574,7 +530,7 @@ class CalendarViewModel(
             providerLines = providerLines,
             meetingUrl = meetingUrl,
             externalEditNote = externalEditNote,
-            hasNearbySchedule = hasNearbySchedule,
+            hasScheduleConflict = hasScheduleConflict,
             isSuspended = isSuspended,
             syncActions = syncActions,
             canEdit = canEdit,
@@ -650,6 +606,7 @@ class CalendarViewModel(
                 isCurrentMonth = YearMonth.from(currentDate) == visibleMonth,
                 isToday = currentDate == today,
                 isSelected = currentDate == selectedDate,
+                isSunday = currentDate.dayOfWeek == DayOfWeek.SUNDAY,
                 holidayLabel = buildHolidayLabel(holidays),
                 indicators = buildIndicators(entries, holidays),
                 summaryCountLabel = entries.size.takeIf { it > 1 }?.let { "+$it" }
@@ -732,43 +689,6 @@ class CalendarViewModel(
                 "$holidayCount ${pluralize(holidayCount, "feriado")}"
 
             else -> "Sin actividad para la fecha seleccionada"
-        }
-    }
-
-    private fun buildUpcomingReminderItems(
-        reminders: List<Reminder>
-    ): List<UpcomingReminderListItem> {
-        val currentDate = LocalDate.now(zoneId)
-        return listOf(
-            currentDate to "Hoy",
-            currentDate.plusDays(1) to "Mañana"
-        ).flatMap { (date, label) ->
-            val dayReminders = reminders.mapNotNull { reminder ->
-                val occurrenceAtEpochMillis =
-                    occurrenceCalculator.resolveOccurrenceAtEpochMillis(reminder, date)
-                        ?: return@mapNotNull null
-                UpcomingReminderListItem.ReminderRow(
-                    reminder = reminder,
-                    occurrenceAtEpochMillis = occurrenceAtEpochMillis
-                )
-            }.sortedWith(
-                compareByDescending<UpcomingReminderListItem.ReminderRow> {
-                    it.reminder.isUrgent
-                }.thenBy { it.occurrenceAtEpochMillis }
-            )
-
-            if (dayReminders.isEmpty()) {
-                emptyList()
-            } else {
-                listOf(
-                    UpcomingReminderListItem.DayHeader(
-                        title = label,
-                        subtitle = ReminderDateTimeFormatter.formatDateFromEpoch(
-                            date.atStartOfDay(zoneId).toInstant().toEpochMilli()
-                        )
-                    )
-                ) + dayReminders
-            }
         }
     }
 

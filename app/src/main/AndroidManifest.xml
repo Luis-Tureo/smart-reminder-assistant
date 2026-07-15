@@ -39,9 +39,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <receiver
-            android:name=".core.alarm.NextDaySummaryReceiver"
-            android:exported="false" />
-        <receiver
             android:name=".core.alarm.ReminderReceiver"
             android:exported="false" />
         <receiver
