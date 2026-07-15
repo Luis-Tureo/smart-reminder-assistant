@@ -187,17 +187,18 @@
                 android:paddingVertical="10dp"
                 android:text="@string/calendar_open_meeting"
                 android:textAllCaps="false"
-                android:textColor="@color/white"
+                android:textColor="@color/calendar_primary_action_content"
                 android:textSize="13sp"
                 android:visibility="gone"
                 android:insetBottom="0dp"
                 android:insetTop="0dp"
-                app:backgroundTint="@color/primary_blue"
+                app:backgroundTint="@color/calendar_primary_action_background"
                 app:cornerRadius="20dp"
                 app:icon="@drawable/ic_meeting_video"
                 app:iconGravity="textStart"
                 app:iconPadding="7dp"
-                app:iconTint="@color/white" />
+                app:iconTint="@color/calendar_primary_action_content"
+                app:rippleColor="@color/calendar_action_ripple_light" />
         </LinearLayout>
     </LinearLayout>
 

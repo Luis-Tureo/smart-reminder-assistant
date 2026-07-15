@@ -12,8 +12,24 @@
     <color name="text_secondary">#6E7B8C</color>
 
     <!-- Botones principales -->
-    <color name="primary_blue">#3F51B5</color>
+    <color name="primary_blue">#4169B2</color>
+    <color name="primary_denim_pressed">#345793</color>
     <color name="accent_purple">#8F9BFF</color>
+
+    <!-- Acciones semánticas -->
+    <color name="sync_connect_background">#3F7F55</color>
+    <color name="sync_connect_pressed">#326744</color>
+    <color name="sync_connect_content">#FFFFFF</color>
+    <color name="sync_pause_background">#F2C94C</color>
+    <color name="sync_pause_pressed">#D8AE32</color>
+    <color name="sync_pause_content">#1F2937</color>
+    <color name="sync_disconnect_background">#B83A3A</color>
+    <color name="sync_disconnect_pressed">#963030</color>
+    <color name="sync_disconnect_content">#FFFFFF</color>
+    <color name="calendar_action_disabled_background">#CBD3DC</color>
+    <color name="calendar_action_disabled_content">#66717E</color>
+    <color name="calendar_action_ripple_light">#33FFFFFF</color>
+    <color name="calendar_action_ripple_dark">#331F2937</color>
 
     <!-- Ripple -->
     <color name="ripple_soft">#1A6EA8FE</color>
@@ -36,8 +52,6 @@
 
     <!-- Calendario -->
     <color name="calendar_screen_background">#ECF1F6</color>
-    <color name="calendar_home_header_background">#526F8A</color>
-    <color name="calendar_toolbar_background">#1F3147</color>
     <color name="calendar_toolbar_text">#F7F6F2</color>
     <color name="calendar_card_background">#FCFAF4</color>
     <color name="calendar_card_stroke">#D9E3EC</color>
@@ -59,8 +73,8 @@
     <color name="calendar_outside_month_text">#93A0AE</color>
     <color name="calendar_day_today_background">#E7F6F0</color>
     <color name="calendar_day_today_stroke">#7CB89F</color>
-    <color name="calendar_day_selected_background">#203047</color>
-    <color name="calendar_day_selected_stroke">#203047</color>
+    <color name="calendar_day_selected_background">@color/primary_blue</color>
+    <color name="calendar_day_selected_stroke">@color/primary_denim_pressed</color>
     <color name="calendar_sunday_text">#A33F46</color>
     <color name="calendar_sunday_outline">#C96B72</color>
     <color name="calendar_sunday_outside_text">#B98287</color>

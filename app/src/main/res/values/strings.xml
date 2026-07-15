@@ -148,6 +148,14 @@
     <string name="calendar_sync_microsoft_activate">Activar calendario Microsoft</string>
     <string name="calendar_sync_google_disconnect">Desconectar de Google</string>
     <string name="calendar_sync_microsoft_disconnect">Desconectar de Microsoft</string>
+    <string name="calendar_sync_google_connect_accessibility">Conectar Google Calendar</string>
+    <string name="calendar_sync_google_pause_accessibility">Pausar sincronizaci&#243;n de Google Calendar</string>
+    <string name="calendar_sync_google_activate_accessibility">Reanudar sincronizaci&#243;n de Google Calendar</string>
+    <string name="calendar_sync_google_disconnect_accessibility">Desconectar Google Calendar</string>
+    <string name="calendar_sync_microsoft_connect_accessibility">Conectar Microsoft Calendar</string>
+    <string name="calendar_sync_microsoft_pause_accessibility">Pausar sincronizaci&#243;n de Microsoft Calendar</string>
+    <string name="calendar_sync_microsoft_activate_accessibility">Reanudar sincronizaci&#243;n de Microsoft Calendar</string>
+    <string name="calendar_sync_microsoft_disconnect_accessibility">Desconectar Microsoft Calendar</string>
     <string name="calendar_sync_disconnect_title">Desconectar de %1$s</string>
     <string name="calendar_sync_disconnect_message">Se cerrar&#225; la sesi&#243;n de este proveedor y se borrar&#225;n sus metadatos locales de conexi&#243;n. No se eliminar&#225;n recordatorios ni eventos externos.</string>
     <string name="calendar_sync_disconnect_confirm">Desconectar</string>

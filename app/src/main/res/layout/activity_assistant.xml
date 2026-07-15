@@ -116,16 +116,16 @@
                 android:paddingVertical="14dp"
                 android:text="@string/assistant_speak_button"
                 android:textAllCaps="false"
-                android:textColor="@color/white"
+                android:textColor="@color/calendar_primary_action_content"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/calendar_toolbar_background"
+                app:backgroundTint="@color/calendar_primary_action_background"
                 app:cornerRadius="24dp"
                 app:icon="@android:drawable/ic_btn_speak_now"
                 app:iconGravity="textStart"
                 app:iconPadding="12dp"
-                app:iconTint="@color/white"
-                app:rippleColor="@color/ripple_soft" />
+                app:iconTint="@color/calendar_primary_action_content"
+                app:rippleColor="@color/calendar_action_ripple_light" />
 
             <TextView
                 android:id="@+id/tvAssistantHeardTitle"

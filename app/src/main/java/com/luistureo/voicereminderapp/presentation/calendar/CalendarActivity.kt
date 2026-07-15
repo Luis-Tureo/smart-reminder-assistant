@@ -1402,6 +1402,16 @@ class CalendarActivity : AppCompatActivity() {
                 else -> R.string.calendar_sync_microsoft_connect
             }
         )
+        applySyncActionStyle(
+            button = googleCalendarSyncButton,
+            action = googleMainAction,
+            provider = CalendarProvider.GOOGLE_CALENDAR
+        )
+        applySyncActionStyle(
+            button = microsoftCalendarSyncButton,
+            action = panelState.microsoftButtonAction,
+            provider = CalendarProvider.MICROSOFT_CALENDAR
+        )
         googleCalendarSyncButton.isEnabled =
             googleProviderUiState != CalendarProviderUiState.SYNCING &&
                     googleProviderUiState != CalendarProviderUiState.CONNECTING
@@ -1412,6 +1422,56 @@ class CalendarActivity : AppCompatActivity() {
         calendarDisconnectActionsContainer.isVisible = hasGoogleSession || hasMicrosoftSession
         renderInlineSyncError()
         logProviderStateChanges()
+    }
+
+    private fun applySyncActionStyle(
+        button: MaterialButton,
+        action: CalendarSyncButtonAction,
+        provider: CalendarProvider
+    ) {
+        val isPauseAction = action == CalendarSyncButtonAction.PAUSE_GOOGLE ||
+                action == CalendarSyncButtonAction.PAUSE_MICROSOFT
+        val isActivateAction = action == CalendarSyncButtonAction.ACTIVATE_GOOGLE ||
+                action == CalendarSyncButtonAction.ACTIVATE_MICROSOFT
+        val backgroundRes = if (isPauseAction) {
+            R.color.calendar_sync_pause_background
+        } else {
+            R.color.calendar_sync_connect_background
+        }
+        val contentRes = if (isPauseAction) {
+            R.color.calendar_sync_pause_content
+        } else {
+            R.color.calendar_sync_connect_content
+        }
+        val accessibilityRes = when (provider) {
+            CalendarProvider.GOOGLE_CALENDAR -> when {
+                isPauseAction -> R.string.calendar_sync_google_pause_accessibility
+                isActivateAction -> R.string.calendar_sync_google_activate_accessibility
+                else -> R.string.calendar_sync_google_connect_accessibility
+            }
+            CalendarProvider.MICROSOFT_CALENDAR -> when {
+                isPauseAction -> R.string.calendar_sync_microsoft_pause_accessibility
+                isActivateAction -> R.string.calendar_sync_microsoft_activate_accessibility
+                else -> R.string.calendar_sync_microsoft_connect_accessibility
+            }
+            CalendarProvider.APP -> return
+        }
+
+        button.backgroundTintList = ContextCompat.getColorStateList(this, backgroundRes)
+        button.setTextColor(ContextCompat.getColorStateList(this, contentRes))
+        button.iconTint = ContextCompat.getColorStateList(this, contentRes)
+        button.setIconResource(
+            if (isPauseAction) R.drawable.ic_calendar_pause else R.drawable.ic_calendar_connect
+        )
+        button.rippleColor = ContextCompat.getColorStateList(
+            this,
+            if (isPauseAction) {
+                R.color.calendar_action_ripple_dark
+            } else {
+                R.color.calendar_action_ripple_light
+            }
+        )
+        button.contentDescription = getString(accessibilityRes)
     }
 
     private fun handleGoogleCalendarSyncClick() {

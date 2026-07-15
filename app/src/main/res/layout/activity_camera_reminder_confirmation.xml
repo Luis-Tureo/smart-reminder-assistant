@@ -201,9 +201,10 @@
             android:paddingVertical="14dp"
             android:text="@string/camera_confirmation_continue"
             android:textAllCaps="false"
+            android:textColor="@color/calendar_primary_action_content"
             android:textStyle="bold"
-            app:backgroundTint="@color/calendar_toolbar_background"
+            app:backgroundTint="@color/calendar_primary_action_background"
             app:cornerRadius="24dp"
-            app:rippleColor="@color/ripple_soft" />
+            app:rippleColor="@color/calendar_action_ripple_light" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

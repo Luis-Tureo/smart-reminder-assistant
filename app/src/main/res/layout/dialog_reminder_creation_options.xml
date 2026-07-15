@@ -21,11 +21,11 @@
             android:contentDescription="@string/calendar_creation_voice_accessibility"
             android:focusable="true"
             android:minHeight="76dp"
-            app:cardBackgroundColor="@color/calendar_detail_item_background"
+            app:cardBackgroundColor="@color/calendar_primary_action_background"
             app:cardCornerRadius="@dimen/reminder_options_item_corner_radius"
             app:cardElevation="0dp"
-            app:rippleColor="@color/ripple_soft"
-            app:strokeColor="@color/calendar_card_stroke"
+            app:rippleColor="@color/calendar_action_ripple_light"
+            app:strokeColor="@color/primary_denim_pressed"
             app:strokeWidth="1dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -45,7 +45,7 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:tint="@color/primary_blue" />
+                    app:tint="@color/white" />
 
                 <TextView
                     android:id="@+id/tvReminderCreationVoiceTitle"
@@ -53,7 +53,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="14dp"
                     android:text="@string/assistant_speak_button"
-                    android:textColor="@color/calendar_title_text"
+                    android:textColor="@color/white"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toStartOf="@id/iconReminderCreationVoiceArrow"
@@ -66,7 +66,7 @@
                     android:layout_marginStart="14dp"
                     android:layout_marginTop="4dp"
                     android:text="@string/calendar_creation_voice_description"
-                    android:textColor="@color/calendar_body_text"
+                    android:textColor="@color/white"
                     android:textSize="14sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@id/iconReminderCreationVoiceArrow"
@@ -83,7 +83,7 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:tint="@color/calendar_navigation_icon" />
+                    app:tint="@color/white" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 

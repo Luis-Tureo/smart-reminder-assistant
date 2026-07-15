@@ -237,16 +237,16 @@
                 android:paddingHorizontal="24dp"
                 android:text="@string/calendar_legend_show_all"
                 android:textAllCaps="false"
-                android:textColor="@color/white"
+                android:textColor="@color/calendar_primary_action_content"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/primary_blue"
+                app:backgroundTint="@color/calendar_primary_action_background"
                 app:cornerRadius="24dp"
                 app:icon="@drawable/ic_calendar_list"
                 app:iconGravity="textStart"
                 app:iconPadding="10dp"
-                app:iconTint="@color/white"
-                app:rippleColor="@color/ripple_soft" />
+                app:iconTint="@color/calendar_primary_action_content"
+                app:rippleColor="@color/calendar_action_ripple_light" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

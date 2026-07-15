@@ -94,8 +94,12 @@ class CalendarRefactorResourceTest {
             filterLayout.indexOf("@+id/cardCalendarFilterReminder"))
 
         listOf(addReminderButton, showAllButton).forEach { button ->
-            assertTrue(button.contains("app:backgroundTint=\"@color/primary_blue\""))
-            assertTrue(button.contains("android:textColor=\"@color/white\""))
+            assertTrue(button.contains(
+                "app:backgroundTint=\"@color/calendar_primary_action_background\""
+            ))
+            assertTrue(button.contains(
+                "android:textColor=\"@color/calendar_primary_action_content\""
+            ))
             assertTrue(button.contains("app:cornerRadius=\"24dp\""))
             assertTrue(button.contains("android:minHeight=\"48dp\""))
             assertTrue(button.contains("android:textStyle=\"bold\""))
@@ -103,7 +107,9 @@ class CalendarRefactorResourceTest {
         assertTrue(addReminderButton.contains(
             "android:contentDescription=\"@string/calendar_add_reminder_accessibility\""
         ))
-        assertTrue(showAllButton.contains("app:iconTint=\"@color/white\""))
+        assertTrue(showAllButton.contains(
+            "app:iconTint=\"@color/calendar_primary_action_content\""
+        ))
         assertTrue(showAllButton.contains("app:icon=\"@drawable/ic_calendar_list\""))
         assertTrue(showAllButton.contains("app:iconGravity=\"textStart\""))
         assertTrue(showAllButton.contains("android:maxWidth=\"360dp\""))
@@ -119,18 +125,22 @@ class CalendarRefactorResourceTest {
     }
 
     @Test
-    fun homeHeaderUsesDedicatedSoftBlueWithAccessibleContrast() {
+    fun homeHeaderUsesSharedSoftDenimWithAccessibleContrast() {
         val layout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
         val colors = sourceFile("app/src/main/res/values/colors.xml").readText()
         val header = layout.substringAfter("@+id/containerUnifiedHeader")
             .substringBefore("</LinearLayout>")
-        val softBlue = colorValue(colors, "calendar_home_header_background")
-        val headerText = colorValue(colors, "calendar_toolbar_text")
+        val softBlue = colorValue(colors, "primary_blue")
+        val headerText = colorValue(colors, "white")
 
-        assertTrue(header.contains("android:background=\"@color/calendar_home_header_background\""))
-        assertEquals("#526F8A", softBlue)
+        assertTrue(header.contains("android:background=\"@color/primary_blue\""))
+        assertEquals(2, "android:textColor=\"@color/white\"".toRegex().findAll(header).count())
+        assertEquals("#4169B2", softBlue)
         assertTrue(contrastRatio(softBlue, headerText) >= 4.5)
-        assertTrue(layout.contains("app:backgroundTint=\"@color/primary_blue\""))
+        assertFalse(colors.contains("#3F51B5"))
+        assertTrue(colors.contains(
+            "<color name=\"calendar_day_selected_background\">@color/primary_blue</color>"
+        ))
     }
 
     @Test
@@ -149,6 +159,9 @@ class CalendarRefactorResourceTest {
         val assistantActivity = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/assistant/" +
                 "AssistantActivity.kt"
+        ).readText()
+        val assistantLayout = sourceFile(
+            "app/src/main/res/layout/activity_assistant.xml"
         ).readText()
         val viewModel = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/viewmodel/" +
@@ -173,6 +186,21 @@ class CalendarRefactorResourceTest {
         assertTrue(dialogLayout.startsWith("<?xml"))
         assertTrue(dialogLayout.contains("<ScrollView"))
         assertFalse(dialogLayout.contains("android:maxLines"))
+        val voiceOption = dialogLayout.substringAfter("@+id/cardReminderCreationVoice")
+            .substringBefore("@+id/cardReminderCreationManual")
+        assertTrue(voiceOption.contains(
+            "app:cardBackgroundColor=\"@color/calendar_primary_action_background\""
+        ))
+        assertTrue(voiceOption.contains("android:textColor=\"@color/white\""))
+        assertTrue(voiceOption.contains("app:tint=\"@color/white\""))
+        val assistantSpeakButton = assistantLayout.substringAfter("@+id/btnSpeakAssistant")
+            .substringBefore("/>")
+        assertTrue(assistantSpeakButton.contains(
+            "app:backgroundTint=\"@color/calendar_primary_action_background\""
+        ))
+        assertTrue(assistantSpeakButton.contains(
+            "app:iconTint=\"@color/calendar_primary_action_content\""
+        ))
         assertEquals(
             4,
             "app:cardCornerRadius=\"@dimen/reminder_options_item_corner_radius\""
