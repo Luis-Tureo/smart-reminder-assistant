@@ -37,4 +37,14 @@
         <item name="android:textSize">16sp</item>
     </style>
 
+    <style name="ThemeOverlay.VoiceReminderApp.ReminderOptionsDialog"
+        parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.VoiceReminderApp.ReminderOptionsDialog</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.VoiceReminderApp.ReminderOptionsDialog" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/reminder_options_panel_corner_radius</item>
+    </style>
+
 </resources>

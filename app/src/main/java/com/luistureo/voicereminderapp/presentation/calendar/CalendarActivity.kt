@@ -36,6 +36,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.alarm.ExactAlarmPermissionPolicy
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
@@ -1209,7 +1210,10 @@ class CalendarActivity : AppCompatActivity() {
         val manualOption = content.findViewById<View>(R.id.cardReminderCreationManual)
         val cameraOption = content.findViewById<View>(R.id.cardReminderCreationCamera)
         val pasteOption = content.findViewById<View>(R.id.cardReminderCreationPaste)
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(
+            this,
+            R.style.ThemeOverlay_VoiceReminderApp_ReminderOptionsDialog
+        )
             .setTitle(R.string.calendar_create_reminder)
             .setMessage(R.string.calendar_creation_options_supporting)
             .setView(content)

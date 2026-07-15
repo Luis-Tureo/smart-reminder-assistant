@@ -119,6 +119,21 @@ class CalendarRefactorResourceTest {
     }
 
     @Test
+    fun homeHeaderUsesDedicatedSoftBlueWithAccessibleContrast() {
+        val layout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
+        val colors = sourceFile("app/src/main/res/values/colors.xml").readText()
+        val header = layout.substringAfter("@+id/containerUnifiedHeader")
+            .substringBefore("</LinearLayout>")
+        val softBlue = colorValue(colors, "calendar_home_header_background")
+        val headerText = colorValue(colors, "calendar_toolbar_text")
+
+        assertTrue(header.contains("android:background=\"@color/calendar_home_header_background\""))
+        assertEquals("#526F8A", softBlue)
+        assertTrue(contrastRatio(softBlue, headerText) >= 4.5)
+        assertTrue(layout.contains("app:backgroundTint=\"@color/primary_blue\""))
+    }
+
+    @Test
     fun reminderCreationPanelOffersImplementedAccessibleOptionsOnly() {
         val calendarActivity = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
@@ -129,6 +144,8 @@ class CalendarRefactorResourceTest {
             "app/src/main/res/layout/dialog_reminder_creation_options.xml"
         ).readText()
         val strings = sourceFile("app/src/main/res/values/strings.xml").readText()
+        val dimensions = sourceFile("app/src/main/res/values/dimens.xml").readText()
+        val themes = sourceFile("app/src/main/res/values/themes.xml").readText()
         val assistantActivity = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/assistant/" +
                 "AssistantActivity.kt"
@@ -156,6 +173,29 @@ class CalendarRefactorResourceTest {
         assertTrue(dialogLayout.startsWith("<?xml"))
         assertTrue(dialogLayout.contains("<ScrollView"))
         assertFalse(dialogLayout.contains("android:maxLines"))
+        assertEquals(
+            4,
+            "app:cardCornerRadius=\"@dimen/reminder_options_item_corner_radius\""
+                .toRegex()
+                .findAll(dialogLayout)
+                .count()
+        )
+        assertTrue(dimensions.contains(
+            "<dimen name=\"reminder_options_panel_corner_radius\">32dp</dimen>"
+        ))
+        assertTrue(dimensions.contains(
+            "<dimen name=\"reminder_options_item_corner_radius\">20dp</dimen>"
+        ))
+        assertTrue(themes.contains(
+            "ThemeOverlay.VoiceReminderApp.ReminderOptionsDialog"
+        ))
+        assertTrue(themes.contains(
+            "@dimen/reminder_options_panel_corner_radius"
+        ))
+        assertTrue(calendarActivity.contains("MaterialAlertDialogBuilder("))
+        assertTrue(calendarActivity.contains(
+            "R.style.ThemeOverlay_VoiceReminderApp_ReminderOptionsDialog"
+        ))
         assertFalse(dialogLayout.contains("Google"))
         assertFalse(dialogLayout.contains("Microsoft"))
         assertTrue(strings.contains(">Agregar recordatorio</string>"))

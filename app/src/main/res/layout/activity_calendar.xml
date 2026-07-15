@@ -10,7 +10,7 @@
         android:id="@+id/containerUnifiedHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/calendar_toolbar_background"
+        android:background="@color/calendar_home_header_background"
         android:minHeight="88dp"
         android:gravity="center_vertical"
         android:orientation="vertical"

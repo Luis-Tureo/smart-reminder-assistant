@@ -36,6 +36,7 @@
 
     <!-- Calendario -->
     <color name="calendar_screen_background">#ECF1F6</color>
+    <color name="calendar_home_header_background">#526F8A</color>
     <color name="calendar_toolbar_background">#1F3147</color>
     <color name="calendar_toolbar_text">#F7F6F2</color>
     <color name="calendar_card_background">#FCFAF4</color>
