@@ -95,7 +95,7 @@
     <string name="weekday_saturday">S&#225;bado</string>
     <string name="weekday_sunday">Domingo</string>
 
-    <string name="assistant_screen_title">Asistente virtual</string>
+    <string name="assistant_screen_title">Asistente de Mi d&#237;a</string>
     <string name="assistant_screen_prepare_title">Prepara tu recordatorio</string>
     <string name="assistant_screen_prepare_subtitle">Habla con calma y revisa abajo lo que entend&#237; antes de guardarlo.</string>
     <string name="assistant_speak_button">Hablar con el asistente</string>
@@ -103,20 +103,16 @@
     <string name="assistant_heard_placeholder">Cuando hables, aqu&#237; aparecer&#225; tu frase.</string>
     <string name="assistant_response_title">Respuesta</string>
     <string name="assistant_response_placeholder">La respuesta del asistente se mostrar&#225; en esta zona.</string>
-    <string name="assistant_character_content_description">Asistente virtual pixel art</string>
     <string name="assistant_dialogue_content_description">Di&#225;logo del asistente</string>
     <string name="assistant_listening_dialogue">Perfecto, te escucho.</string>
     <string name="assistant_thinking_dialogue">Dame un segundo...</string>
-    <string name="home_virtual_assistant_title">Asistente virtual</string>
-    <string name="home_virtual_assistant_subtitle">Dicta un recordatorio con una voz amable.</string>
-    <string name="home_calendar_title">Calendario</string>
-    <string name="home_calendar_subtitle">Explora tus notas en el tiempo.</string>
-    <string name="home_screen_title">Mi día</string>
-    <string name="home_screen_subtitle">Organiza tu d&#237;a de una forma simple.</string>
-    <string name="home_calendar_action">Abrir Calendario</string>
-    <string name="home_virtual_assistant_action">Abrir Asistente virtual</string>
-    <string name="home_supporting_message">Tu calendario y asistente est&#225;n listos para ayudarte.</string>
-    <string name="calendar_screen_title">Calendario</string>
+    <string name="unified_screen_title">Mi d&#237;a</string>
+    <string name="unified_screen_subtitle">Organiza tus fechas, notas y recordatorios.</string>
+    <string name="unified_assistant_heading">Asistente</string>
+    <string name="unified_assistant_supporting_text">Dime qu&#233; necesitas recordar.</string>
+    <string name="unified_empty_day_title">No tienes actividades para este d&#237;a</string>
+    <string name="unified_empty_day_supporting_text">Puedes agregar un recordatorio con el asistente.</string>
+    <string name="unified_empty_day_message">%1$s\n%2$s</string>
     <string name="calendar_previous_month">Mes anterior</string>
     <string name="calendar_next_month">Mes siguiente</string>
     <string name="calendar_month_label">Mes</string>
@@ -187,7 +183,7 @@
     <string name="calendar_sync_microsoft_graph_5xx_inline">C&#243;digo: MICROSOFT_GRAPH_5XX. Microsoft Calendar no est&#225; disponible temporalmente. Tus datos locales se conservaron.</string>
     <string name="calendar_sync_microsoft_sync_io_inline">C&#243;digo: MICROSOFT_SYNC_IO_EXCEPTION. La sincronizaci&#243;n se interrumpi&#243; por un problema de red. Tus datos locales se conservaron.</string>
     <string name="calendar_sync_delete_finished_inline">La cita se elimin&#243; de los calendarios conectados.</string>
-    <string name="calendar_create_reminder">Crear recordatorio</string>
+    <string name="calendar_create_reminder">Otras formas de agregar</string>
     <string name="calendar_create_choice_title">Crear recordatorio</string>
     <string name="calendar_create_manual_choice">Escribirlo manualmente</string>
     <string name="calendar_create_camera_choice">Crear desde imagen/OCR</string>
@@ -239,7 +235,6 @@
     <string name="calendar_filter_title_birthday">Cumplea&#241;os</string>
     <string name="calendar_filter_title_holiday">Feriados</string>
     <string name="calendar_filter_title_completed">Completados</string>
-    <string name="calendar_back">Volver a Mi d&#237;a</string>
     <string name="calendar_connections_heading">Calendarios conectados</string>
     <string name="calendar_filters_heading">Filtros del calendario</string>
     <string name="calendar_day_accessibility">%1$s. %2$s</string>

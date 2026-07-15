@@ -16,7 +16,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
-import com.luistureo.voicereminderapp.MainActivity
 import com.luistureo.voicereminderapp.R
 import com.luistureo.voicereminderapp.core.speech.SpeechRecognizerManager
 import com.luistureo.voicereminderapp.core.speech.VoiceAssistantSpeaker
@@ -28,11 +27,15 @@ import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.SaveReminderDraftUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
 import com.luistureo.voicereminderapp.presentation.state.ReminderUiEvent
+import com.luistureo.voicereminderapp.presentation.calendar.CalendarActivity
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModel
 import com.luistureo.voicereminderapp.presentation.viewmodel.ReminderViewModelFactory
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.math.roundToInt
 
 class AssistantActivity : ComponentActivity() {
@@ -52,6 +55,7 @@ class AssistantActivity : ComponentActivity() {
 
     private var currentAssistantVisualState: AssistantVisualState = AssistantVisualState.IDLE
     private var hasPendingSuccessState: Boolean = false
+    private var savedReminderDate: LocalDate? = null
     private var assistantResetJob: Job? = null
     private val assistantSpeechQueue = ArrayDeque<String>()
     private var isAssistantSpeechQueueActive: Boolean = false
@@ -74,7 +78,7 @@ class AssistantActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (isLegacyRemovedModuleIntent()) {
             startActivity(
-                Intent(this, MainActivity::class.java).apply {
+                Intent(this, CalendarActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 }
             )
@@ -88,6 +92,9 @@ class AssistantActivity : ComponentActivity() {
         setupSpeech()
         setupListeners()
         setupViewModel()
+        intent.getStringExtra(EXTRA_SELECTED_DATE)
+            ?.let { value -> runCatching { LocalDate.parse(value) }.getOrNull() }
+            ?.let(reminderViewModel::setAssistantDefaultDate)
         observeAssistantState()
         observeEvents()
     }
@@ -263,6 +270,13 @@ class AssistantActivity : ComponentActivity() {
                             if (event.message.isNotBlank()) {
                                 enqueueAssistantReply(event.message)
                             }
+                        }
+
+                        is ReminderUiEvent.AssistantReminderSaved -> {
+                            savedReminderDate = Instant
+                                .ofEpochMilli(event.scheduledAtEpochMillis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
                         }
 
                         ReminderUiEvent.StopAssistantConversation -> {
@@ -446,7 +460,16 @@ class AssistantActivity : ComponentActivity() {
 
         assistantResetJob = lifecycleScope.launch {
             delay(1200L)
-            renderAssistantState(AssistantVisualState.IDLE)
+            val resultDate = savedReminderDate
+            if (resultDate != null) {
+                setResult(
+                    RESULT_OK,
+                    Intent().putExtra(EXTRA_SAVED_DATE, resultDate.toString())
+                )
+                finish()
+            } else {
+                renderAssistantState(AssistantVisualState.IDLE)
+            }
         }
     }
 
@@ -522,6 +545,8 @@ class AssistantActivity : ComponentActivity() {
     }
 
     companion object {
+        const val EXTRA_SELECTED_DATE = "extra_assistant_selected_date"
+        const val EXTRA_SAVED_DATE = "extra_assistant_saved_date"
         private const val MAX_DIALOGUE_CHUNK_LENGTH = 52
         private const val LEGACY_ROUTINE_ID_EXTRA = "extra_assistant_routine_id"
         private const val LEGACY_ROUTINE_URI_PREFIX = "voicereminder://routine/"

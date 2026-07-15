@@ -421,15 +421,6 @@ class CalendarViewModel(
                     holidaysByDate = holidaysByDate,
                     duplicateItemIds = duplicateItemIds
                 ),
-                emptyStateMessage = if (selectedDateEntries.isEmpty()) {
-                    if (selectedDateHolidays.isEmpty()) {
-                        "No hay eventos para este dia."
-                    } else {
-                        "No hay eventos, pero el feriado sigue visible para esta fecha."
-                    }
-                } else {
-                    ""
-                },
                 selectedDateDuplicateWarning = selectedDuplicateItemIds
                     .takeIf { it.isNotEmpty() }
                     ?.let { ids ->

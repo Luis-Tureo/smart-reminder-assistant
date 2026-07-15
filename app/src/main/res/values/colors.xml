@@ -27,12 +27,9 @@
     <color name="reminder_card_stroke">#EEE7DC</color>
     <color name="reminder_text_primary">#222738</color>
     <color name="reminder_text_secondary">#5E6275</color>
-    <color name="reminder_accent">#6A83BD</color>
     <color name="reminder_delete_tint">#A4ABBA</color>
     <color name="reminder_delete_red">#B42318</color>
     <color name="reminder_delete_background">#FFE4E1</color>
-    <color name="reminder_icon_blue_bg">#D9E4FF</color>
-    <color name="reminder_icon_blue_fg">#4261AF</color>
     <color name="recurrence_chip_background">#F8FAFF</color>
     <color name="recurrence_chip_selected_background">#EFE3FF</color>
     <color name="recurrence_chip_stroke">#8F95A3</color>
@@ -41,7 +38,6 @@
     <color name="calendar_screen_background">#ECF1F6</color>
     <color name="calendar_toolbar_background">#1F3147</color>
     <color name="calendar_toolbar_text">#F7F6F2</color>
-    <color name="calendar_toolbar_icon">#F7F6F2</color>
     <color name="calendar_card_background">#FCFAF4</color>
     <color name="calendar_card_stroke">#D9E3EC</color>
     <color name="calendar_title_text">#1F2E40</color>

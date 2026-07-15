@@ -9,19 +9,30 @@ import org.junit.Test
 class CalendarRefactorResourceTest {
 
     @Test
-    fun homeUsesAvailableHeightWithOnlyActiveModulesAndSupportingPanel() {
-        val layout = sourceFile("app/src/main/res/layout/activity_main.xml").readText()
+    fun unifiedCalendarIsLauncherAndOldHomeOnlyRedirects() {
+        val manifest = sourceFile("app/src/main/AndroidManifest.xml").readText()
+        val mainActivity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/MainActivity.kt"
+        ).readText()
+        val layout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
+        val strings = sourceFile("app/src/main/res/values/strings.xml").readText()
 
-        assertTrue(layout.contains("@+id/cardCalendar"))
-        assertTrue(layout.contains("@+id/cardAssistantReminder"))
-        assertTrue(layout.contains("@+id/panelHomeSupport"))
-        assertTrue(layout.contains("android:fillViewport=\"true\""))
-        assertTrue(layout.contains("app:layout_constraintWidth_max=\"840dp\""))
-        assertTrue(layout.contains("@string/home_calendar_action"))
-        assertTrue(layout.contains("@string/home_virtual_assistant_action"))
-        assertFalse(layout.contains("cardLoan"))
-        assertFalse(layout.contains("cardDailyRoutines"))
-        assertEquals(2, layout.split("@+id/card").size - 1)
+        assertFalse(sourceFile("app/src/main/res/layout/activity_main.xml").exists())
+        assertTrue(manifest.substringAfter(".presentation.calendar.CalendarActivity")
+            .substringBefore(".presentation.assistant.AssistantActivity")
+            .contains("android.intent.category.LAUNCHER"))
+        assertFalse(mainActivity.contains("setContentView"))
+        assertTrue(mainActivity.contains("CalendarActivity::class.java"))
+        assertTrue(manifest.substringAfter("android:name=\".MainActivity\"")
+            .substringBefore("<activity-alias")
+            .contains("android:exported=\"true\""))
+        assertTrue(layout.contains("@string/unified_screen_title"))
+        assertTrue(layout.contains("@string/unified_screen_subtitle"))
+        assertFalse(layout.contains("navigationIcon"))
+        assertFalse(layout.contains("cardAssistantReminder"))
+        assertFalse(layout.contains("panelHomeSupport"))
+        assertFalse(strings.contains("home_virtual_assistant_title"))
+        assertFalse(strings.contains("home_calendar_title"))
     }
 
     @Test
@@ -41,11 +52,45 @@ class CalendarRefactorResourceTest {
             layout.indexOf("@+id/gridCalendarDays") <
                 layout.indexOf("@+id/cardCalendarSelectedDate")
         )
+        assertTrue(
+            layout.indexOf("@+id/cardCalendarSelectedDate") <
+                layout.indexOf("@+id/cardCalendarAssistant")
+        )
+        assertTrue(
+            layout.indexOf("@+id/cardCalendarAssistant") <
+                layout.indexOf("@+id/tvCalendarConnectionsHeading")
+        )
         assertFalse(layout.contains("cardCalendarNextDaySummary"))
         assertFalse(layout.contains("recyclerCalendarUpcomingReminders"))
         assertFalse(layout.contains("calendarReminderEmptyStateCard"))
         assertFalse(strings.contains("calendar_next_day_summary"))
         assertFalse(strings.contains("calendar_upcoming_empty"))
+    }
+
+    @Test
+    fun assistantIsLaunchedFromSelectedDateAndReturnsSavedDate() {
+        val calendarActivity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                "CalendarActivity.kt"
+        ).readText()
+        val assistantActivity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/assistant/" +
+                "AssistantActivity.kt"
+        ).readText()
+        val viewModel = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/viewmodel/" +
+                "ReminderViewModel.kt"
+        ).readText()
+
+        assertTrue(calendarActivity.contains("btnCalendarAssistant"))
+        assertTrue(calendarActivity.contains("AssistantActivity.EXTRA_SELECTED_DATE"))
+        assertTrue(calendarActivity.contains("calendarViewModel.onDaySelected(savedDate)"))
+        assertTrue(calendarActivity.contains("STATE_ACTIVE_FILTER"))
+        assertTrue(calendarActivity.contains("STATE_SELECTED_DATE"))
+        assertTrue(assistantActivity.contains("setAssistantDefaultDate"))
+        assertTrue(assistantActivity.contains("EXTRA_SAVED_DATE"))
+        assertTrue(viewModel.contains("assistantDefaultDate"))
+        assertTrue(viewModel.contains("AssistantReminderSaved"))
     }
 
     @Test
@@ -123,7 +168,7 @@ class CalendarRefactorResourceTest {
     }
 
     @Test
-    fun removedScreensRemainSafeHomeAliasesAndCalendarConnectionsRemain() {
+    fun removedScreensRemainSafeUnifiedAliasesAndCalendarConnectionsRemain() {
         val manifest = sourceFile("app/src/main/AndroidManifest.xml").readText()
         val calendarActivity = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
@@ -135,6 +180,9 @@ class CalendarRefactorResourceTest {
             11,
             "android:targetActivity=\".MainActivity\"".toRegex().findAll(manifest).count()
         )
+        assertTrue(sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/MainActivity.kt"
+        ).readText().contains("CalendarActivity::class.java"))
         assertTrue(calendarActivity.contains("GoogleCalendarAuthManager"))
         assertTrue(calendarActivity.contains("MicrosoftCalendarAuthProvider"))
         assertTrue(calendarActivity.contains("UnifiedCalendarSynchronizer"))

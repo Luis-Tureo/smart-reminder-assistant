@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.ZoneId
+import java.time.LocalDate
 import java.util.Calendar
 
 class ReminderViewModel(
@@ -116,6 +117,7 @@ class ReminderViewModel(
     val events: SharedFlow<ReminderUiEvent> = _events.asSharedFlow()
 
     private var pendingDraft: ReminderDraft? = null
+    private var assistantDefaultDate: LocalDate? = null
     private var hasSavedInCurrentSession: Boolean = false
     private var pendingAssistantAmbiguousTime: PendingAmbiguousTime? = null
     private var pendingVoiceAmbiguousTime: PendingAmbiguousTime? = null
@@ -158,6 +160,10 @@ class ReminderViewModel(
                 )
             )
         }
+    }
+
+    fun setAssistantDefaultDate(date: LocalDate?) {
+        assistantDefaultDate = date
     }
 
     fun processAssistantMessage(message: String) {
@@ -232,7 +238,9 @@ class ReminderViewModel(
 
             val parsedDate = parsedMessage.date?.let {
                 ResolvedDate(day = it.dayOfMonth, month = it.monthValue, year = it.year)
-            }
+            } ?: assistantDefaultDate
+                ?.takeIf { pendingDraft?.date.isNullOrBlank() }
+                ?.let { ResolvedDate(day = it.dayOfMonth, month = it.monthValue, year = it.year) }
             val parsedTime = parsedMessage.time?.let {
                 ParsedTime(hour = it.hour, minute = it.minute, isAmbiguous = it.isAmbiguous)
             }
@@ -648,7 +656,8 @@ class ReminderViewModel(
             )
             reminderScheduler.syncReminderSchedule(savedReminder)
             loadReminders()
-        }.onSuccess {
+            savedReminder
+        }.onSuccess { savedReminder ->
             AssistantConversationLogger.log("Assistant save flow completed")
             hasSavedInCurrentSession = true
             pendingDraft = null
@@ -667,6 +676,9 @@ class ReminderViewModel(
             }
 
             _events.emit(ReminderUiEvent.ShowMessage("Recordatorio guardado correctamente."))
+            _events.emit(
+                ReminderUiEvent.AssistantReminderSaved(savedReminder.scheduledAtEpochMillis)
+            )
             _events.emit(ReminderUiEvent.SpeakAssistantReply(successReply))
             _events.emit(ReminderUiEvent.StopAssistantConversation)
         }.onFailure {

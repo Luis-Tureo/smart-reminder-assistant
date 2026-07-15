@@ -10,6 +10,7 @@
     <dimen name="calendar_filter_stroke_selected">2dp</dimen>
     <dimen name="calendar_filter_stroke_unselected">1dp</dimen>
     <dimen name="calendar_detail_action_spacing">8dp</dimen>
+    <dimen name="unified_content_max_width">720dp</dimen>
     <dimen name="assistant_dialogue_min_width">104dp</dimen>
     <dimen name="assistant_dialogue_max_width">236dp</dimen>
     <dimen name="assistant_dialogue_max_height">74dp</dimen>

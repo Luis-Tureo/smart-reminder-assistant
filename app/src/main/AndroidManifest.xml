@@ -66,8 +66,14 @@
             android:theme="@style/Theme.VoiceReminderApp" />
         <activity
             android:name=".presentation.calendar.CalendarActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp" />
+            android:exported="true"
+            android:theme="@style/Theme.VoiceReminderApp">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".presentation.assistant.AssistantActivity"
             android:exported="false"
@@ -90,13 +96,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.VoiceReminderApp">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.VoiceReminderApp" />
 
         <activity-alias
             android:name=".presentation.loan.LoanDetailActivity"

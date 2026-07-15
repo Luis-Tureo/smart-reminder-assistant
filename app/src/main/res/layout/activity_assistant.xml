@@ -92,7 +92,8 @@
                         android:id="@+id/assistantView"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:contentDescription="@string/assistant_character_content_description" />
+                        android:contentDescription="@null"
+                        android:importantForAccessibility="no" />
 
                     <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
                         android:id="@+id/assistantDialogueBubble"
@@ -102,6 +103,7 @@
                         android:layout_marginStart="28dp"
                         android:layout_marginEnd="28dp"
                         android:layout_marginBottom="6dp"
+                        android:accessibilityLiveRegion="polite"
                         android:contentDescription="@string/assistant_dialogue_content_description" />
                 </FrameLayout>
             </FrameLayout>
@@ -140,6 +142,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:accessibilityLiveRegion="polite"
                 android:background="@drawable/bg_result_box"
                 android:minHeight="58dp"
                 android:paddingHorizontal="16dp"
@@ -163,6 +166,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:accessibilityLiveRegion="polite"
                 android:background="@drawable/bg_result_box"
                 android:minHeight="86dp"
                 android:paddingHorizontal="16dp"

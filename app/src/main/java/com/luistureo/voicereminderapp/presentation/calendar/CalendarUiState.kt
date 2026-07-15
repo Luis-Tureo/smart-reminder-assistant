@@ -18,7 +18,6 @@ data class CalendarUiState(
     val selectedHolidays: List<String> = emptyList(),
     val selectedDateReminders: List<CalendarReminderDetailUiModel> = emptyList(),
     val filteredItems: List<CalendarFilteredListItemUiModel> = emptyList(),
-    val emptyStateMessage: String = "",
     val showDeleteSyncSuccess: Boolean = false,
     val syncError: CalendarSyncInlineError? = null,
     val selectedDateDuplicateWarning: CalendarDuplicateWarningUiModel? = null

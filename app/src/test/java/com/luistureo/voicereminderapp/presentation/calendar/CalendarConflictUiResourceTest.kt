@@ -81,11 +81,10 @@ class CalendarConflictUiResourceTest {
     }
 
     @Test
-    fun obsoleteDuplicateRecommendationIsAbsentFromHomeAndCalendar() {
-        val homeLayout = sourceFile("app/src/main/res/layout/activity_main.xml").readText()
+    fun obsoleteDuplicateRecommendationIsAbsentFromUnifiedCalendar() {
         val calendarLayout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
 
-        assertFalse(homeLayout.contains("calendar_duplicate_alert_recommendation"))
+        assertFalse(sourceFile("app/src/main/res/layout/activity_main.xml").exists())
         assertFalse(calendarLayout.contains("calendar_duplicate_alert_recommendation"))
     }
 
