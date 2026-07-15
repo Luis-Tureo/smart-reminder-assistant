@@ -21,7 +21,9 @@
             android:id="@+id/tvUnifiedScreenTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:text="@string/unified_screen_title"
+            android:textAlignment="center"
             android:textColor="@color/calendar_toolbar_text"
             android:textSize="25sp"
             android:textStyle="bold" />
@@ -31,8 +33,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:maxLines="2"
+            android:gravity="center"
             android:text="@string/unified_screen_subtitle"
+            android:textAlignment="center"
             android:textColor="@color/calendar_toolbar_text"
             android:textSize="14sp" />
     </LinearLayout>
@@ -330,70 +333,22 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnCalendarCreateReminder"
-                            style="?attr/materialButtonOutlinedStyle"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/calendar_add_reminder_accessibility"
                             android:maxLines="1"
                             android:minHeight="48dp"
                             android:minWidth="0dp"
                             android:paddingHorizontal="18dp"
                             android:text="@string/calendar_create_reminder"
                             android:textAllCaps="false"
-                            android:textColor="@color/calendar_title_text"
-                            android:textSize="15sp"
+                            android:textColor="@color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            app:backgroundTint="@color/primary_blue"
                             app:cornerRadius="24dp"
-                            app:strokeColor="@color/calendar_title_text" />
+                            app:rippleColor="@color/ripple_soft" />
                     </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardCalendarAssistant"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/calendar_card_background"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/calendar_card_stroke"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="18dp">
-
-                    <TextView
-                        android:id="@+id/tvCalendarAssistantHeading"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/unified_assistant_heading"
-                        android:textColor="@color/calendar_title_text"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/unified_assistant_supporting_text"
-                        android:textColor="@color/calendar_body_text"
-                        android:textSize="15sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCalendarAssistant"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:minHeight="48dp"
-                        android:text="@string/assistant_speak_button"
-                        android:textAllCaps="false"
-                        android:textSize="16sp"
-                        app:cornerRadius="24dp"
-                        app:icon="@android:drawable/ic_btn_speak_now"
-                        app:iconGravity="textStart"
-                        app:iconPadding="10dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

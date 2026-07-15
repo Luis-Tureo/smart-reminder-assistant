@@ -10,7 +10,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="4dp"
+        android:gravity="center"
         android:text="@string/calendar_filters_heading"
+        android:textAlignment="center"
         android:textColor="@color/calendar_title_text"
         android:textSize="20sp"
         android:textStyle="bold" />
@@ -223,16 +225,28 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCalendarLegendShowAll"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:layout_marginTop="10dp"
+                android:contentDescription="@string/calendar_legend_show_all_accessibility"
+                android:maxLines="2"
+                android:maxWidth="360dp"
                 android:minHeight="48dp"
+                android:minWidth="200dp"
+                android:paddingHorizontal="24dp"
                 android:text="@string/calendar_legend_show_all"
                 android:textAllCaps="false"
-                android:textColor="@color/calendar_title_text"
-                app:cornerRadius="22dp"
-                app:strokeColor="@color/calendar_title_text" />
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/primary_blue"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_calendar_list"
+                app:iconGravity="textStart"
+                app:iconPadding="10dp"
+                app:iconTint="@color/white"
+                app:rippleColor="@color/ripple_soft" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

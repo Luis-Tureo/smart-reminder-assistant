@@ -54,12 +54,10 @@ class CalendarRefactorResourceTest {
         )
         assertTrue(
             layout.indexOf("@+id/cardCalendarSelectedDate") <
-                layout.indexOf("@+id/cardCalendarAssistant")
-        )
-        assertTrue(
-            layout.indexOf("@+id/cardCalendarAssistant") <
                 layout.indexOf("@+id/tvCalendarConnectionsHeading")
         )
+        assertFalse(layout.contains("cardCalendarAssistant"))
+        assertFalse(layout.contains("btnCalendarAssistant"))
         assertFalse(layout.contains("cardCalendarNextDaySummary"))
         assertFalse(layout.contains("recyclerCalendarUpcomingReminders"))
         assertFalse(layout.contains("calendarReminderEmptyStateCard"))
@@ -68,11 +66,69 @@ class CalendarRefactorResourceTest {
     }
 
     @Test
-    fun assistantIsLaunchedFromSelectedDateAndReturnsSavedDate() {
+    fun centeredHeadingsAndPrimaryShowAllButtonShareAccessibleStyling() {
+        val calendarLayout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
+        val filterLayout = sourceFile(
+            "app/src/main/res/layout/view_calendar_filters.xml"
+        ).readText()
+        val strings = sourceFile("app/src/main/res/values/strings.xml").readText()
+        val colors = sourceFile("app/src/main/res/values/colors.xml").readText()
+        val title = calendarLayout.substringAfter("@+id/tvUnifiedScreenTitle")
+            .substringBefore("/>")
+        val subtitle = calendarLayout.substringAfter("@+id/tvUnifiedScreenSubtitle")
+            .substringBefore("/>")
+        val addReminderButton = calendarLayout.substringAfter("@+id/btnCalendarCreateReminder")
+            .substringBefore("/>")
+        val filterHeading = filterLayout.substringAfter("@+id/tvCalendarFiltersHeading")
+            .substringBefore("/>")
+        val showAllButton = filterLayout.substringAfter("@+id/btnCalendarLegendShowAll")
+            .substringBefore("/>")
+
+        listOf(title, subtitle, filterHeading).forEach { heading ->
+            assertTrue(heading.contains("android:gravity=\"center\""))
+            assertTrue(heading.contains("android:textAlignment=\"center\""))
+        }
+        assertFalse(title.contains("android:maxLines"))
+        assertFalse(subtitle.contains("android:maxLines"))
+        assertTrue(filterLayout.indexOf("@+id/tvCalendarFiltersHeading") <
+            filterLayout.indexOf("@+id/cardCalendarFilterReminder"))
+
+        listOf(addReminderButton, showAllButton).forEach { button ->
+            assertTrue(button.contains("app:backgroundTint=\"@color/primary_blue\""))
+            assertTrue(button.contains("android:textColor=\"@color/white\""))
+            assertTrue(button.contains("app:cornerRadius=\"24dp\""))
+            assertTrue(button.contains("android:minHeight=\"48dp\""))
+            assertTrue(button.contains("android:textStyle=\"bold\""))
+        }
+        assertTrue(addReminderButton.contains(
+            "android:contentDescription=\"@string/calendar_add_reminder_accessibility\""
+        ))
+        assertTrue(showAllButton.contains("app:iconTint=\"@color/white\""))
+        assertTrue(showAllButton.contains("app:icon=\"@drawable/ic_calendar_list\""))
+        assertTrue(showAllButton.contains("app:iconGravity=\"textStart\""))
+        assertTrue(showAllButton.contains("android:maxWidth=\"360dp\""))
+        assertTrue(showAllButton.contains(
+            "android:contentDescription=\"@string/calendar_legend_show_all_accessibility\""
+        ))
+        assertTrue(strings.contains(">Ver todas las actividades</string>"))
+        assertTrue(sourceFile("app/src/main/res/drawable/ic_calendar_list.xml").exists())
+
+        val primary = colorValue(colors, "primary_blue")
+        val white = colorValue(colors, "white")
+        assertTrue(contrastRatio(primary, white) >= 4.5)
+    }
+
+    @Test
+    fun reminderCreationPanelOffersImplementedAccessibleOptionsOnly() {
         val calendarActivity = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
                 "CalendarActivity.kt"
         ).readText()
+        val calendarLayout = sourceFile("app/src/main/res/layout/activity_calendar.xml").readText()
+        val dialogLayout = sourceFile(
+            "app/src/main/res/layout/dialog_reminder_creation_options.xml"
+        ).readText()
+        val strings = sourceFile("app/src/main/res/values/strings.xml").readText()
         val assistantActivity = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/presentation/assistant/" +
                 "AssistantActivity.kt"
@@ -82,8 +138,37 @@ class CalendarRefactorResourceTest {
                 "ReminderViewModel.kt"
         ).readText()
 
-        assertTrue(calendarActivity.contains("btnCalendarAssistant"))
+        assertFalse(calendarLayout.contains("cardCalendarAssistant"))
+        assertTrue(calendarLayout.contains("@string/calendar_add_reminder_accessibility"))
+        assertTrue(calendarActivity.contains("showReminderCreationOptions()"))
+        listOf(
+            "cardReminderCreationVoice",
+            "cardReminderCreationManual",
+            "cardReminderCreationCamera",
+            "cardReminderCreationPaste"
+        ).forEach { optionId ->
+            val option = dialogLayout.substringAfter("@+id/$optionId").substringBefore(">")
+            assertTrue(option.contains("android:clickable=\"true\""))
+            assertTrue(option.contains("android:focusable=\"true\""))
+            assertTrue(option.contains("android:minHeight=\"76dp\""))
+            assertTrue(option.contains("android:contentDescription="))
+        }
+        assertTrue(dialogLayout.startsWith("<?xml"))
+        assertTrue(dialogLayout.contains("<ScrollView"))
+        assertFalse(dialogLayout.contains("android:maxLines"))
+        assertFalse(dialogLayout.contains("Google"))
+        assertFalse(dialogLayout.contains("Microsoft"))
+        assertTrue(strings.contains(">Agregar recordatorio</string>"))
+        assertTrue(strings.contains(">Elige c&#243;mo quieres crearlo.</string>"))
+        assertTrue(strings.contains(">Escribir recordatorio</string>"))
+        assertFalse(strings.contains("Otras formas de agregar"))
+        assertTrue(calendarActivity.contains("info.className = android.widget.Button::class.java.name"))
+        assertTrue(calendarActivity.contains("voiceOption.requestFocus()"))
+        assertTrue(calendarActivity.contains("createReminderButton.requestFocus()"))
+        assertTrue(calendarActivity.contains("dialog.dismiss()"))
         assertTrue(calendarActivity.contains("AssistantActivity.EXTRA_SELECTED_DATE"))
+        assertTrue(calendarActivity.contains("ManualReminderActivity.EXTRA_PREFILLED_DATE"))
+        assertTrue(calendarActivity.contains("PasteTextReminderActivity.EXTRA_SELECTED_DATE"))
         assertTrue(calendarActivity.contains("calendarViewModel.onDaySelected(savedDate)"))
         assertTrue(calendarActivity.contains("STATE_ACTIVE_FILTER"))
         assertTrue(calendarActivity.contains("STATE_SELECTED_DATE"))
@@ -192,5 +277,29 @@ class CalendarRefactorResourceTest {
         val fromRoot = File(projectPath)
         if (fromRoot.exists()) return fromRoot
         return File(projectPath.removePrefix("app/"))
+    }
+
+    private fun colorValue(colors: String, name: String): String {
+        return Regex("<color name=\"$name\">(#[0-9A-Fa-f]{6})</color>")
+            .find(colors)
+            ?.groupValues
+            ?.get(1)
+            ?: error("Color $name not found")
+    }
+
+    private fun contrastRatio(first: String, second: String): Double {
+        val firstLuminance = relativeLuminance(first)
+        val secondLuminance = relativeLuminance(second)
+        val lighter = maxOf(firstLuminance, secondLuminance)
+        val darker = minOf(firstLuminance, secondLuminance)
+        return (lighter + 0.05) / (darker + 0.05)
+    }
+
+    private fun relativeLuminance(color: String): Double {
+        val channels = listOf(1, 3, 5).map { index ->
+            val channel = color.substring(index, index + 2).toInt(16) / 255.0
+            if (channel <= 0.03928) channel / 12.92 else Math.pow((channel + 0.055) / 1.055, 2.4)
+        }
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722
     }
 }

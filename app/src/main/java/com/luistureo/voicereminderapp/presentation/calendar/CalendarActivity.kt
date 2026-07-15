@@ -101,7 +101,6 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var detailContainer: LinearLayout
     private lateinit var selectedDateActionsContainer: LinearLayout
     private lateinit var createReminderButton: MaterialButton
-    private lateinit var assistantButton: MaterialButton
     private lateinit var legendFilterCards: Map<CalendarIndicatorStyle, MaterialCardView>
     private lateinit var legendFilterDots: Map<CalendarIndicatorStyle, View>
     private lateinit var legendFilterLabels: Map<CalendarIndicatorStyle, TextView>
@@ -289,7 +288,6 @@ class CalendarActivity : AppCompatActivity() {
         detailContainer = findViewById(R.id.containerDayDetails)
         selectedDateActionsContainer = findViewById(R.id.containerSelectedDateActions)
         createReminderButton = findViewById(R.id.btnCalendarCreateReminder)
-        assistantButton = findViewById(R.id.btnCalendarAssistant)
         legendShowAllButton = findViewById(R.id.btnCalendarLegendShowAll)
         legendFilterCards = mapOf(
             CalendarIndicatorStyle.REMINDER to findViewById(R.id.cardCalendarFilterReminder),
@@ -312,7 +310,6 @@ class CalendarActivity : AppCompatActivity() {
         listOf(
             findViewById<TextView>(R.id.tvUnifiedScreenTitle),
             selectedDateTitleView,
-            findViewById<TextView>(R.id.tvCalendarAssistantHeading),
             findViewById<TextView>(R.id.tvCalendarConnectionsHeading),
             findViewById<TextView>(R.id.tvCalendarFiltersHeading)
         ).forEach { heading ->
@@ -396,10 +393,7 @@ class CalendarActivity : AppCompatActivity() {
         }
 
         createReminderButton.setOnClickListener {
-            showCreateReminderChoice()
-        }
-        assistantButton.setOnClickListener {
-            openAssistantForSelectedDate()
+            showReminderCreationOptions()
         }
         refreshGoogleCalendarStatus()
     }
@@ -1005,11 +999,7 @@ class CalendarActivity : AppCompatActivity() {
         )
 
         emptyStateView.isVisible = filteredReminders.isEmpty() && visibleHolidayCount == 0
-        emptyStateView.text = getString(
-            R.string.unified_empty_day_message,
-            getString(R.string.unified_empty_day_title),
-            getString(R.string.unified_empty_day_supporting_text)
-        )
+        emptyStateView.text = getString(R.string.unified_empty_day_title)
     }
 
     private fun renderLegendFilters() {
@@ -1064,6 +1054,11 @@ class CalendarActivity : AppCompatActivity() {
             getString(R.string.calendar_legend_show_all)
         } else {
             getString(R.string.calendar_clear_filter)
+        }
+        legendShowAllButton.contentDescription = if (activeFilter == null) {
+            getString(R.string.calendar_legend_show_all_accessibility)
+        } else {
+            getString(R.string.calendar_clear_filter_accessibility)
         }
     }
 
@@ -1134,6 +1129,24 @@ class CalendarActivity : AppCompatActivity() {
         )
     }
 
+    private fun openPasteTextReminder() {
+        val selectedDate = lastRenderedState?.days
+            ?.firstOrNull { it.isSelected }
+            ?.date
+
+        startActivity(
+            Intent(this, PasteTextReminderActivity::class.java).apply {
+                selectedDate?.let { date ->
+                    putExtra(
+                        PasteTextReminderActivity.EXTRA_SELECTED_DATE,
+                        CalendarActionRules.formatPrefilledDate(date)
+                    )
+                }
+            }
+        )
+        CalendarSyncLogger.ui("paste_text_reminder_opened_from_calendar")
+    }
+
     private fun requestNotificationPermissionIfNeeded() {
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -1189,37 +1202,59 @@ class CalendarActivity : AppCompatActivity() {
         )
     }
 
-    private fun showCreateReminderChoice() {
-        val options = arrayOf(
-            getString(R.string.calendar_create_manual_choice),
-            getString(R.string.calendar_create_camera_choice),
-            getString(R.string.calendar_create_paste_choice)
-        )
+    private fun showReminderCreationOptions() {
+        val content = LayoutInflater.from(this)
+            .inflate(R.layout.dialog_reminder_creation_options, null, false)
+        val voiceOption = content.findViewById<View>(R.id.cardReminderCreationVoice)
+        val manualOption = content.findViewById<View>(R.id.cardReminderCreationManual)
+        val cameraOption = content.findViewById<View>(R.id.cardReminderCreationCamera)
+        val pasteOption = content.findViewById<View>(R.id.cardReminderCreationPaste)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.calendar_create_reminder)
+            .setMessage(R.string.calendar_creation_options_supporting)
+            .setView(content)
+            .setNegativeButton(R.string.calendar_creation_close, null)
+            .create()
 
-        AlertDialog.Builder(this)
-            .setTitle(R.string.calendar_create_choice_title)
-            .setItems(options) { _, which ->
-                if (which == 2) {
-                    val selectedDate = lastRenderedState?.days
-                        ?.firstOrNull { it.isSelected }
-                        ?.date
-                    startActivity(
-                        Intent(this, PasteTextReminderActivity::class.java).apply {
-                            selectedDate?.let { date ->
-                                putExtra(
-                                    PasteTextReminderActivity.EXTRA_SELECTED_DATE,
-                                    CalendarActionRules.formatPrefilledDate(date)
-                                )
-                            }
-                        }
-                    )
-                    CalendarSyncLogger.ui("paste_text_reminder_opened_from_calendar")
-                } else {
-                    val source = CalendarActionRules.creationChoices()[which]
-                    openReminderCreation(source)
+        listOf(voiceOption, manualOption, cameraOption, pasteOption).forEach { option ->
+            ViewCompat.setAccessibilityDelegate(
+                option,
+                object : AccessibilityDelegateCompat() {
+                    override fun onInitializeAccessibilityNodeInfo(
+                        host: View,
+                        info: AccessibilityNodeInfoCompat
+                    ) {
+                        super.onInitializeAccessibilityNodeInfo(host, info)
+                        info.className = android.widget.Button::class.java.name
+                    }
                 }
-            }
-            .show()
+            )
+        }
+
+        fun selectOption(action: () -> Unit) {
+            dialog.dismiss()
+            action()
+        }
+
+        voiceOption.setOnClickListener {
+            selectOption(::openAssistantForSelectedDate)
+        }
+        manualOption.setOnClickListener {
+            selectOption { openReminderCreation(ReminderSource.MANUAL) }
+        }
+        cameraOption.setOnClickListener {
+            selectOption { openReminderCreation(ReminderSource.CAMERA) }
+        }
+        pasteOption.setOnClickListener {
+            selectOption(::openPasteTextReminder)
+        }
+        dialog.setOnShowListener {
+            voiceOption.requestFocus()
+        }
+        dialog.setOnDismissListener {
+            createReminderButton.requestFocus()
+        }
+        dialog.show()
     }
 
     private fun showDeleteConfirmation(detail: CalendarReminderDetailUiModel) {

@@ -39,7 +39,7 @@ class PasteTextReminderFlowTest {
 
     @Test
     fun calendarOffersPasteTextWithSelectedDay() {
-        assertTrue(calendarActivity.contains("R.string.calendar_create_paste_choice"))
+        assertTrue(calendarActivity.contains("cardReminderCreationPaste"))
         assertTrue(calendarActivity.contains("PasteTextReminderActivity.EXTRA_SELECTED_DATE"))
         assertTrue(calendarActivity.contains("PasteTextReminderActivity::class.java"))
     }

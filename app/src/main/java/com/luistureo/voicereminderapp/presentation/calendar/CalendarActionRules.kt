@@ -2,7 +2,6 @@ package com.luistureo.voicereminderapp.presentation.calendar
 
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter
 import com.luistureo.voicereminderapp.core.reminder.ReminderTemporalValidationPolicy
-import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import java.time.LocalDate
 
 object CalendarActionRules {
@@ -37,10 +36,6 @@ object CalendarActionRules {
         today: LocalDate = LocalDate.now()
     ): Boolean {
         return ReminderTemporalValidationPolicy.canCreateOnDate(selectedDate, today)
-    }
-
-    fun creationChoices(): List<ReminderSource> {
-        return listOf(ReminderSource.MANUAL, ReminderSource.CAMERA)
     }
 
     fun canDelete(detail: CalendarReminderDetailUiModel): Boolean {
