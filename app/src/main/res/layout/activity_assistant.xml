@@ -92,7 +92,8 @@
                         android:id="@+id/assistantView"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:contentDescription="@string/assistant_character_content_description" />
+                        android:contentDescription="@null"
+                        android:importantForAccessibility="no" />
 
                     <com.luistureo.voicereminderapp.presentation.assistant.AssistantDialogueBubbleView
                         android:id="@+id/assistantDialogueBubble"
@@ -102,80 +103,10 @@
                         android:layout_marginStart="28dp"
                         android:layout_marginEnd="28dp"
                         android:layout_marginBottom="6dp"
+                        android:accessibilityLiveRegion="polite"
                         android:contentDescription="@string/assistant_dialogue_content_description" />
                 </FrameLayout>
             </FrameLayout>
-
-            <LinearLayout
-                android:id="@+id/containerAssistantRoutineControls"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/bg_result_box"
-                android:orientation="vertical"
-                android:padding="16dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:id="@+id/tvAssistantRoutineProgress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/routine_assistant_progress_initial"
-                    android:textColor="@color/reminder_text_primary"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAssistantRoutineCompleted"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/routine_assistant_completed_action"
-                    android:textAllCaps="false" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAssistantRoutinePartial"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/routine_assistant_partial_action"
-                    android:textAllCaps="false" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/containerAssistantCalendarSyncOptions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/bg_result_box"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/calendar_sync_targets_title"
-                    android:textColor="@color/reminder_text_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/checkAssistantSyncGoogle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/calendar_sync_target_google"
-                    android:visibility="gone" />
-
-                <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/checkAssistantSyncMicrosoft"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/calendar_sync_target_microsoft"
-                    android:visibility="gone" />
-            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSpeakAssistant"
@@ -185,16 +116,16 @@
                 android:paddingVertical="14dp"
                 android:text="@string/assistant_speak_button"
                 android:textAllCaps="false"
-                android:textColor="@color/white"
+                android:textColor="@color/calendar_primary_action_content"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="@color/calendar_toolbar_background"
+                app:backgroundTint="@color/calendar_primary_action_background"
                 app:cornerRadius="24dp"
                 app:icon="@android:drawable/ic_btn_speak_now"
                 app:iconGravity="textStart"
                 app:iconPadding="12dp"
-                app:iconTint="@color/white"
-                app:rippleColor="@color/ripple_soft" />
+                app:iconTint="@color/calendar_primary_action_content"
+                app:rippleColor="@color/calendar_action_ripple_light" />
 
             <TextView
                 android:id="@+id/tvAssistantHeardTitle"
@@ -211,6 +142,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:accessibilityLiveRegion="polite"
                 android:background="@drawable/bg_result_box"
                 android:minHeight="58dp"
                 android:paddingHorizontal="16dp"
@@ -234,6 +166,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:accessibilityLiveRegion="polite"
                 android:background="@drawable/bg_result_box"
                 android:minHeight="86dp"
                 android:paddingHorizontal="16dp"

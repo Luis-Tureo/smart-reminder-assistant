@@ -348,7 +348,7 @@ class ManualReminderActivity : ComponentActivity() {
         }
 
         screenSubtitle.text = when {
-            currentSource == ReminderSource.CAMERA -> getString(R.string.home_camera_reminder_subtitle)
+            currentSource == ReminderSource.CAMERA -> getString(R.string.reminder_editor_camera_subtitle)
             else -> getString(R.string.manual_reminder_screen_subtitle)
         }
 

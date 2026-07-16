@@ -17,7 +17,7 @@ class ReminderViewModelFactory(
     private val getReminderByIdUseCase: GetReminderByIdUseCase,
     private val deleteReminderUseCase: DeleteReminderUseCase,
     private val updateReminderUseCase: UpdateReminderUseCase,
-    private val unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
+    private val unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer? = null
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

@@ -6,15 +6,30 @@
 
     <!-- Tarjetas -->
     <color name="card_background">#FFFFFF</color>
-    <color name="card_stroke">#D8E3F0</color>
 
     <!-- Textos -->
     <color name="text_primary">#1C2430</color>
     <color name="text_secondary">#6E7B8C</color>
 
     <!-- Botones principales -->
-    <color name="primary_blue">#3F51B5</color>
+    <color name="primary_blue">#2F589C</color>
+    <color name="primary_denim_pressed">#274A84</color>
     <color name="accent_purple">#8F9BFF</color>
+
+    <!-- Acciones semánticas -->
+    <color name="sync_connect_background">#3F7F55</color>
+    <color name="sync_connect_pressed">#326744</color>
+    <color name="sync_connect_content">#FFFFFF</color>
+    <color name="sync_pause_background">#F2C94C</color>
+    <color name="sync_pause_pressed">#D8AE32</color>
+    <color name="sync_pause_content">#1F2937</color>
+    <color name="sync_disconnect_background">#B83A3A</color>
+    <color name="sync_disconnect_pressed">#963030</color>
+    <color name="sync_disconnect_content">#FFFFFF</color>
+    <color name="calendar_action_disabled_background">#CBD3DC</color>
+    <color name="calendar_action_disabled_content">#66717E</color>
+    <color name="calendar_action_ripple_light">#33FFFFFF</color>
+    <color name="calendar_action_ripple_dark">#331F2937</color>
 
     <!-- Ripple -->
     <color name="ripple_soft">#1A6EA8FE</color>
@@ -22,74 +37,28 @@
     <!-- Cajas informativas -->
     <color name="info_box_background">#EEF4FB</color>
     <color name="result_box_background">#EAF2FF</color>
-    <color name="assistant_screen_background">#EEF3FB</color>
-    <color name="assistant_body">#1C2430</color>
-    <color name="assistant_shadow">#1A1C2430</color>
-    <color name="assistant_eye_default">#F8FAFF</color>
-    <color name="assistant_eye_success">#E9FFF0</color>
-    <color name="assistant_chip_background">#E4EBF5</color>
-    <color name="assistant_accent_idle">#6EA8FE</color>
-    <color name="assistant_accent_listening">#4FC3B3</color>
-    <color name="assistant_accent_thinking">#F4B860</color>
-    <color name="assistant_accent_speaking">#8F9BFF</color>
-    <color name="assistant_accent_success">#63C98D</color>
-    <color name="assistant_glow_idle">#336EA8FE</color>
-    <color name="assistant_glow_listening">#334FC3B3</color>
-    <color name="assistant_glow_thinking">#33F4B860</color>
-    <color name="assistant_glow_speaking">#338F9BFF</color>
-    <color name="assistant_glow_success">#3363C98D</color>
 
     <!-- Recordatorios -->
     <color name="reminder_card_background">#FBF8F2</color>
     <color name="reminder_card_stroke">#EEE7DC</color>
     <color name="reminder_text_primary">#222738</color>
     <color name="reminder_text_secondary">#5E6275</color>
-    <color name="reminder_text_soft">#8C93A5</color>
-    <color name="reminder_accent">#6A83BD</color>
     <color name="reminder_delete_tint">#A4ABBA</color>
     <color name="reminder_delete_red">#B42318</color>
     <color name="reminder_delete_background">#FFE4E1</color>
-    <color name="reminder_divider">#E8E1D7</color>
-    <color name="reminder_icon_blue_bg">#D9E4FF</color>
-    <color name="reminder_icon_blue_fg">#4261AF</color>
-    <color name="reminder_icon_amber_bg">#FFD990</color>
-    <color name="reminder_icon_amber_fg">#896114</color>
-    <color name="reminder_icon_birthday_bg">#FFE2F0</color>
-    <color name="reminder_icon_birthday_fg">#B33D70</color>
-    <color name="reminder_done_unchecked">#D4D9E6</color>
     <color name="recurrence_chip_background">#F8FAFF</color>
     <color name="recurrence_chip_selected_background">#EFE3FF</color>
     <color name="recurrence_chip_stroke">#8F95A3</color>
 
-    <!-- Rutinas del día -->
-    <color name="routine_screen_background">#F1F4F8</color>
-    <color name="routine_card_background">#FBF8F2</color>
-    <color name="routine_card_stroke">#DDD8CE</color>
-    <color name="routine_toolbar_background">#1F3147</color>
-    <color name="routine_toolbar_text">#F7F6F2</color>
-    <color name="routine_primary">#496A84</color>
-    <color name="routine_primary_soft">#DCE8F0</color>
-    <color name="routine_morning">#C98524</color>
-    <color name="routine_afternoon">#B56C2F</color>
-    <color name="routine_night">#5968A8</color>
-    <color name="routine_success_background">#E5F4EA</color>
-    <color name="routine_success_text">#27643C</color>
-    <color name="routine_disabled_background">#ECEFF2</color>
-    <color name="routine_disabled_text">#68727D</color>
-
     <!-- Calendario -->
     <color name="calendar_screen_background">#ECF1F6</color>
-    <color name="calendar_toolbar_background">#1F3147</color>
     <color name="calendar_toolbar_text">#F7F6F2</color>
-    <color name="calendar_toolbar_icon">#F7F6F2</color>
     <color name="calendar_card_background">#FCFAF4</color>
     <color name="calendar_card_stroke">#D9E3EC</color>
     <color name="calendar_title_text">#1F2E40</color>
     <color name="calendar_body_text">#5E6B7A</color>
     <color name="calendar_caption_text">#7E8A99</color>
-    <color name="calendar_selector_background">#F2F6FA</color>
     <color name="calendar_selector_stroke">#C9D7E2</color>
-    <color name="calendar_selector_icon">#536476</color>
     <color name="calendar_navigation_icon">#304357</color>
     <color name="calendar_navigation_background">#EEF3F8</color>
     <color name="calendar_legend_background">#F7F3EC</color>
@@ -104,11 +73,14 @@
     <color name="calendar_outside_month_text">#93A0AE</color>
     <color name="calendar_day_today_background">#E7F6F0</color>
     <color name="calendar_day_today_stroke">#7CB89F</color>
-    <color name="calendar_day_selected_background">#203047</color>
-    <color name="calendar_day_selected_stroke">#203047</color>
+    <color name="calendar_day_selected_background">@color/primary_blue</color>
+    <color name="calendar_day_selected_stroke">@color/primary_denim_pressed</color>
+    <color name="calendar_sunday_text">#A33F46</color>
+    <color name="calendar_sunday_outline">#C96B72</color>
+    <color name="calendar_sunday_outside_text">#B98287</color>
+    <color name="calendar_sunday_outside_outline">#D5A1A5</color>
     <color name="calendar_day_holiday_background">#FFF4EE</color>
     <color name="calendar_day_holiday_stroke">#E9B8A6</color>
-    <color name="calendar_holiday_text">#B35A3F</color>
     <color name="calendar_indicator_reminder_background">#DDE9FF</color>
     <color name="calendar_indicator_reminder_text">#325D9F</color>
     <color name="calendar_indicator_birthday_background">#FFE2F0</color>
@@ -128,6 +100,4 @@
 
     <!-- Compatibilidad -->
     <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-
 </resources>

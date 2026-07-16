@@ -1,7 +1,6 @@
 package com.luistureo.voicereminderapp.presentation.calendar
 
 import com.luistureo.voicereminderapp.domain.model.ReminderType
-import com.luistureo.voicereminderapp.domain.model.ReminderSource
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -44,14 +43,6 @@ class CalendarActionRulesTest {
         assertEquals("13/06/2026", prefilledDate)
         assertTrue(CalendarActionRules.shouldLockDate(prefilledDate))
         assertFalse(CalendarActionRules.shouldLockDate(""))
-    }
-
-    @Test
-    fun createReminderChoiceKeepsSelectedDateForManualAndCameraFlows() {
-        assertEquals(
-            listOf(ReminderSource.MANUAL, ReminderSource.CAMERA),
-            CalendarActionRules.creationChoices()
-        )
     }
 
     @Test

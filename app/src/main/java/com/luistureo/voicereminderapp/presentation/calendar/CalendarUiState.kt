@@ -18,7 +18,6 @@ data class CalendarUiState(
     val selectedHolidays: List<String> = emptyList(),
     val selectedDateReminders: List<CalendarReminderDetailUiModel> = emptyList(),
     val filteredItems: List<CalendarFilteredListItemUiModel> = emptyList(),
-    val emptyStateMessage: String = "",
     val showDeleteSyncSuccess: Boolean = false,
     val syncError: CalendarSyncInlineError? = null,
     val selectedDateDuplicateWarning: CalendarDuplicateWarningUiModel? = null
@@ -35,6 +34,7 @@ data class CalendarDayUiModel(
     val isCurrentMonth: Boolean,
     val isToday: Boolean,
     val isSelected: Boolean,
+    val isSunday: Boolean,
     val holidayLabel: String? = null,
     val indicators: List<CalendarIndicatorUiModel> = emptyList(),
     val summaryCountLabel: String? = null
@@ -65,7 +65,7 @@ data class CalendarReminderDetailUiModel(
     val providerLines: List<String> = emptyList(),
     val meetingUrl: String? = null,
     val externalEditNote: String? = null,
-    val hasNearbySchedule: Boolean = false,
+    val hasScheduleConflict: Boolean = false,
     val isSuspended: Boolean = false,
     val syncActions: Set<CalendarProvider> = emptySet(),
     val canDelete: Boolean = true,

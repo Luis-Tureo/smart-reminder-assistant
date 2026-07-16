@@ -64,38 +64,110 @@ class CalendarSyncLayoutResourceTest {
     }
 
     @Test
-    fun providerButtonsHaveEqualFixedDimensions() {
+    fun providerButtonsUseFullWidthAccessibleTouchTargets() {
         val layout = activityCalendarLayoutFile().readText()
         val google = layout.substringAfter("@+id/btnCalendarGoogleSync")
-            .substringBefore("<Space")
+            .substringBefore("/>")
         val microsoft = layout.substringAfter("@+id/btnCalendarMicrosoftSync")
-            .substringBefore("</LinearLayout>")
+            .substringBefore("/>")
 
-        assertTrue(google.contains("android:layout_width=\"0dp\""))
-        assertTrue(microsoft.contains("android:layout_width=\"0dp\""))
-        assertTrue(google.contains("android:layout_height=\"48dp\""))
-        assertTrue(microsoft.contains("android:layout_height=\"48dp\""))
-        assertTrue(google.contains("android:layout_weight=\"1\""))
-        assertTrue(microsoft.contains("android:layout_weight=\"1\""))
-        assertTrue(google.contains("android:textColor=\"@color/calendar_title_text\""))
-        assertTrue(microsoft.contains("android:textColor=\"@color/calendar_title_text\""))
-        assertTrue(google.contains("app:strokeColor=\"@color/calendar_title_text\""))
-        assertTrue(microsoft.contains("app:strokeColor=\"@color/calendar_title_text\""))
+        assertTrue(google.contains("android:layout_width=\"match_parent\""))
+        assertTrue(microsoft.contains("android:layout_width=\"match_parent\""))
+        assertTrue(google.contains("android:minHeight=\"48dp\""))
+        assertTrue(microsoft.contains("android:minHeight=\"48dp\""))
+        listOf(google, microsoft).forEach { button ->
+            assertTrue(button.contains("android:maxWidth=\"480dp\""))
+            assertTrue(button.contains("android:maxLines=\"2\""))
+            assertTrue(button.contains(
+                "android:textColor=\"@color/calendar_sync_connect_content\""
+            ))
+            assertTrue(button.contains(
+                "app:backgroundTint=\"@color/calendar_sync_connect_background\""
+            ))
+            assertTrue(button.contains("app:icon=\"@drawable/ic_calendar_connect\""))
+            assertTrue(button.contains(
+                "app:iconTint=\"@color/calendar_sync_connect_content\""
+            ))
+        }
     }
 
     @Test
-    fun disconnectActionsRemainRedAndVisuallySeparated() {
+    fun disconnectActionsRemainSemanticRedStackedAndVisuallySeparated() {
         val layout = activityCalendarLayoutFile().readText()
         val disconnect = layout.substringAfter(
             "@+id/containerCalendarDisconnectActions"
         ).substringBefore("</com.google.android.material.card.MaterialCardView>")
 
-        assertTrue(disconnect.contains("android:layout_marginTop=\"12dp\""))
-        assertTrue(disconnect.contains("android:layout_height=\"1dp\""))
+        assertTrue(disconnect.contains("android:layout_marginTop=\"10dp\""))
+        assertTrue(disconnect.contains("android:orientation=\"vertical\""))
         assertTrue(disconnect.contains("@+id/btnCalendarGoogleDisconnect"))
         assertTrue(disconnect.contains("@+id/btnCalendarMicrosoftDisconnect"))
-        assertTrue(disconnect.contains("android:textColor=\"@color/reminder_delete_red\""))
-        assertTrue(disconnect.contains("app:strokeColor=\"@color/reminder_delete_red\""))
+        assertTrue(disconnect.contains("android:minHeight=\"48dp\""))
+        assertTrue(disconnect.contains(
+            "android:textColor=\"@color/calendar_sync_disconnect_content\""
+        ))
+        assertTrue(disconnect.contains(
+            "app:backgroundTint=\"@color/calendar_sync_disconnect_background\""
+        ))
+        assertTrue(disconnect.contains("app:icon=\"@drawable/ic_calendar_disconnect\""))
+        assertTrue(disconnect.contains("calendar_sync_google_disconnect_accessibility"))
+        assertTrue(disconnect.contains("calendar_sync_microsoft_disconnect_accessibility"))
+    }
+
+    @Test
+    fun providerActionsShareSemanticStylesIconsAndAccessibleNames() {
+        val activity = sourceFile(
+            "app/src/main/java/com/luistureo/voicereminderapp/presentation/calendar/" +
+                "CalendarActivity.kt"
+        ).readText()
+        val strings = sourceFile("app/src/main/res/values/strings.xml").readText()
+
+        assertTrue(activity.contains("applySyncActionStyle("))
+        assertTrue(activity.contains("R.color.calendar_sync_pause_background"))
+        assertTrue(activity.contains("R.color.calendar_sync_connect_background"))
+        assertTrue(activity.contains("R.drawable.ic_calendar_pause"))
+        assertTrue(activity.contains("R.drawable.ic_calendar_connect"))
+        listOf(
+            "calendar_sync_google_connect_accessibility",
+            "calendar_sync_google_pause_accessibility",
+            "calendar_sync_google_activate_accessibility",
+            "calendar_sync_microsoft_connect_accessibility",
+            "calendar_sync_microsoft_pause_accessibility",
+            "calendar_sync_microsoft_activate_accessibility"
+        ).forEach { resourceName ->
+            assertTrue(strings.contains("name=\"$resourceName\""))
+            assertTrue(activity.contains("R.string.$resourceName"))
+        }
+        listOf(
+            "ic_calendar_connect.xml",
+            "ic_calendar_pause.xml",
+            "ic_calendar_disconnect.xml"
+        ).forEach { icon ->
+            assertTrue(sourceFile("app/src/main/res/drawable/$icon").exists())
+        }
+    }
+
+    @Test
+    fun semanticActionColorsMeetContrastAndDefineInteractionStates() {
+        val colors = sourceFile("app/src/main/res/values/colors.xml").readText()
+        val white = colorValue(colors, "white")
+        val dark = colorValue(colors, "sync_pause_content")
+
+        assertTrue(contrastRatio(colorValue(colors, "primary_blue"), white) >= 4.5)
+        assertTrue(contrastRatio(colorValue(colors, "sync_connect_background"), white) >= 4.5)
+        assertTrue(contrastRatio(colorValue(colors, "sync_pause_background"), dark) >= 4.5)
+        assertTrue(contrastRatio(colorValue(colors, "sync_disconnect_background"), white) >= 4.5)
+        listOf(
+            "calendar_primary_action_background.xml",
+            "calendar_sync_connect_background.xml",
+            "calendar_sync_pause_background.xml",
+            "calendar_sync_disconnect_background.xml"
+        ).forEach { selectorName ->
+            val selector = sourceFile("app/src/main/res/color/$selectorName").readText()
+            assertTrue(selector.contains("android:state_enabled=\"false\""))
+            assertTrue(selector.contains("android:state_pressed=\"true\""))
+            assertTrue(selector.contains("android:state_focused=\"true\""))
+        }
     }
 
     @Test
@@ -125,7 +197,7 @@ class CalendarSyncLayoutResourceTest {
         assertTrue(provider < join)
         assertTrue(layout.substring(join).contains("android:visibility=\"gone\""))
         assertTrue(layout.substring(join).contains("@drawable/ic_meeting_video"))
-        assertTrue(layout.substring(join).contains("@color/primary_blue"))
+        assertTrue(layout.substring(join).contains("@color/calendar_primary_action_background"))
     }
 
     @Test
@@ -159,7 +231,7 @@ class CalendarSyncLayoutResourceTest {
         val layout = sourceFile("app/src/main/res/layout/item_calendar_detail.xml").readText()
         val optionalIds = listOf(
             "tvCalendarDetailDescription",
-            "tvCalendarDetailNearbySchedule",
+            "tvCalendarDetailScheduleConflict",
             "tvCalendarDetailProvider",
             "tvCalendarDetailExternalNote",
             "containerCalendarDetailActions",
@@ -220,5 +292,30 @@ class CalendarSyncLayoutResourceTest {
         val fromRoot = File(projectPath)
         if (fromRoot.exists()) return fromRoot
         return File(projectPath.removePrefix("app/"))
+    }
+
+    private fun colorValue(colors: String, name: String): String {
+        return Regex("<color name=\"$name\">(#[0-9A-Fa-f]{6})</color>")
+            .find(colors)
+            ?.groupValues
+            ?.get(1)
+            ?: error("Color $name not found")
+    }
+
+    private fun contrastRatio(first: String, second: String): Double {
+        val firstLuminance = relativeLuminance(first)
+        val secondLuminance = relativeLuminance(second)
+        val lighter = maxOf(firstLuminance, secondLuminance)
+        val darker = minOf(firstLuminance, secondLuminance)
+        return (lighter + 0.05) / (darker + 0.05)
+    }
+
+    private fun relativeLuminance(color: String): Double {
+        val channels = listOf(1, 3, 5).map { index ->
+            val channel = color.substring(index, index + 2).toInt(16) / 255.0
+            if (channel <= 0.03928) channel / 12.92
+            else Math.pow((channel + 0.055) / 1.055, 2.4)
+        }
+        return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722
     }
 }

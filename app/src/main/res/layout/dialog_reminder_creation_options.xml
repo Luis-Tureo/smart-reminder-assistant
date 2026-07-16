@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipToPadding="false"
+    android:fillViewport="false"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="6dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardReminderCreationVoice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:contentDescription="@string/calendar_creation_voice_accessibility"
+            android:focusable="true"
+            android:minHeight="76dp"
+            app:cardBackgroundColor="@color/calendar_primary_action_background"
+            app:cardCornerRadius="@dimen/reminder_options_item_corner_radius"
+            app:cardElevation="0dp"
+            app:rippleColor="@color/calendar_action_ripple_light"
+            app:strokeColor="@color/primary_denim_pressed"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAccessibility="noHideDescendants"
+                android:minHeight="76dp"
+                android:padding="14dp">
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationVoice"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_reminder_option_voice"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/white" />
+
+                <TextView
+                    android:id="@+id/tvReminderCreationVoiceTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:text="@string/assistant_speak_button"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationVoiceArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationVoice"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/calendar_creation_voice_description"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationVoiceArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationVoice"
+                    app:layout_constraintTop_toBottomOf="@id/tvReminderCreationVoiceTitle" />
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationVoiceArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_calendar_chevron_right"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/white" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardReminderCreationManual"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:clickable="true"
+            android:contentDescription="@string/calendar_creation_manual_accessibility"
+            android:focusable="true"
+            android:minHeight="76dp"
+            app:cardBackgroundColor="@color/calendar_detail_item_background"
+            app:cardCornerRadius="@dimen/reminder_options_item_corner_radius"
+            app:cardElevation="0dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/calendar_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAccessibility="noHideDescendants"
+                android:minHeight="76dp"
+                android:padding="14dp">
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationManual"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_reminder_option_edit"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/primary_blue" />
+
+                <TextView
+                    android:id="@+id/tvReminderCreationManualTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:text="@string/calendar_creation_manual_title"
+                    android:textColor="@color/calendar_title_text"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationManualArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationManual"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/calendar_creation_manual_description"
+                    android:textColor="@color/calendar_body_text"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationManualArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationManual"
+                    app:layout_constraintTop_toBottomOf="@id/tvReminderCreationManualTitle" />
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationManualArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_calendar_chevron_right"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/calendar_navigation_icon" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardReminderCreationCamera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:clickable="true"
+            android:contentDescription="@string/calendar_creation_camera_accessibility"
+            android:focusable="true"
+            android:minHeight="76dp"
+            app:cardBackgroundColor="@color/calendar_detail_item_background"
+            app:cardCornerRadius="@dimen/reminder_options_item_corner_radius"
+            app:cardElevation="0dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/calendar_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAccessibility="noHideDescendants"
+                android:minHeight="76dp"
+                android:padding="14dp">
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationCamera"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_reminder_option_camera"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/primary_blue" />
+
+                <TextView
+                    android:id="@+id/tvReminderCreationCameraTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:text="@string/calendar_creation_camera_title"
+                    android:textColor="@color/calendar_title_text"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationCameraArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationCamera"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/calendar_creation_camera_description"
+                    android:textColor="@color/calendar_body_text"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationCameraArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationCamera"
+                    app:layout_constraintTop_toBottomOf="@id/tvReminderCreationCameraTitle" />
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationCameraArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_calendar_chevron_right"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/calendar_navigation_icon" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardReminderCreationPaste"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:clickable="true"
+            android:contentDescription="@string/calendar_creation_paste_accessibility"
+            android:focusable="true"
+            android:minHeight="76dp"
+            app:cardBackgroundColor="@color/calendar_detail_item_background"
+            app:cardCornerRadius="@dimen/reminder_options_item_corner_radius"
+            app:cardElevation="0dp"
+            app:rippleColor="@color/ripple_soft"
+            app:strokeColor="@color/calendar_card_stroke"
+            app:strokeWidth="1dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAccessibility="noHideDescendants"
+                android:minHeight="76dp"
+                android:padding="14dp">
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationPaste"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_reminder_option_paste"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/primary_blue" />
+
+                <TextView
+                    android:id="@+id/tvReminderCreationPasteTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:text="@string/calendar_creation_paste_title"
+                    android:textColor="@color/calendar_title_text"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationPasteArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationPaste"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/calendar_creation_paste_description"
+                    android:textColor="@color/calendar_body_text"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/iconReminderCreationPasteArrow"
+                    app:layout_constraintStart_toEndOf="@id/iconReminderCreationPaste"
+                    app:layout_constraintTop_toBottomOf="@id/tvReminderCreationPasteTitle" />
+
+                <ImageView
+                    android:id="@+id/iconReminderCreationPasteArrow"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_calendar_chevron_right"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/calendar_navigation_icon" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</ScrollView>

@@ -17,6 +17,7 @@ import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarCardD
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSynchronizer
 import com.luistureo.voicereminderapp.core.calendar.unified.UnifiedCalendarSyncSummary
 import com.luistureo.voicereminderapp.core.reminder.ReminderOccurrenceCalculator
+import com.luistureo.voicereminderapp.core.reminder.ReminderScheduleStateResolver
 import com.luistureo.voicereminderapp.core.utils.DateTimeFormatter as ReminderDateTimeFormatter
 import com.luistureo.voicereminderapp.domain.model.CalendarProvider
 import com.luistureo.voicereminderapp.domain.model.Reminder
@@ -82,6 +83,7 @@ class CalendarViewModel(
         month.getDisplayName(TextStyle.FULL_STANDALONE, locale).toUiTitleCase()
     }
     private val occurrenceCalculator = ReminderOccurrenceCalculator()
+    private val scheduleStateResolver = ReminderScheduleStateResolver(occurrenceCalculator)
 
     private var visibleMonth: YearMonth = YearMonth.now()
     private var selectedDate: LocalDate = today
@@ -196,17 +198,7 @@ class CalendarViewModel(
                     cachedReminders.firstOrNull { it.googleCalendarEventId == eventId }
                 }
 
-                if (reminder != null) {
-                    val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(
-                        reminder = reminder,
-                        deleteExternalCalendars = deleteExternalCalendars
-                    )
-                    if (deletionResult.pendingDeleteProviders.isEmpty()) {
-                        deleteReminderUseCase(deletionResult)
-                    }
-                    reminderScheduler.cancelReminder(reminder.id)
-                    reminderScheduler.scheduleNextDaySummary()
-                }
+                if (reminder != null) deleteReminderData(reminder, deleteExternalCalendars)
             }.onSuccess {
                 reloadCalendar()
             }.onFailure {
@@ -215,6 +207,20 @@ class CalendarViewModel(
                 )
             }
         }
+    }
+
+    private suspend fun deleteReminderData(
+        reminder: Reminder,
+        deleteExternalCalendars: Boolean
+    ) {
+        val deletionResult = unifiedCalendarSynchronizer.deleteReminderEvent(
+            reminder = reminder,
+            deleteExternalCalendars = deleteExternalCalendars
+        )
+        if (deletionResult.pendingDeleteProviders.isEmpty()) {
+            deleteReminderUseCase(deletionResult)
+        }
+        reminderScheduler.cancelReminder(reminder.id)
     }
 
     fun syncCalendarItemWithProvider(
@@ -408,22 +414,13 @@ class CalendarViewModel(
                 ),
                 selectedHolidays = selectedDateHolidays.map { holiday -> holiday.name },
                 selectedDateReminders = selectedDateEntries.map { entry ->
-                    entry.toDetailUiModel(hasNearbySchedule = entry.id in selectedDuplicateItemIds)
+                    entry.toDetailUiModel(hasScheduleConflict = entry.id in selectedDuplicateItemIds)
                 },
                 filteredItems = buildFilteredItems(
                     entries = calendarEntries,
                     holidaysByDate = holidaysByDate,
                     duplicateItemIds = duplicateItemIds
                 ),
-                emptyStateMessage = if (selectedDateEntries.isEmpty()) {
-                    if (selectedDateHolidays.isEmpty()) {
-                        "No hay eventos para este dia."
-                    } else {
-                        "No hay eventos, pero el feriado sigue visible para esta fecha."
-                    }
-                } else {
-                    ""
-                },
                 selectedDateDuplicateWarning = selectedDuplicateItemIds
                     .takeIf { it.isNotEmpty() }
                     ?.let { ids ->
@@ -485,7 +482,7 @@ class CalendarViewModel(
                 date = entry.date,
                 dateTitle = entry.date.format(selectedDateFormatter).toUiTitleCase(),
                 detail = entry.toDetailUiModel(
-                    hasNearbySchedule = entry.id in duplicateItemIds
+                    hasScheduleConflict = entry.id in duplicateItemIds
                 ),
                 style = entry.toIndicatorStyle()
             )
@@ -509,7 +506,7 @@ class CalendarViewModel(
     }
 
     private fun CalendarEntry.toDetailUiModel(
-        hasNearbySchedule: Boolean = false
+        hasScheduleConflict: Boolean = false
     ): CalendarReminderDetailUiModel {
         return CalendarReminderDetailUiModel(
             id = id,
@@ -524,7 +521,7 @@ class CalendarViewModel(
             providerLines = providerLines,
             meetingUrl = meetingUrl,
             externalEditNote = externalEditNote,
-            hasNearbySchedule = hasNearbySchedule,
+            hasScheduleConflict = hasScheduleConflict,
             isSuspended = isSuspended,
             syncActions = syncActions,
             canEdit = canEdit,
@@ -600,6 +597,7 @@ class CalendarViewModel(
                 isCurrentMonth = YearMonth.from(currentDate) == visibleMonth,
                 isToday = currentDate == today,
                 isSelected = currentDate == selectedDate,
+                isSunday = currentDate.dayOfWeek == DayOfWeek.SUNDAY,
                 holidayLabel = buildHolidayLabel(holidays),
                 indicators = buildIndicators(entries, holidays),
                 summaryCountLabel = entries.size.takeIf { it > 1 }?.let { "+$it" }

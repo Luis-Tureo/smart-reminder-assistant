@@ -25,13 +25,12 @@ class CalendarSyncStartupNoticeTest {
     }
 
     @Test
-    fun homeStartupSyncDoesNotShowTransientNotices() {
+    fun homeDoesNotOwnCalendarSyncFlow() {
         val source = sourceFile(
             "app/src/main/java/com/luistureo/voicereminderapp/MainActivity.kt"
         ).readText()
-        val syncBlock = source.substringAfter("private fun syncPendingCalendarChanges")
-
-        assertFalse(syncBlock.contains("Toast.makeText"))
+        assertFalse(source.contains("syncPendingCalendarChanges"))
+        assertFalse(source.contains("CalendarSyncCoordinator"))
         assertFalse(source.contains("CalendarSyncSessionNoticePolicy"))
     }
 

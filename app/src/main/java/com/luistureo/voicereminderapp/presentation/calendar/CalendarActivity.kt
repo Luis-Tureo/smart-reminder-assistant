@@ -1,10 +1,14 @@
 package com.luistureo.voicereminderapp.presentation.calendar
 
+import android.Manifest
 import android.os.Bundle
 import android.content.Intent
 import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
 import android.graphics.Paint
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -19,7 +23,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.AccessibilityDelegateCompat
+import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -27,10 +34,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.luistureo.voicereminderapp.R
+import com.luistureo.voicereminderapp.core.alarm.ExactAlarmPermissionPolicy
 import com.luistureo.voicereminderapp.core.alarm.ReminderScheduler
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthManager
 import com.luistureo.voicereminderapp.core.calendar.google.GoogleCalendarAuthException
@@ -55,13 +63,20 @@ import com.luistureo.voicereminderapp.domain.model.ReminderType
 import com.luistureo.voicereminderapp.domain.usecase.DeleteReminderUseCase
 import com.luistureo.voicereminderapp.domain.usecase.GetRemindersUseCase
 import com.luistureo.voicereminderapp.domain.usecase.UpdateReminderUseCase
+import com.luistureo.voicereminderapp.presentation.assistant.AssistantActivity
 import com.luistureo.voicereminderapp.presentation.manual.ManualReminderActivity
 import com.luistureo.voicereminderapp.presentation.manual.PasteTextReminderActivity
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.util.Locale
 
 class CalendarActivity : AppCompatActivity() {
 
-    private lateinit var toolbar: MaterialToolbar
+    private val accessibilityDateFormatter = java.time.format.DateTimeFormatter.ofPattern(
+        "EEEE d 'de' MMMM",
+        Locale.forLanguageTag("es-CL")
+    )
+
     private lateinit var previousMonthButton: ImageButton
     private lateinit var nextMonthButton: ImageButton
     private lateinit var monthSelectorButton: MaterialButton
@@ -98,6 +113,7 @@ class CalendarActivity : AppCompatActivity() {
     private lateinit var unifiedCalendarSynchronizer: UnifiedCalendarSynchronizer
     private lateinit var microsoftCalendarAuthController: MicrosoftCalendarAuthController
     private lateinit var calendarAutoSyncStateStore: CalendarAutoSyncStateStore
+    private lateinit var reminderScheduler: ReminderScheduler
 
     private var activeFilter: CalendarIndicatorStyle? = null
     private var lastErrorMessage: String? = null
@@ -114,6 +130,30 @@ class CalendarActivity : AppCompatActivity() {
     private var lastVisibleMonthSyncError: CalendarSyncInlineError? = null
     private var googleRecoveryAttempted = false
     private var googleActivationRequested = false
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (!isGranted) {
+                Toast.makeText(
+                    this,
+                    getString(R.string.notification_permission_denied),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+    private val assistantFlowLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val savedDate = result.data
+                ?.getStringExtra(AssistantActivity.EXTRA_SAVED_DATE)
+                ?.let { value -> runCatching { LocalDate.parse(value) }.getOrNull() }
+
+            if (result.resultCode == RESULT_OK && savedDate != null) {
+                calendarViewModel.onDaySelected(savedDate)
+            } else {
+                calendarViewModel.reloadCalendar()
+            }
+        }
 
     private val googleCalendarSignInLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -180,12 +220,29 @@ class CalendarActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        activeFilter = savedInstanceState
+            ?.getString(STATE_ACTIVE_FILTER)
+            ?.let { value -> runCatching { CalendarIndicatorStyle.valueOf(value) }.getOrNull() }
         setContentView(R.layout.activity_calendar)
         initViews()
-        setupToolbar()
         setupViewModel()
+        savedInstanceState
+            ?.getString(STATE_SELECTED_DATE)
+            ?.let { value -> runCatching { LocalDate.parse(value) }.getOrNull() }
+            ?.let(calendarViewModel::onDaySelected)
         setupControls()
         observeState()
+        requestNotificationPermissionIfNeeded()
+        showExactAlarmPermissionGuidanceIfNeeded()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        activeFilter?.let { outState.putString(STATE_ACTIVE_FILTER, it.name) }
+        lastRenderedState?.days
+            ?.firstOrNull { it.isSelected }
+            ?.date
+            ?.let { outState.putString(STATE_SELECTED_DATE, it.toString()) }
     }
 
     override fun onResume() {
@@ -205,7 +262,6 @@ class CalendarActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        toolbar = findViewById(R.id.toolbarCalendar)
         previousMonthButton = findViewById(R.id.btnPreviousMonth)
         nextMonthButton = findViewById(R.id.btnNextMonth)
         monthSelectorButton = findViewById(R.id.btnMonthSelector)
@@ -252,12 +308,18 @@ class CalendarActivity : AppCompatActivity() {
             CalendarIndicatorStyle.HOLIDAY to findViewById(R.id.tvCalendarFilterHoliday),
             CalendarIndicatorStyle.COMPLETED to findViewById(R.id.tvCalendarFilterCompleted)
         )
-    }
-
-    private fun setupToolbar() {
-        toolbar.setNavigationOnClickListener {
-            finish()
+        listOf(
+            findViewById<TextView>(R.id.tvUnifiedScreenTitle),
+            selectedDateTitleView,
+            findViewById<TextView>(R.id.tvCalendarConnectionsHeading),
+            findViewById<TextView>(R.id.tvCalendarFiltersHeading)
+        ).forEach { heading ->
+            ViewCompat.setAccessibilityHeading(heading, true)
         }
+        ViewCompat.setAccessibilityLiveRegion(
+            selectedDateTitleView,
+            ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE
+        )
     }
 
     private fun setupViewModel() {
@@ -275,13 +337,14 @@ class CalendarActivity : AppCompatActivity() {
         )
         microsoftCalendarAuthController = MicrosoftCalendarAuthProvider.get(applicationContext)
         calendarAutoSyncStateStore = CalendarAutoSyncStateStore(applicationContext)
+        reminderScheduler = ReminderScheduler(applicationContext)
         val factory = CalendarViewModelFactory(
             getRemindersUseCase = GetRemindersUseCase(repository),
             deleteReminderUseCase = DeleteReminderUseCase(repository),
             updateReminderUseCase = UpdateReminderUseCase(repository),
             googleCalendarAuthManager = googleCalendarAuthManager,
             unifiedCalendarSynchronizer = unifiedCalendarSynchronizer,
-            reminderScheduler = ReminderScheduler(applicationContext)
+            reminderScheduler = reminderScheduler
         )
 
         calendarViewModel = ViewModelProvider(this, factory)[CalendarViewModel::class.java]
@@ -331,9 +394,8 @@ class CalendarActivity : AppCompatActivity() {
         }
 
         createReminderButton.setOnClickListener {
-            showCreateReminderChoice()
+            showReminderCreationOptions()
         }
-
         refreshGoogleCalendarStatus()
     }
 
@@ -357,6 +419,11 @@ class CalendarActivity : AppCompatActivity() {
         renderSelectors(state)
         selectedDateTitleView.text = activeFilter?.let(::buildFilterTitle) ?: state.selectedDateTitle
         renderSelectedDateSummary(state)
+        selectedDateTitleView.contentDescription = getString(
+            R.string.calendar_day_accessibility,
+            selectedDateTitleView.text,
+            selectedDateSummaryView.text
+        )
         holidaySummaryView.isVisible =
             activeFilter == null && state.selectedHolidays.isNotEmpty()
         holidaySummaryView.text = state.selectedHolidays.joinToString(separator = " - ")
@@ -470,17 +537,57 @@ class CalendarActivity : AppCompatActivity() {
         val shouldShowSummary = day.isCurrentMonth
         val visibleIndicators = day.indicators
 
-        val numberColorRes = if (day.isSelected) {
-            R.color.calendar_toolbar_text
-        } else if (!day.isCurrentMonth) {
-            R.color.calendar_outside_month_text
-        } else {
-            R.color.calendar_title_text
+        val numberColorRes = when {
+            day.isSelected -> R.color.calendar_toolbar_text
+            day.isSunday && !day.isCurrentMonth -> R.color.calendar_sunday_outside_text
+            day.isSunday -> R.color.calendar_sunday_text
+            !day.isCurrentMonth -> R.color.calendar_outside_month_text
+            else -> R.color.calendar_title_text
         }
 
         numberView.text = day.dayNumber
         numberView.setTextColor(ContextCompat.getColor(this, numberColorRes))
         numberView.alpha = if (day.isCurrentMonth) 1f else 0.76f
+        cardView.isSelected = day.isSelected
+        val accessibilityDetails = buildList {
+            if (day.isSelected) add(getString(R.string.calendar_day_selected))
+            if (day.isToday) add(getString(R.string.calendar_day_today))
+            if (day.isSunday) add(getString(R.string.calendar_day_sunday))
+            day.holidayLabel?.takeIf { it.isNotBlank() }?.let(::add)
+            day.indicators.forEach { indicator ->
+                add(
+                    when (indicator.style) {
+                        CalendarIndicatorStyle.REMINDER ->
+                            getString(R.string.calendar_legend_reminder)
+                        CalendarIndicatorStyle.BIRTHDAY ->
+                            getString(R.string.calendar_legend_birthday)
+                        CalendarIndicatorStyle.HOLIDAY ->
+                            getString(R.string.calendar_legend_holiday)
+                        CalendarIndicatorStyle.COMPLETED ->
+                            getString(R.string.calendar_legend_completed)
+                    }
+                )
+            }
+        }.distinct()
+        cardView.contentDescription = getString(
+            R.string.calendar_day_accessibility,
+            day.date.format(accessibilityDateFormatter),
+            accessibilityDetails.joinToString(separator = ". ")
+                .ifBlank { getString(R.string.calendar_empty_no_visible_filters) }
+        )
+        ViewCompat.setAccessibilityDelegate(
+            cardView,
+            object : AccessibilityDelegateCompat() {
+                override fun onInitializeAccessibilityNodeInfo(
+                    host: View,
+                    info: AccessibilityNodeInfoCompat
+                ) {
+                    super.onInitializeAccessibilityNodeInfo(host, info)
+                    info.className = android.widget.Button::class.java.name
+                    info.isSelected = day.isSelected
+                }
+            }
+        )
         todayMarker.isVisible = day.isToday && day.isCurrentMonth
         if (day.isToday && day.isCurrentMonth) {
             val todayColorRes = if (day.isSelected) {
@@ -502,6 +609,8 @@ class CalendarActivity : AppCompatActivity() {
         }
 
         val strokeColorRes = when {
+            day.isSunday && !day.isCurrentMonth -> R.color.calendar_sunday_outside_outline
+            day.isSunday -> R.color.calendar_sunday_outline
             !day.isCurrentMonth -> R.color.calendar_day_outside_stroke
             day.isSelected -> R.color.calendar_day_selected_stroke
             day.isToday -> R.color.calendar_day_today_stroke
@@ -512,7 +621,13 @@ class CalendarActivity : AppCompatActivity() {
 
         cardView.setCardBackgroundColor(ContextCompat.getColor(this, backgroundColorRes))
         cardView.strokeColor = ContextCompat.getColor(this, strokeColorRes)
-        cardView.strokeWidth = resources.getDimensionPixelSize(R.dimen.calendar_day_stroke)
+        cardView.strokeWidth = resources.getDimensionPixelSize(
+            if (day.isSunday) {
+                R.dimen.calendar_sunday_stroke
+            } else {
+                R.dimen.calendar_day_stroke
+            }
+        )
         cardView.radius = if (day.isSelected) 14f else 12f
 
         indicatorViews.forEachIndexed { index, indicatorView ->
@@ -667,8 +782,8 @@ class CalendarActivity : AppCompatActivity() {
         val timeView = detailView.findViewById<TextView>(R.id.tvCalendarDetailTime)
         val typeView = detailView.findViewById<TextView>(R.id.tvCalendarDetailType)
         val completedView = detailView.findViewById<TextView>(R.id.tvCalendarDetailCompleted)
-        val nearbyScheduleView =
-            detailView.findViewById<TextView>(R.id.tvCalendarDetailNearbySchedule)
+        val scheduleConflictView =
+            detailView.findViewById<TextView>(R.id.tvCalendarDetailScheduleConflict)
         val deleteButton = detailView.findViewById<ImageButton>(R.id.btnCalendarDetailDelete)
         val openMeetingButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarOpenMeeting)
         val reactivateButton = detailView.findViewById<MaterialButton>(R.id.btnCalendarReactivate)
@@ -710,7 +825,7 @@ class CalendarActivity : AppCompatActivity() {
         typeView.setTextColor(ContextCompat.getColor(this, typeStyle.textColorResId))
 
         completedView.isVisible = detail.isCompleted && forcedStyle != CalendarIndicatorStyle.COMPLETED
-        nearbyScheduleView.isVisible = detail.hasNearbySchedule
+        scheduleConflictView.isVisible = detail.hasScheduleConflict
         if (detail.isCompleted) {
             completedView.setBackgroundResource(CalendarIndicatorStyle.COMPLETED.backgroundResId)
             completedView.setTextColor(
@@ -885,7 +1000,7 @@ class CalendarActivity : AppCompatActivity() {
         )
 
         emptyStateView.isVisible = filteredReminders.isEmpty() && visibleHolidayCount == 0
-        emptyStateView.text = getString(R.string.calendar_empty_no_visible_filters)
+        emptyStateView.text = getString(R.string.unified_empty_day_title)
     }
 
     private fun renderLegendFilters() {
@@ -941,6 +1056,11 @@ class CalendarActivity : AppCompatActivity() {
         } else {
             getString(R.string.calendar_clear_filter)
         }
+        legendShowAllButton.contentDescription = if (activeFilter == null) {
+            getString(R.string.calendar_legend_show_all_accessibility)
+        } else {
+            getString(R.string.calendar_clear_filter_accessibility)
+        }
     }
 
     private fun buildSelectedDateSummary(
@@ -994,6 +1114,87 @@ class CalendarActivity : AppCompatActivity() {
 
     private fun openReminderEditor(detail: CalendarReminderDetailUiModel) {
         val reminderId = detail.localReminderId ?: return
+        openReminderEditor(reminderId)
+    }
+
+    private fun openAssistantForSelectedDate() {
+        val selectedDate = lastRenderedState?.days
+            ?.firstOrNull { it.isSelected }
+            ?.date
+            ?: return
+
+        assistantFlowLauncher.launch(
+            Intent(this, AssistantActivity::class.java).apply {
+                putExtra(AssistantActivity.EXTRA_SELECTED_DATE, selectedDate.toString())
+            }
+        )
+    }
+
+    private fun openPasteTextReminder() {
+        val selectedDate = lastRenderedState?.days
+            ?.firstOrNull { it.isSelected }
+            ?.date
+
+        startActivity(
+            Intent(this, PasteTextReminderActivity::class.java).apply {
+                selectedDate?.let { date ->
+                    putExtra(
+                        PasteTextReminderActivity.EXTRA_SELECTED_DATE,
+                        CalendarActionRules.formatPrefilledDate(date)
+                    )
+                }
+            }
+        )
+        CalendarSyncLogger.ui("paste_text_reminder_opened_from_calendar")
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private fun showExactAlarmPermissionGuidanceIfNeeded() {
+        if (
+            !ExactAlarmPermissionPolicy.shouldShowGuidance(
+                sdkInt = Build.VERSION.SDK_INT,
+                android12SdkInt = Build.VERSION_CODES.S,
+                canScheduleExactAlarms = reminderScheduler.canScheduleExactAlarms()
+            )
+        ) {
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.exact_alarm_permission_title))
+            .setMessage(getString(R.string.exact_alarm_permission_message))
+            .setNegativeButton(R.string.exact_alarm_permission_later, null)
+            .setPositiveButton(R.string.exact_alarm_permission_open_settings) { _, _ ->
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return@setPositiveButton
+                runCatching {
+                    startActivity(
+                        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                    )
+                }.onFailure {
+                    Toast.makeText(
+                        this,
+                        getString(R.string.exact_alarm_permission_settings_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+            .show()
+    }
+
+    private fun openReminderEditor(reminderId: Int) {
         startActivity(
             Intent(this, ManualReminderActivity::class.java).apply {
                 putExtra(ManualReminderActivity.EXTRA_REMINDER_ID, reminderId)
@@ -1002,41 +1203,82 @@ class CalendarActivity : AppCompatActivity() {
         )
     }
 
-    private fun showCreateReminderChoice() {
-        val options = arrayOf(
-            getString(R.string.calendar_create_manual_choice),
-            getString(R.string.calendar_create_camera_choice),
-            getString(R.string.calendar_create_paste_choice)
+    private fun showReminderCreationOptions() {
+        val content = LayoutInflater.from(this)
+            .inflate(R.layout.dialog_reminder_creation_options, null, false)
+        val voiceOption = content.findViewById<View>(R.id.cardReminderCreationVoice)
+        val manualOption = content.findViewById<View>(R.id.cardReminderCreationManual)
+        val cameraOption = content.findViewById<View>(R.id.cardReminderCreationCamera)
+        val pasteOption = content.findViewById<View>(R.id.cardReminderCreationPaste)
+        val dialog = MaterialAlertDialogBuilder(
+            this,
+            R.style.ThemeOverlay_VoiceReminderApp_ReminderOptionsDialog
         )
+            .setTitle(R.string.calendar_create_reminder)
+            .setMessage(R.string.calendar_creation_options_supporting)
+            .setView(content)
+            .setNegativeButton(R.string.calendar_creation_close, null)
+            .create()
 
-        AlertDialog.Builder(this)
-            .setTitle(R.string.calendar_create_choice_title)
-            .setItems(options) { _, which ->
-                if (which == 2) {
-                    val selectedDate = lastRenderedState?.days
-                        ?.firstOrNull { it.isSelected }
-                        ?.date
-                    startActivity(
-                        Intent(this, PasteTextReminderActivity::class.java).apply {
-                            selectedDate?.let { date ->
-                                putExtra(
-                                    PasteTextReminderActivity.EXTRA_SELECTED_DATE,
-                                    CalendarActionRules.formatPrefilledDate(date)
-                                )
-                            }
-                        }
-                    )
-                    CalendarSyncLogger.ui("paste_text_reminder_opened_from_calendar")
-                } else {
-                    val source = CalendarActionRules.creationChoices()[which]
-                    openReminderCreation(source)
+        listOf(voiceOption, manualOption, cameraOption, pasteOption).forEach { option ->
+            ViewCompat.setAccessibilityDelegate(
+                option,
+                object : AccessibilityDelegateCompat() {
+                    override fun onInitializeAccessibilityNodeInfo(
+                        host: View,
+                        info: AccessibilityNodeInfoCompat
+                    ) {
+                        super.onInitializeAccessibilityNodeInfo(host, info)
+                        info.className = android.widget.Button::class.java.name
+                    }
                 }
-            }
-            .show()
+            )
+        }
+
+        fun selectOption(action: () -> Unit) {
+            dialog.dismiss()
+            action()
+        }
+
+        voiceOption.setOnClickListener {
+            selectOption(::openAssistantForSelectedDate)
+        }
+        manualOption.setOnClickListener {
+            selectOption { openReminderCreation(ReminderSource.MANUAL) }
+        }
+        cameraOption.setOnClickListener {
+            selectOption { openReminderCreation(ReminderSource.CAMERA) }
+        }
+        pasteOption.setOnClickListener {
+            selectOption(::openPasteTextReminder)
+        }
+        dialog.setOnShowListener {
+            voiceOption.requestFocus()
+        }
+        dialog.setOnDismissListener {
+            createReminderButton.requestFocus()
+        }
+        dialog.show()
     }
 
     private fun showDeleteConfirmation(detail: CalendarReminderDetailUiModel) {
-        val linkedExternalProviders = detail.providerExternalIds
+        showDeleteConfirmation(
+            title = detail.title,
+            providerExternalIds = detail.providerExternalIds
+        ) { deleteExternalCalendars ->
+            calendarViewModel.deleteCalendarItem(
+                item = detail,
+                deleteExternalCalendars = deleteExternalCalendars
+            )
+        }
+    }
+
+    private fun showDeleteConfirmation(
+        title: String,
+        providerExternalIds: Map<CalendarProvider, String>,
+        onDelete: (Boolean) -> Unit
+    ) {
+        val linkedExternalProviders = providerExternalIds
             .filterKeys { it != CalendarProvider.APP }
             .filterValues { it.isNotBlank() }
             .keys
@@ -1048,17 +1290,11 @@ class CalendarActivity : AppCompatActivity() {
             )
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.calendar_delete_title))
-                .setMessage(getString(R.string.calendar_delete_synced_message, detail.title))
+                .setMessage(getString(R.string.calendar_delete_synced_message, title))
                 .setItems(options) { dialog, which ->
                     when (which) {
-                        0 -> calendarViewModel.deleteCalendarItem(
-                            item = detail,
-                            deleteExternalCalendars = false
-                        )
-                        1 -> calendarViewModel.deleteCalendarItem(
-                            item = detail,
-                            deleteExternalCalendars = true
-                        )
+                        0 -> onDelete(false)
+                        1 -> onDelete(true)
                         else -> dialog.dismiss()
                     }
                 }
@@ -1068,13 +1304,10 @@ class CalendarActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.calendar_delete_title))
-            .setMessage(getString(R.string.calendar_delete_message, detail.title))
+            .setMessage(getString(R.string.calendar_delete_message, title))
             .setNegativeButton(R.string.reminder_cancel_action, null)
             .setPositiveButton(R.string.delete_reminder) { _, _ ->
-                calendarViewModel.deleteCalendarItem(
-                    item = detail,
-                    deleteExternalCalendars = false
-                )
+                onDelete(false)
             }
             .show()
     }
@@ -1169,6 +1402,16 @@ class CalendarActivity : AppCompatActivity() {
                 else -> R.string.calendar_sync_microsoft_connect
             }
         )
+        applySyncActionStyle(
+            button = googleCalendarSyncButton,
+            action = googleMainAction,
+            provider = CalendarProvider.GOOGLE_CALENDAR
+        )
+        applySyncActionStyle(
+            button = microsoftCalendarSyncButton,
+            action = panelState.microsoftButtonAction,
+            provider = CalendarProvider.MICROSOFT_CALENDAR
+        )
         googleCalendarSyncButton.isEnabled =
             googleProviderUiState != CalendarProviderUiState.SYNCING &&
                     googleProviderUiState != CalendarProviderUiState.CONNECTING
@@ -1179,6 +1422,56 @@ class CalendarActivity : AppCompatActivity() {
         calendarDisconnectActionsContainer.isVisible = hasGoogleSession || hasMicrosoftSession
         renderInlineSyncError()
         logProviderStateChanges()
+    }
+
+    private fun applySyncActionStyle(
+        button: MaterialButton,
+        action: CalendarSyncButtonAction,
+        provider: CalendarProvider
+    ) {
+        val isPauseAction = action == CalendarSyncButtonAction.PAUSE_GOOGLE ||
+                action == CalendarSyncButtonAction.PAUSE_MICROSOFT
+        val isActivateAction = action == CalendarSyncButtonAction.ACTIVATE_GOOGLE ||
+                action == CalendarSyncButtonAction.ACTIVATE_MICROSOFT
+        val backgroundRes = if (isPauseAction) {
+            R.color.calendar_sync_pause_background
+        } else {
+            R.color.calendar_sync_connect_background
+        }
+        val contentRes = if (isPauseAction) {
+            R.color.calendar_sync_pause_content
+        } else {
+            R.color.calendar_sync_connect_content
+        }
+        val accessibilityRes = when (provider) {
+            CalendarProvider.GOOGLE_CALENDAR -> when {
+                isPauseAction -> R.string.calendar_sync_google_pause_accessibility
+                isActivateAction -> R.string.calendar_sync_google_activate_accessibility
+                else -> R.string.calendar_sync_google_connect_accessibility
+            }
+            CalendarProvider.MICROSOFT_CALENDAR -> when {
+                isPauseAction -> R.string.calendar_sync_microsoft_pause_accessibility
+                isActivateAction -> R.string.calendar_sync_microsoft_activate_accessibility
+                else -> R.string.calendar_sync_microsoft_connect_accessibility
+            }
+            CalendarProvider.APP -> return
+        }
+
+        button.backgroundTintList = ContextCompat.getColorStateList(this, backgroundRes)
+        button.setTextColor(ContextCompat.getColorStateList(this, contentRes))
+        button.iconTint = ContextCompat.getColorStateList(this, contentRes)
+        button.setIconResource(
+            if (isPauseAction) R.drawable.ic_calendar_pause else R.drawable.ic_calendar_connect
+        )
+        button.rippleColor = ContextCompat.getColorStateList(
+            this,
+            if (isPauseAction) {
+                R.color.calendar_action_ripple_dark
+            } else {
+                R.color.calendar_action_ripple_light
+            }
+        )
+        button.contentDescription = getString(accessibilityRes)
     }
 
     private fun handleGoogleCalendarSyncClick() {
@@ -1761,5 +2054,10 @@ class CalendarActivity : AppCompatActivity() {
             type == ReminderType.BIRTHDAY -> CalendarIndicatorStyle.BIRTHDAY
             else -> CalendarIndicatorStyle.REMINDER
         }
+    }
+
+    companion object {
+        private const val STATE_ACTIVE_FILTER = "state_calendar_active_filter"
+        private const val STATE_SELECTED_DATE = "state_calendar_selected_date"
     }
 }

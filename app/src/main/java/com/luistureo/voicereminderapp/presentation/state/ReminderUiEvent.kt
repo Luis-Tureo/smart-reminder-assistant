@@ -5,5 +5,7 @@ sealed class ReminderUiEvent {
 
     data class SpeakAssistantReply(val message: String) : ReminderUiEvent()
 
+    data class AssistantReminderSaved(val scheduledAtEpochMillis: Long) : ReminderUiEvent()
+
     data object StopAssistantConversation : ReminderUiEvent()
 }

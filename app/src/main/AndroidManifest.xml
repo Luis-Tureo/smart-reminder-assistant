@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -40,19 +39,10 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <receiver
-            android:name=".core.alarm.NextDaySummaryReceiver"
-            android:exported="false" />
-        <receiver
             android:name=".core.alarm.ReminderReceiver"
             android:exported="false" />
         <receiver
-            android:name=".core.routine.RoutineAlarmReceiver"
-            android:exported="false" />
-        <receiver
-            android:name=".core.routine.RoutineActionReceiver"
-            android:exported="false" />
-        <receiver
-            android:name=".core.routine.RoutineRescheduleReceiver"
+            android:name=".core.alarm.ReminderRescheduleReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -62,56 +52,6 @@
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
-        <receiver
-            android:name=".core.loan.alarm.LoanReminderReceiver"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.routine.RoutineTemplatesActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp.Routine" />
-        <activity
-            android:name=".presentation.routine.RoutineProgressActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp.Routine" />
-        <activity
-            android:name=".presentation.routine.RoutineSuggestionsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp.Routine" />
-        <activity
-            android:name=".presentation.routine.RoutinePostponeActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:showWhenLocked="true"
-            android:theme="@style/Theme.VoiceReminderApp.Routine.Dialog"
-            tools:targetApi="o_mr1" />
-        <activity
-            android:name=".presentation.routine.RoutineSettingsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp.Routine" />
-        <activity
-            android:name=".presentation.routine.RoutineEditorActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp.Routine" />
-        <activity
-            android:name=".presentation.routine.RoutineDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp.Routine" />
-        <activity
-            android:name=".presentation.routine.RoutineDashboardActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp.Routine" />
-        <activity
-            android:name=".presentation.loan.LoanDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp" />
-        <activity
-            android:name=".presentation.loan.LoanEditorActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp" />
-        <activity
-            android:name=".presentation.loan.LoanListActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp" />
         <activity
             android:name=".presentation.camera.CameraReminderConfirmationActivity"
             android:exported="false"
@@ -126,8 +66,14 @@
             android:theme="@style/Theme.VoiceReminderApp" />
         <activity
             android:name=".presentation.calendar.CalendarActivity"
-            android:exported="false"
-            android:theme="@style/Theme.VoiceReminderApp" />
+            android:exported="true"
+            android:theme="@style/Theme.VoiceReminderApp">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".presentation.assistant.AssistantActivity"
             android:exported="false"
@@ -150,13 +96,52 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.VoiceReminderApp">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            android:theme="@style/Theme.VoiceReminderApp" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+        <activity-alias
+            android:name=".presentation.loan.LoanDetailActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.loan.LoanEditorActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.loan.LoanListActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutineDashboardActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutineDetailActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutineEditorActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutinePostponeActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutineProgressActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutineSettingsActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutineSuggestionsActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
+        <activity-alias
+            android:name=".presentation.routine.RoutineTemplatesActivity"
+            android:exported="false"
+            android:targetActivity=".MainActivity" />
 
     </application>
 

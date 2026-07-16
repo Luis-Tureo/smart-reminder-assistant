@@ -57,7 +57,6 @@ class ReminderReceiver : BroadcastReceiver() {
 
         if (reminder == null || reminder.isCompleted) {
             scheduler.cancelReminder(reminderId)
-            scheduler.scheduleNextDaySummary()
             return
         }
 

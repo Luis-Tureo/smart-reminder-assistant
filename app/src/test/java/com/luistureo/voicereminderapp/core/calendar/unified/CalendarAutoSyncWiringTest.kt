@@ -55,8 +55,8 @@ class CalendarAutoSyncWiringTest {
                     "ReminderViewModel.kt"
         )
 
-        assertTrue(viewModel.contains("unifiedCalendarSynchronizer.syncSavedReminder"))
-        assertTrue(viewModel.contains("unifiedCalendarSynchronizer.deleteReminderEvent"))
+        assertTrue(viewModel.contains("?.syncSavedReminder"))
+        assertTrue(viewModel.contains("?.deleteReminderEvent"))
     }
 
     private fun workerSource() = source(
