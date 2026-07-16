@@ -135,7 +135,8 @@ class CalendarRefactorResourceTest {
 
         assertTrue(header.contains("android:background=\"@color/primary_blue\""))
         assertEquals(2, "android:textColor=\"@color/white\"".toRegex().findAll(header).count())
-        assertEquals("#4169B2", softBlue)
+        assertEquals("#2F589C", softBlue)
+        assertEquals("#274A84", colorValue(colors, "primary_denim_pressed"))
         assertTrue(contrastRatio(softBlue, headerText) >= 4.5)
         assertFalse(colors.contains("#3F51B5"))
         assertTrue(colors.contains(
